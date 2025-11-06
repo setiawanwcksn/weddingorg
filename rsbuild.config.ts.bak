@@ -1,0 +1,9 @@
+// src/src/rsbuild.config.ts
+import { defineConfig } from '@rsbuild/core';
+import { pluginReact } from '@rsbuild/plugin-react';
+
+export default defineConfig({
+  plugins: [pluginReact()],
+  tools: { tailwindcss: { configFile: '../../tailwind.config.ts' } },
+  source: { entry: { index: './index.tsx' } },
+});

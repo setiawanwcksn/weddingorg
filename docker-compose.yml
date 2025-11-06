@@ -1,0 +1,33 @@
+services:
+  mongo:
+    image: mongo:7.0-jammy
+    container_name: mongo
+    ports: ["27017:27017"]
+    volumes: [ "mongo_data:/data/db" ]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./src
+      dockerfile: server/Dockerfile
+    container_name: backend
+    ports: [ "8787:8787" ]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./src/src
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports: [ "8080:80" ]
+    depends_on: [ backend ]
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=/api
+
+volumes:
+  mongo_data:

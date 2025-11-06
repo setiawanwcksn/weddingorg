@@ -1,0 +1,537 @@
+/**
+ * SendReminder page component
+ * Page redesigned to match the provided reference exactly: header tiles, action buttons,
+ * datatable controls, and a table with Set Reminder, Schedule, Status, and Share actions.
+ */
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
+import {
+  Bell,
+  LayoutGrid,
+  Settings as Cog,
+  Filter,
+  Search,
+  Share2,
+  Copy,
+  Trash2,
+  ChevronDown,
+  Circle,
+  Clock,
+  RefreshCw,
+  Settings,
+  Smartphone
+} from 'lucide-react';
+import { NoticeModal } from '../components/common/NoticeModal';
+import { TableFilterPopover } from '../components/guests/TableFilterPopover';
+import { ReminderSettingsModal } from '../components/reminders/ReminderSettingsModal';
+import { WhatsAppConnectionModal } from '../components/whatsapp/WhatsAppConnectionModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useGuests } from '../contexts/GuestsContext';
+import { useToast } from '../contexts/ToastContext';
+import { apiUrl } from '../lib/api';
+
+interface ReminderItem {
+  id: string;
+  guestId: string;
+  guestName: string;
+  phone: string;
+  message: string;
+  scheduledAt: string;
+  status: 'pending' | 'sent' | 'failed';
+  type: 'wedding_invitation' | 'reminder' | 'thank_you';
+  createdAt: string;
+  updatedAt: string;
+}
+
+function Badge({ children, tone = 'primary' }: { children: React.ReactNode; tone?: 'primary' | 'muted' }) {
+  const tones = tone === 'primary'
+    ? 'bg-primary/15 text-primary'
+    : 'bg-secondary text-text/80';
+  return (
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${tones}`}>
+      {children}
+    </span>
+  );
+}
+
+const SendReminder: React.FC = () => {
+  const navigate = useNavigate();
+  const { apiRequest, user } = useAuth();
+  const { showToast } = useToast();
+
+  const [openNotice, setOpenNotice] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [selectedGuest, setSelectedGuest] = useState<string>('');
+  const [showGuestDropdown, setShowGuestDropdown] = useState(false);
+  const [reminderSettingsOpen, setReminderSettingsOpen] = useState(false);
+  const [selectedGuestForReminder, setSelectedGuestForReminder] = useState<any>(null);
+  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [whatsAppConnected, setWhatsAppConnected] = useState(false);
+  const [whatsAppLoading, setWhatsAppLoading] = useState(true);
+  const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
+    no: true,
+    name: true,
+    phone: true,
+    email: true,
+    status: true,
+    terjadwal: true,
+    reminder: true,
+    share: true,
+  });
+
+  // Use the shared guests data from context
+  const { guests, loading, error, refresh } = useGuests();
+
+  // Check WhatsApp connection status
+  const { data: whatsAppStatus, error: whatsAppError } = useSWR(
+    user ? '/api/whatsapp/status' : null,
+    async (url) => {      
+      try {
+        const response = await apiRequest(apiUrl(`${url}`));
+        console.log(`[SendReminder] WhatsApp status response: ${response.status}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error(`[SendReminder] WhatsApp status error:`, errorData);
+          throw new Error(errorData.error || 'Failed to fetch WhatsApp status');
+        }
+        const data = await response.json();
+        console.log(`[SendReminder] WhatsApp status data:`, data);
+        return data;
+      } catch (error) {
+        console.error(`[SendReminder] Network error fetching WhatsApp status:`, error);
+        throw error;
+      }
+    },
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+      revalidateOnFocus: true,
+      onError: (error) => {
+        console.error(`[SendReminder] WhatsApp status SWR error:`, error);
+      }
+    }
+  );
+
+  useEffect(() => {
+    if (whatsAppStatus) {
+      setWhatsAppConnected(whatsAppStatus.connected);
+      setWhatsAppLoading(false);
+    }
+  }, [whatsAppStatus]);
+
+  useEffect(() => {
+    if (whatsAppError) {
+      console.error('[SendReminder] WhatsApp status error:', whatsAppError);
+      setWhatsAppLoading(false);
+      showToast(`WhatsApp status check failed: ${whatsAppError.message}`, 'error');
+    }
+  }, [whatsAppError]);
+
+  // Filter guests based on search term
+  const filteredGuests = guests.filter(guest =>
+    guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    guest.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = 1;
+  const totalGuests = filteredGuests.length;
+
+  // Filter guests for reminder creation (guests without active reminders)
+  const { data: remindersData, error: remindersError, isLoading: remindersLoading, mutate: mutateReminders } = useSWR(
+    user ? '/api/reminders' : null,
+    async (url) => {
+      const response = await apiRequest(apiUrl(`${url}`));
+      if (!response.ok) {
+        throw new Error('Failed to fetch reminders');
+      }
+      const data = await response.json();
+      console.log('Reminders API response:', data); // Debug log
+      return data;
+    }
+  );
+
+  const reminders = remindersData?.data?.items || remindersData || [];
+  console.log('Processed reminders array:', reminders); // Debug log
+  const guestsWithoutReminders = guests.filter((guest: any) =>
+    !reminders.some((reminder: ReminderItem) => reminder.guestId === guest._id)
+  );
+
+  return (
+    <>
+      <div className="bg-gray-50 text-gray-800">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <NoticeModal
+            open={openNotice}
+            onClose={() => setOpenNotice(false)}
+            title="Mohon diperhatikan!"
+            confirmLabel="Mengerti"
+          >
+            <p>
+              Untuk menghindari akun <a href="#" className="text-primary underline">WhatsApp ter-Block</a>,
+              tolong atur jadwal reminder 5 menit pernama tamu undangan.
+            </p>
+          </NoticeModal>
+          <div className="space-y-5">
+            {/* Header tiles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-7">
+              <button
+                onClick={() => navigate('/guests')}
+                className="rounded-lg sm:rounded-xl border border-border bg-secondary p-4 sm:p-5 flex items-center gap-2 sm:gap-3 shadow-sm hover:bg-accent transition-colors bg-secondary"
+              >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center shadow-sm">
+                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                </div>
+                <div className="font-semibold text-sm sm:text-base">Kelola Tamu</div>
+              </button>
+
+              <div className="rounded-lg sm:rounded-xl border border-border p-4 sm:p-5 flex items-center gap-2 sm:gap-3 bg-primary shadow-sm justify-center">
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-background" />
+                <div className="font-semibold text-background text-sm sm:text-base">Send Reminder</div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="rounded-lg sm:rounded-xl border border-border p-3 sm:p-4 shadow-sm bg-white rounded-b-none">
+              <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    onClick={() => navigate('/message-templates')}
+                    className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-primary text-white text-xs sm:text-sm transition-colors"
+                  >
+                    <span className="w-3 h-3 sm:w-4 sm:h-4 inline-flex items-center justify-center rounded-sm">✎</span>
+                    Teks Pengantar
+                  </button>
+                  <button
+                    onClick={() => setWhatsAppModalOpen(true)}
+                    disabled={whatsAppLoading}
+                    className={`inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-white text-xs sm:text-sm transition-colors ${whatsAppLoading
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : whatsAppConnected
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-primary hover:bg-primary/90'
+                      }`}
+                  >
+                    <Smartphone className="w-3 h-3 sm:w-4 sm:h-4" />
+                    {whatsAppLoading ? 'Checking...' : whatsAppConnected ? 'WhatsApp Terhubung' : 'Hubungkan WhatsApp'}
+                  </button>
+
+                </div>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="relative">
+                    <button
+                      onClick={() => setFilterOpen(true)}
+                      className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors"
+                      title="Filter columns"
+                    >
+                      <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                    </button>
+                    <TableFilterPopover
+                      open={filterOpen}
+                      onClose={() => setFilterOpen(false)}
+                      options={[
+                        { key: 'no', label: 'No' },
+                        { key: 'name', label: 'Nama' },
+                        { key: 'phone', label: 'WhatsApp' },
+                        { key: 'status', label: 'Status' },
+                        { key: 'terjadwal', label: 'Terjadwal' },
+                        { key: 'reminder', label: 'Set Reminder' },
+                        { key: 'share', label: 'Bagikan' },
+                      ]}
+                      visible={visibleCols}
+                      onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                      onToggleAll={(checked) => {
+                        const allKeys = ['no', 'name', 'phone', 'status', 'terjadwal', 'reminder', 'share'];
+                        const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {});
+                        setVisibleCols(newState);
+                      }}
+                    />
+                  </div>
+                  <button className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors" title="Settings">
+                    <Cog className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="rounded-lg sm:rounded-xl border border-border bg-white overflow-hidden shadow-sm px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 rounded-t-none" style={{ marginTop: '0px' }} >
+
+              {/* Datatable controls */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-xs sm:text-sm mb-4 sm:mb-6">
+                <div className="text-xs sm:text-sm text-text/70">
+                  Show [ {guests.length} ] entries
+                </div>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="relative w-full sm:w-48 md:w-64">
+                    <Search className="w-3 h-3 sm:w-4 sm:h-4 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-text/50" />
+                    <input
+                      placeholder="Search"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-7 sm:pl-9 pr-2 sm:pr-3 py-1.5 sm:py-2 rounded-lg border border-border bg-background text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {visibleCols.no && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">No</th>}
+                      {visibleCols.name && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium sticky left-0 bg-gray-50 z-10">Nama</th>}
+                      {visibleCols.phone && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden sm:table-cell">WhatsApp</th>}
+                      {visibleCols.reminder && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Set Reminder</th>}
+                      {visibleCols.terjadwal && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden md:table-cell">Terjadwal</th>}
+                      {visibleCols.status && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Status</th>}
+                      {visibleCols.share && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Bagikan</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {loading || remindersLoading ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-text/50">
+                          <div className="flex items-center justify-center gap-2">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            Loading guests...
+                          </div>
+                        </td>
+                      </tr>
+                    ) : error || remindersError ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-red-600">
+                          Error loading data: {error || remindersError}
+                        </td>
+                      </tr>
+                    ) : filteredGuests.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-text/50">
+                          No guests found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredGuests.map((guest: any, index: number) => {
+                        const hasReminder = reminders.some((reminder: ReminderItem) => reminder.guestId === guest._id);
+                        return (
+                          <tr key={guest._id} className="hover:bg-accent transition">
+                            {visibleCols.no && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">{(page - 1) * 10 + index + 1}</td>}
+                            {visibleCols.name && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap sticky left-0 bg-white z-10 text-sm sm:text-base">{guest.name}</td>}
+                            {visibleCols.phone && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">{guest.phone || '-'}</td>}
+                            {visibleCols.reminder && (
+                              <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
+                                <button
+                                  onClick={() => {
+                                    setSelectedGuestForReminder({
+                                      id: guest._id,
+                                      name: guest.name,
+                                      phone: guest.phone || ''
+                                    });
+                                    setReminderSettingsOpen(true);
+                                  }}
+                                  className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors min-h-[28px] ${guest.status === 'Confirmed' || hasReminder
+                                      ? 'bg-green-500 text-white hover:bg-green-600'
+                                      : 'bg-red-500 text-white hover:bg-red-600'
+                                    }`}
+                                >
+                                  {guest.status === 'Confirmed' || hasReminder ? 'Done' : 'Setting'}
+                                  <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                </button>
+                              </td>
+                            )}
+                            {visibleCols.terjadwal && (
+                              <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
+                                {guest.reminderScheduledAt ? (
+                                  <span className="text-xs text-gray-600">
+                                    {new Date(guest.reminderScheduledAt).toLocaleString('id-ID', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">-</span>
+                                )}
+                              </td>
+                            )}
+                            {visibleCols.status && (
+                              <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
+                                <input
+                                  type="checkbox"
+                                  checked={guest.status === 'confirmed' || guest.status === 'scheduled' || !!guest.reminderScheduledAt}
+                                  onChange={async (e) => {
+                                    try {
+                                      const newStatus = e.target.checked ? 'confirmed' : 'pending';
+
+                                      // If unchecking (setting to pending), also remove any associated reminders
+                                      if (!e.target.checked) {
+                                        try {
+                                          console.log(`[SendReminder] Removing reminders for guest ${guest._id}`);
+                                          const remindersResponse = await apiRequest(apiUrl(`/api/reminders`), {
+                                            method: 'GET'
+                                          });
+
+                                          if (remindersResponse.ok) {
+                                            const remindersData = await remindersResponse.json();
+                                            const guestReminders = remindersData.data?.items?.filter((reminder: any) => reminder.guestId === guest._id) || [];
+
+                                            // Delete all reminders for this guest
+                                            for (const reminder of guestReminders) {
+                                              await apiRequest(apiUrl(`/api/reminders/${reminder.id}`), {
+                                                method: 'DELETE'
+                                              });
+                                              console.log(`[SendReminder] Deleted reminder ${reminder.id} for guest ${guest._id}`);
+                                            }
+                                          }
+                                        } catch (reminderError) {
+                                          console.error(`[SendReminder] Error removing reminders:`, reminderError);
+                                          // Continue with status update even if reminder deletion fails
+                                        }
+                                      }
+
+                                      await apiRequest(apiUrl(`/api/guests/${guest._id}`), {
+                                        method: 'PUT',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: newStatus })
+                                      });
+                                      showToast('Guest status updated successfully', 'success');
+                                      refresh();
+                                    } catch (error: any) {
+                                      showToast(`Error updating status: ${error.message}`, 'error');
+                                    }
+                                  }}
+                                  className="w-3 h-3 sm:w-4 sm:h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
+                                />
+                              </td>
+                            )}
+                            {visibleCols.share && (
+                              <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <button
+                                    onClick={() => {
+                                      const message = `Dear ${guest.name}, this is a reminder for your upcoming event.`;
+                                      navigator.clipboard.writeText(message);
+                                      showToast('Message copied to clipboard!', 'success');
+                                    }}
+                                    className="p-1 sm:p-1.5 rounded-md bg-secondary hover:bg-primary/10 transition-colors min-h-[32px]"
+                                    title="Copy message"
+                                  >
+                                    <Copy className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (hasReminder) {
+                                        showToast('Guest already has a reminder', 'info');
+                                        return;
+                                      }
+
+                                      try {
+                                        const reminderData = {
+                                          guestId: guest._id,
+                                          guestName: guest.name,
+                                          phone: guest.phone || '',
+                                          message: `Dear ${guest.name}, this is a reminder for your upcoming event.`,
+                                          scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                          type: 'reminder'
+                                          // Note: status and accountId are set server-side
+                                        };
+
+                                        await apiRequest(apiUrl(`/api/reminders`), {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify(reminderData)
+                                        });
+                                        showToast('Reminder created successfully', 'success');
+                                        // Refresh both reminders and guests data
+                                        await mutateReminders();
+                                        await refresh();
+                                      } catch (error: any) {
+                                        showToast(`Error creating reminder: ${error.message}`, 'error');
+                                      }
+                                    }}
+                                    className="p-1 sm:p-1.5 rounded-md bg-secondary hover:bg-primary/10 transition-colors min-h-[32px]"
+                                    title="Create reminder"
+                                  >
+                                    <Bell className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      showToast('Share action coming soon', 'info');
+                                    }}
+                                    className="p-1 sm:p-1.5 rounded-md bg-secondary hover:bg-primary/10 transition-colors min-h-[32px]"
+                                    title="Share"
+                                  >
+                                    <Share2 className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 text-xs sm:text-sm">
+                <p className="text-xs sm:text-sm">Showing {filteredGuests.length} to {filteredGuests.length} of {totalGuests} entries</p>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <button
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page <= 1}
+                    className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                  >
+                    Previous
+                  </button>
+                  <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
+                  <button
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page >= totalPages}
+                    className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Reminder Settings Modal */}
+          {selectedGuestForReminder && (
+            <ReminderSettingsModal
+              open={reminderSettingsOpen}
+              onClose={() => {
+                setReminderSettingsOpen(false);
+                setSelectedGuestForReminder(null);
+              }}
+              guestId={selectedGuestForReminder.id}
+              guestName={selectedGuestForReminder.name}
+              phone={selectedGuestForReminder.phone}
+              existingReminder={reminders.find((reminder: ReminderItem) => reminder.guestId === selectedGuestForReminder.id)}
+              currentIntroTextCategory={guests.find((guest: any) => guest._id === selectedGuestForReminder.id)?.introTextCategory}
+              onSuccess={() => {
+                mutateReminders();
+                refresh();
+              }}
+            />
+          )}
+
+          {/* WhatsApp Connection Modal */}
+          <WhatsAppConnectionModal
+            open={whatsAppModalOpen}
+            onClose={() => setWhatsAppModalOpen(false)}
+            onConnected={() => {
+              setWhatsAppConnected(true);
+              showToast('WhatsApp berhasil terhubung!', 'success');
+            }}
+          />
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default SendReminder;

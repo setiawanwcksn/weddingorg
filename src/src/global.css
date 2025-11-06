@@ -1,0 +1,79 @@
+:root {
+  /* Lavender Wedding (your palette) */
+  --primary: 240 89% 72%; /* #7979F7 */
+  --primary-glow: 240 89% 85%;
+  --secondary: 246 76% 95%; /* #EAE9FB */
+  --brand-secondary: 246 76% 95%; /* #EAE9FB */
+  --accent: 220 40% 97%; /* #F5F7FB */
+  --background: 0 0% 100%; /* #FFFFFF */
+  --text: 220 18% 15%; /* #1E232C */
+  --border: 228 40% 90%; /* #E0E3F2 */
+  /* Semantic status tokens */
+  --success: 140 70% 35%; /* green for status check */
+  --warning: 45 95% 60%; /* warm yellow for info pill */
+  --danger: 340 75% 65%; /* pink for edit icon */
+  --highlight: 48 93% 77%; /* #FDE68A - soft yellow for keterangan */
+  --nextui-secondary: var(--secondary);
+
+  --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  --gradient-subtle: linear-gradient(180deg, hsl(var(--accent)), hsl(var(--secondary)));
+
+  --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+  --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 640px) {
+  :root {
+    --shadow-elegant: 0 6px 20px -8px hsl(var(--primary) / 0.25);
+    --shadow-glow: 0 0 25px hsl(var(--primary-glow) / 0.3);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: hsl(var(--background)); /* #FFFFFF per palette */
+  color: hsl(var(--text));
+}
+
+/* per-cell horizontal scroll */
+.cell-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* optional: small horizontal scrollbar styling */
+.cell-scroll::-webkit-scrollbar { height: 6px; }
+.cell-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 9999px; }
+
+/* ensure table doesn't force page overflow */
+.table-fixed { table-layout: fixed; }
+
+/* optional: ensure images/buttons don't overflow */
+.table-fixed img, .table-fixed button { max-width: 100%; }
+
