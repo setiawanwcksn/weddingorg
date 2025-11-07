@@ -47,28 +47,30 @@ export interface Guest {
   status: 'Pending' | 'Confirmed' | 'Declined' | 'Checked-In';
   plusOne: boolean;
   isInvited?: boolean; // true for invited guests, false for walk-ins
-  
+
   // Check-in tracking
   checkInDate?: Date;
   guestCount?: number; // Number of people checking in
-  
+
   // Souvenir tracking
   souvenirCount?: number;
   souvenirRecordedAt?: Date;
-  
+
   // Gift tracking
   giftType?: 'Angpao' | 'Kado';
+  kadoCount?: number;
+  angpaoCount?: number;
   giftCount?: number;
   giftNote?: string;
-  
+
   // Reminder tracking
   reminderScheduledAt?: Date;
   reminderSentAt?: Date;
-  
+
   // Additional info
   notes?: string;
   dietaryRequirements?: string; // Special dietary requirements
-  
+
   // Frontend display fields
   code?: string; // Unique code for display (kode unik)
   session?: string; // Guest session (sesi)
@@ -76,7 +78,7 @@ export interface Guest {
   tableNo?: string; // Table number (no. meja)
   info?: string; // Additional info (keterangan)
   introTextCategory?: string; // Intro text category (Formal/Casual/etc)
-  
+
   // Timestamps
   createdAt?: Date;
   updatedAt?: Date;

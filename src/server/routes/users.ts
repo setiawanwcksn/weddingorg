@@ -372,17 +372,17 @@ usersApp.post('/', requireAdmin, async (c) => {
       }
     }
 
-    await createAuditLog(currentUser.id, currentUser.username, 'user_created', 'users', {
-      newUserUsername: username,
-      role,
-      account: {
-        ...accountDoc,
-        photoUrl: defaultPhoto,
-        photoUrl_dashboard: dashboardUrl,
-        photoUrl_welcome: welcomeUrl,
-      },
-      permissions,
-    })
+    // await createAuditLog(currentUser.id, currentUser.username, 'user_created', 'users', {
+    //   newUserUsername: username,
+    //   role,
+    //   account: {
+    //     ...accountDoc,
+    //     photoUrl: defaultPhoto,
+    //     photoUrl_dashboard: dashboardUrl,
+    //     photoUrl_welcome: welcomeUrl,
+    //   },
+    //   permissions,
+    // })
 
     return c.json({
       success: true,

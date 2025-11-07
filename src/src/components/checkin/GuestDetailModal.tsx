@@ -40,6 +40,8 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
   const { apiRequest } = useAuth();
   const [count, setCount] = React.useState<number>(guest ? 1 : 0);
   const [souvenir, setSouvenir] = React.useState<number>(0);
+  const [kado, setKado] = React.useState<number>(0);
+  const [angpao, setAngpao] = React.useState<number>(0);
   const [gift, setGift] = React.useState<'Angpao' | 'Kado' | null>(null);
   const [isCheckingIn, setIsCheckingIn] = React.useState(false);
   const [guestDetails, setGuestDetails] = React.useState<any>(null);
@@ -61,17 +63,17 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
 
   const fetchGuestDetails = React.useCallback(async () => {
     if (!guest?.id) return;
-    
+
     setIsLoadingDetails(true);
     try {
       // Use unified guests API for all guest types
       const endpoint = apiUrl(`/api/guests/${guest.id}`);
-      
+
       const response = await apiRequest(endpoint);
       const data = await response.json();
-      
+
       console.log('Guest details API response:', data);
-      
+
       if (data.success && data.data) {
         setGuestDetails(data.data);
         // Sync local state with updated guest data
@@ -87,7 +89,7 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
 
   const performCheckIn = React.useCallback(async () => {
     if (!guest || !onCheckIn) return;
-    
+
     setIsCheckingIn(true);
     try {
       // Use unified guests API for all guest types
@@ -99,13 +101,13 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
         },
         body: JSON.stringify({ guestCount: count })
       });
-      
+
       const checkInData = await checkInResponse.json();
-      
+
       if (!checkInResponse.ok || !checkInData.success) {
         throw new Error(checkInData.error || 'Failed to check in guest');
       }
-      
+
       // Update souvenir count if set
       if (souvenir > 0) {
         try {
@@ -121,28 +123,28 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
           // Continue with check-in even if souvenir update fails
         }
       }
-      
+
       // Update gift information if set
-      if (gift) {
+      if (kado > 0 || angpao > 0) {
         try {
           await apiRequest(apiUrl(`/api/guests/${guest.id}/gifts`), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ type: gift, count: 1 })
+            body: JSON.stringify({ angpao: angpao, kado: kado, count: 1})
           });
         } catch (giftError) {
           console.error('Error updating gift information:', giftError);
           // Continue with check-in even if gift update fails
         }
       }
-      
+
       // Call the parent's onCheckIn callback
       onCheckIn(guest);
       showToast(`Guest ${guest.name} checked in successfully`, 'success');
       onClose();
-      
+
       // Refresh the global guests data to reflect the check-in
       await refresh();
     } catch (error) {
@@ -151,7 +153,7 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
     } finally {
       setIsCheckingIn(false);
     }
-  }, [guest, onCheckIn, count, souvenir, gift, apiRequest, onClose, refresh, showToast]);
+  }, [guest, onCheckIn, count, souvenir, angpao, kado, apiRequest, onClose, refresh, showToast]);
 
   React.useEffect(() => {
     if (open && guest?.id) {
@@ -194,9 +196,8 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
               </li>
               <li className="flex items-center justify-between px-4 py-3 sm:py-4">
                 <span className="text-sm sm:text-base">Kategori Tamu</span>
-                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs sm:text-sm font-semibold ${
-                  guestDetails?.category === 'VIP' ? 'bg-secondary text-text' : 'bg-accent text-text'
-                }`}>
+                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs sm:text-sm font-semibold ${guestDetails?.category === 'VIP' ? 'bg-secondary text-text' : 'bg-accent text-text'
+                  }`}>
                   {guestDetails?.category || 'Regular'}
                 </span>
               </li>
@@ -237,16 +238,16 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
               <li className="flex items-center justify-between px-4 py-3 sm:py-4">
                 <span className="text-sm sm:text-base">Tanggal dan Waktu</span>
                 <span className="text-sm sm:text-base text-text">{guestDetails?.checkInDate
-  ? new Intl.DateTimeFormat('id-ID', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).format(new Date(guestDetails.checkInDate))
-  : '-'}</span>
+                  ? new Intl.DateTimeFormat('id-ID', {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                  }).format(new Date(guestDetails.checkInDate))
+                  : '-'}</span>
               </li>
               <li className="px-4 py-3 sm:py-4">
                 <div className="flex items-center justify-between">
@@ -295,19 +296,17 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
                       <>
                         <button
                           type="button"
-                          onClick={() => setGift('Angpao')}
-                          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-sm sm:text-base border-2 transition ${
-                            gift === 'Angpao' ? 'bg-primary text-background border-primary' : 'bg-secondary text-text border-border hover:border-primary/50'
-                          }`}
+                          onClick={() => setAngpao(1)}
+                          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-sm sm:text-base border-2 transition ${angpao > 0 ? 'bg-primary text-background border-primary' : 'bg-secondary text-text border-border hover:border-primary/50'
+                            }`}
                         >
                           Angpao
                         </button>
                         <button
                           type="button"
-                          onClick={() => setGift('Kado')}
-                          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-sm sm:text-base border-2 transition ${
-                            gift === 'Kado' ? 'bg-primary text-background border-primary' : 'bg-secondary text-text border-border hover:border-primary/50'
-                          }`}
+                          onClick={() => setKado(1)}
+                          className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl text-sm sm:text-base border-2 transition ${kado > 0 ? 'bg-primary text-background border-primary' : 'bg-secondary text-text border-border hover:border-primary/50'
+                            }`}
                         >
                           Kado
                         </button>
@@ -333,14 +332,14 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
             type="button"
             onClick={async () => {
               if (!guest || !onCheckIn || isCheckingIn) return;
-              
+
               // Check if guest has already checked in
               if (guestDetails?.checkInDate) {
                 setPendingCheckInData({ guest, onCheckIn });
                 setShowDuplicateCheckInAlert(true);
                 return;
               }
-              
+
               await performCheckIn();
             }}
             disabled={isCheckingIn}

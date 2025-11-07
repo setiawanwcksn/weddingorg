@@ -36,7 +36,6 @@ export default function NonInvitedGuestCheckInModal({
     tableNo: '',
     info: '',
     guestCount: 1,
-    notes: '',
     session: '1',
     limit: 1,
     category: 'Regular'
@@ -78,7 +77,6 @@ export default function NonInvitedGuestCheckInModal({
         tableNo: '',
         info: '',
         guestCount: 1,
-        notes: '',
         session: '1',
         limit: 1,
         category: 'Regular'

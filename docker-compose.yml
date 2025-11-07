@@ -12,8 +12,8 @@ services:
 
   backend:
     build:
-      context: ./src
-      dockerfile: server/Dockerfile
+      context: .                # <-- ROOT repo supaya bisa COPY src/server dan src/shared
+      dockerfile: src/server/Dockerfile
     container_name: backend
     ports: [ "8787:8787" ]
     restart: unless-stopped

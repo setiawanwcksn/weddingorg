@@ -236,7 +236,6 @@ export function Doorprize(): JSX.Element {
                     <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Jumlah Tamu</th>
                     <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>
                     <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Waktu</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Edit</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -269,9 +268,9 @@ export function Doorprize(): JSX.Element {
                       <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.guestCount}</td>
                       <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.date}</td>
                       <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.time}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                      {/* <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                         <RowActions />
-                      </td>
+                      </td> */}
                     </tr>
                   )))}
                 </tbody>

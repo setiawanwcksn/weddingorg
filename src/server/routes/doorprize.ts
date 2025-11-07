@@ -87,68 +87,53 @@ doorprizeApp.get('/debug', async (c: Context<AppEnv>) => {
  * GET /api/doorprize/checked-in
  * Returns all guests who have checked in for the current account, optionally filtered by search term.
  */
-doorprizeApp.get('/checked-in', async (c: Context<AppEnv>) => {
+doorprizeApp.get('/checked-in', async (c) => {
   try {
-    const user = requireUser(c)
-    if (!user) return c.json({ success: false, error: 'Authentication required' }, 401)
-
-    const { search } = c.req.query()
-
-    // Build query (account-scoped)
-    const base: any = {
-      accountId: user.accountId,
-      $or: [{ checkInDate: { $ne: null } }, { checkInDate: { $exists: true } }],
+    // Get user from middleware context
+    const user = c.get('user');
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'Authentication required'
+      }, 401);
     }
 
-    const filter = search
-      ? {
-        accountId: user.accountId,
-        $and: [
-          { $or: base.$or },
-          {
-            $or: [
-              { name: { $regex: search, $options: 'i' } },
-              { code: { $regex: search, $options: 'i' } },
-            ],
-          },
-        ],
-      }
-      : base
+    const userId = user.id;
+    const { search } = c.req.query();
 
-    console.log(`[doorprize] Searching checked-in guests filter:`, JSON.stringify(filter))
+    // Build query with user isolation
+    const filter: any = { userId };
 
-    // Sanity logs (optional)
-    const allUserGuests = await db
-      .collection(GUESTS_COLLECTION)
-      .find({ accountId: user.accountId })
-      .project({ name: 1, checkInDate: 1, code: 1 })
-      .toArray()
+    // Check for checked-in guests - handle both null and undefined cases
+    filter.$and = [
+      { checkInDate: { $ne: null } },
+      { checkInDate: { $exists: true } }
+    ];
 
-    console.log(`[doorprize] Total guests for account ${user.accountId}: ${allUserGuests.length}`)
+    if (search) {
+      filter.$and = [
+        { $or: filter.$or },
+        {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { code: { $regex: search, $options: 'i' } },
+          ]
+        }
+      ];
+      delete filter.$or;
+    }
 
-    const list = await db
-      .collection(GUESTS_COLLECTION)
-      .find(filter, {
-        projection: {
-          name: 1,
-          code: 1,
-          category: 1,
-          info: 1,
-          session: 1,
-          limit: 1,
-          tableNo: 1,
-          guestCount: 1,
-          checkInDate: 1,
-          phone: 1,
-        },
-      })
+    console.log(`[doorprize] Searching for checked-in guests with filter:`, JSON.stringify(filter));
+
+    const cursor = db.collection(GUESTS_COLLECTION)
+      .find(filter, { projection: { name: 1, code: 1, category: 1, info: 1, session: 1, limit: 1, tableNo: 1, guestCount: 1, checkInDate: 1, phone: 1 } })
       .sort({ checkInDate: -1 })
-      .limit(500)
-      .toArray()
+      .limit(500);
+    const list = await cursor.toArray();
 
-    console.info(`[doorprize] Found ${list.length} checked-in guests for account ${user.accountId}`)
+    console.info(`[doorprize] Found ${list.length} checked-in guests for user ${userId}`);
 
-    const items = (list as any[]).map((g) => ({
+    const items = list.map((g: any) => ({
       id: String(g._id),
       name: g.name,
       code: g.code,
@@ -160,14 +145,20 @@ doorprizeApp.get('/checked-in', async (c: Context<AppEnv>) => {
       guestCount: g.guestCount,
       phone: g.phone,
       checkedInAt: g.checkInDate ? new Date(g.checkInDate).toISOString() : undefined,
-    }))
+    }));
 
-    return c.json({ success: true, items })
-  } catch (error: unknown) {
-    console.error('[api] /doorprize/checked-in', errMsg(error))
-    return c.json({ success: false, error: errMsg(error) ?? 'Unknown error' }, 500)
+    return c.json({
+      success: true,
+      items
+    });
+  } catch (error: any) {
+    console.error('[api] /doorprize/checked-in', error?.message);
+    return c.json({
+      success: false,
+      error: error?.message ?? 'Unknown error'
+    }, 500);
   }
-})
+});
 
 /**
  * GET /api/doorprize/prizes

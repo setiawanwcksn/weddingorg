@@ -1,39 +1,38 @@
-# ---------- Build ----------
+# ---------- Build stage ----------
 FROM node:20-alpine AS builder
-WORKDIR /repo
+WORKDIR /app
 
-# pakai lockfile root (workspaces)
-COPY package.json package-lock.json ./
-COPY src/server/package.json src/server/package.json
-RUN npm ci --no-audit --no-fund
+# hanya ambil manifest BE agar cache build efisien
+COPY src/server/package*.json src/server/
 
-# salin source
+# install deps BE
+WORKDIR /app/src/server
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+# copy source BE + shared (karena ts build biasanya import dari shared)
+WORKDIR /app
 COPY src/server/ src/server/
 COPY src/shared/ src/shared/
 
-# build server via workspace
-RUN npm run build -w src/server
+# build BE
+WORKDIR /app/src/server
+RUN npm run build
 
-# ---------- Runtime ----------
+# ---------- Runtime stage ----------
 FROM node:20-alpine AS runner
-WORKDIR /repo/src/server
+WORKDIR /app/src/server
 RUN adduser -D appuser && apk add --no-cache curl
 
 ENV NODE_ENV=production
 ENV PORT=8787
-ENV NODE_OPTIONS=--enable-source-maps
 
-# install prod deps via lockfile root
-COPY package.json package-lock.json /repo/
-COPY src/server/package.json ./package.json
-RUN cd /repo && npm ci --omit=dev --no-audit --no-fund
+# prod deps
+COPY src/server/package*.json ./
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev --no-audit --no-fund; else npm install --omit=dev --no-audit --no-fund; fi
 
 # hasil build
-COPY --from=builder /repo/src/server/dist ./dist
+COPY --from=builder /app/src/server/dist ./dist
 
-EXPOSE 8787
 USER appuser
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost:${PORT}/health || exit 1
-
+EXPOSE 8787
 CMD ["node", "dist/server/server.js"]

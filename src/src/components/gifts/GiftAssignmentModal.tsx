@@ -34,8 +34,8 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
   useEffect(() => {
     if (isOpen && guest) {
       // Set initial counts and notes from existing guest data
-      setAngpaoCount(guest.giftType === 'Angpao' ? guest.giftCount || 0 : 0);
-      setKadoCount(guest.giftType === 'Kado' ? guest.giftCount || 0 : 0);
+      setAngpaoCount(guest.angpaoCount || 0);
+      setKadoCount(guest.kadoCount || 0);
       setGiftNote(guest.giftNote || '');
       console.log(`[GiftAssignmentModal] Loaded existing gift data for guest:`, guest.name, {
         giftType: guest.giftType,
@@ -53,31 +53,7 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
     setLoading(true);
 
     try {
-      console.log('[GiftAssignmentModal] Submitting gift assignments:', {
-        guestId: guest._id,
-        angpaoCount,
-        kadoCount,
-        giftNote
-      });
-
-      // Determine the final gift type and count
-      let finalGiftType: GiftType | null = null;
-      let finalGiftCount = 0;
-
       if (angpaoCount > 0 && kadoCount > 0) {
-        // If both types are assigned, prioritize Angpao (more common)
-        finalGiftType = 'Angpao';
-        finalGiftCount = angpaoCount;
-        console.log('[GiftAssignmentModal] Both types assigned, using Angpao');
-      } else if (angpaoCount > 0) {
-        finalGiftType = 'Angpao';
-        finalGiftCount = angpaoCount;
-      } else if (kadoCount > 0) {
-        finalGiftType = 'Kado';
-        finalGiftCount = kadoCount;
-      }
-
-      if (finalGiftType && finalGiftCount > 0) {
         // Update guest with gift data using unified guests API
         const response = await apiRequest(apiUrl(`/api/guests/${guest._id}`), {
           method: 'PUT',
@@ -85,9 +61,9 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            giftType: finalGiftType,
-            giftCount: finalGiftCount,
-            giftNote: giftNote // This will now be properly stored in the database
+            kadoCount: kadoCount,
+            angpaoCount: angpaoCount,
+            giftNote: giftNote
           })
         });
 
@@ -101,7 +77,7 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
 
         // Call onAssign to refresh the parent component data
         if (onAssign) {
-          await onAssign(guest._id, finalGiftType, finalGiftCount);
+          await onAssign(guest._id, 'Angpao', 0); // Use Angpao as default for clearing
         }
 
         onClose();
@@ -165,7 +141,7 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
       <button aria-label="Close overlay" onClick={onClose} className="absolute inset-0 bg-text/30" />
 
       {/* Card - Exactly matching GuestDetailModal style */}
-      <div className="absolute left-1/2 top-2 sm:top-4 -translate-x-1/2 w-[96%] sm:w-[94%] max-w-[340px] sm:max-w-[480px] md:max-w-[860px] rounded-2xl border border-border bg-background shadow-lg overflow-hidden max-h-[98vh] sm:max-h-[95vh] overflow-y-auto">
+      <div className="absolute left-1/2 top-2 sm:top-4 -translate-x-1/2 w-[96%] sm:w-[94%] max-w-[340px] sm:max-w-[480px] md:max-w-[660px] rounded-2xl border border-border bg-background shadow-lg overflow-hidden max-h-[98vh] sm:max-h-[95vh] overflow-y-auto">
         {/* Header - Exactly matching GuestDetailModal style */}
         <div className="flex items-center justify-between p-3 sm:p-4 md:p-5">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -180,17 +156,6 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
           >
             <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
-        </div>
-
-        {/* Guest Info - Exactly matching GuestDetailModal style */}
-        <div className="p-3 sm:p-4 md:p-5">
-          <div className="rounded-xl border border-border bg-background overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1517244683847-7456b63c5969?q=80&w=1600&auto=format&fit=crop"
-              alt="Guest banner"
-              className="w-full h-32 sm:h-40 md:h-56 object-cover"
-            />
-          </div>
         </div>
 
         {/* Detail list - Exactly matching GuestDetailModal style */}
@@ -258,14 +223,6 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
               )}
             </ul>
           </div>
-
-          {guest.giftType && guest.giftCount > 0 && (
-            <div className="mt-3 p-2 sm:p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs sm:text-sm text-blue-800">
-                <strong>Current Gifts:</strong> {getExistingGiftSummary()}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Form - Matching GuestDetailModal footer style */}
@@ -337,21 +294,6 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
                   </div>
                 </li>
               </ul>
-            </div>
-
-            {/* Summary */}
-            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3">
-              <h4 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">Assignment Summary</h4>
-              <div className="space-y-1 text-xs sm:text-sm text-gray-600">
-                <div className="flex justify-between">
-                  <span>Guest:</span>
-                  <span className="font-medium truncate ml-2">{guest.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>New Assignment:</span>
-                  <span className="font-medium">{getCurrentGiftSummary()}</span>
-                </div>
-              </div>
             </div>
 
             {/* Actions */}

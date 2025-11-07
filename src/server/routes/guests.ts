@@ -3,7 +3,7 @@
  */
 
 import { Hono, Context } from 'hono'
-import { z } from 'zod'
+import { date, z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { broadcastGuestUpdate } from './realtime-guests.js'
 import type { AppEnv } from '@shared/types'
@@ -43,7 +43,10 @@ const guestSchema = z.object({
   souvenirRecordedAt: z.string().datetime().optional(),
   giftType: z.enum(['Angpao', 'Kado']).optional(),
   giftCount: z.number().min(0).optional(),
+  kadoCount: z.number().min(0).optional(),
+  angpaoCount: z.number().min(0).optional(),
   giftNote: z.string().optional(),
+  giftRecordedAt: z.string().datetime().optional(),
   reminderScheduledAt: z.string().datetime().optional(),
   reminderSentAt: z.string().datetime().optional(),
   notes: z.string().optional(),
@@ -188,9 +191,8 @@ guestsApp.post(
       name: z.string().min(1, 'Name is required'),
       phone: z.string().optional(),
       tableNo: z.string().optional(),
-      dietaryRequirements: z.string().optional(),
       guestCount: z.number().min(1).default(1),
-      notes: z.string().optional(),
+      info: z.string().optional(),
       session: z.string().optional(),
       limit: z.number().min(1).optional(),
       category: z.enum(['Regular', 'VIP']).optional().default('Regular'),
@@ -205,9 +207,8 @@ guestsApp.post(
         name: string
         phone?: string
         tableNo?: string
-        dietaryRequirements?: string
+        info?: string
         guestCount?: number
-        notes?: string
         session?: string
         limit?: number
         category?: 'Regular' | 'VIP'
@@ -228,14 +229,15 @@ guestsApp.post(
         isInvited: false,
         checkInDate: new Date(),
         tableNo: data.tableNo || '',
-        notes: data.notes || '',
-        dietaryRequirements: data.dietaryRequirements || '',
+        info: data.info || '',
         guestCount: data.guestCount || 1,
         plusOne: (data.guestCount || 1) > 1,
         code: displayCode,
         session: data.session || '',
         limit: data.limit || data.guestCount || 1,
         giftType: null,
+        kadoCount: 0,
+        angpaoCount: 0,
         giftCount: 0,
         souvenirCount: 0,
         souvenirRecordedAt: null,
@@ -393,25 +395,60 @@ guestsApp.post(
 guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
-    if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
+    if (!user)
+      return c.json({ success: false, error: 'No token provided' }, 401)
 
     const id = c.req.param('id')
     const collection = db.collection('94884219_guests')
+    const guest = await collection.findOne({
+      _id: new ObjectId(id),
+      userId: user.id,
+    })
 
-    const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id), userId: user.id },
-      { $set: { souvenirCount: 0, souvenirRecordedAt: null, updatedAt: new Date() } },
-      { returnDocument: 'after' },
-    )
+    if (!guest)
+      return c.json({ success: false, error: 'Guest not found' }, 404)
 
-    const updated = (result && (result as any).value) || result
-    if (!updated) return c.json({ success: false, error: 'Guest not found' }, 404)
+    let result
 
-    return c.json({ success: true, data: updated })
+    if (guest.invited === false) {
+      result = await collection.deleteOne({
+        _id: new ObjectId(id),
+        userId: user.id,
+      })
+
+      return c.json({
+        success: true,
+        message: 'Guest deleted because not invited',
+        deletedCount: result.deletedCount,
+      })
+    } else {
+      const updateResult = await collection.findOneAndUpdate(
+        { _id: new ObjectId(id), userId: user.id },
+        {
+          $set: {
+            souvenirCount: 0,
+            souvenirRecordedAt: null,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' },
+      )
+
+      const updated = updateResult?.value || updateResult
+      if (!updated)
+        return c.json({ success: false, error: 'Guest not found after update' }, 404)
+
+      return c.json({
+        success: true,
+        message: 'Souvenir reset for invited guest',
+        data: updated,
+      })
+    }
   } catch (error: unknown) {
     return c.json({ success: false, error: errMsg(error) }, 500)
   }
 })
+
 
 // Assign gift to guest (user-specific)
 guestsApp.post(
@@ -419,8 +456,10 @@ guestsApp.post(
   zValidator(
     'json',
     z.object({
-      type: z.enum(['Angpao', 'Kado']),
+      type: z.enum(['Angpao', 'Kado']).optional(),
       count: z.number().min(1),
+      kado: z.number().min(0).optional(),
+      angpao: z.number().min(0).optional(),
     }),
   ),
   async (c: Context<AppEnv>) => {
@@ -429,7 +468,7 @@ guestsApp.post(
       if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
       const id = c.req.param('id')
-      const { type, count } = (c.req as any).valid('json') as { type: 'Angpao' | 'Kado'; count: number }
+      const { type, count, kado, angpao } = (c.req as any).valid('json') as { type: 'Angpao' | 'Kado'; count: number; kado?: number; angpao?: number }
 
       const collection = db.collection('94884219_guests')
 
@@ -438,7 +477,7 @@ guestsApp.post(
 
       const result = await collection.findOneAndUpdate(
         { _id: new ObjectId(id), userId: user.id },
-        { $set: { giftType: type, giftCount: count, updatedAt: new Date() } },
+        { $set: { giftType: type, kadoCount: kado, angpaoCount: angpao, giftCount: count, updatedAt: new Date(), giftRecordedAt: new Date() } },
         { returnDocument: 'after' },
       )
 

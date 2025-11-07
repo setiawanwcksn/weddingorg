@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Search, Edit3, Trash2, UserPlus, Filter, FileSpreadsheet } from 'lucide-react';
+import { Search, Edit3, QrCode, Trash2, UserPlus, Filter, FileSpreadsheet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
 import SouvenirAssignmentModal from '../components/souvenirs/SouvenirAssignmentModal';
@@ -29,6 +29,7 @@ export const Souvenirs: React.FC = () => {
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [isAddGuestOpen, setIsAddGuestOpen] = useState(false);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +73,33 @@ export const Souvenirs: React.FC = () => {
     }
   };
 
+  const handleQRCodeScanned = (qrData: string) => {
+    try {
+      const guestName = qrData.trim();
+
+      if (!guestName) {
+        alert('Empty QR code data');
+        return;
+      }
+
+      // Find guest by name (case-insensitive) - now searches all guests
+      const foundGuest = allGuests.find((g) =>
+        g.name.toLowerCase() === guestName.toLowerCase()
+      );
+
+      if (foundGuest) {
+        setSelectedGuest(foundGuest);
+        setIsAssignmentModalOpen(true);
+        setIsQRScannerOpen(false);
+      } else {
+        alert(`Guest "${guestName}" not found`);
+      }
+    } catch (error) {
+      console.error('Error processing QR code:', error);
+      alert('Invalid QR code format');
+    }
+  };
+
 
   const handleDeleteSouvenir = async (guestId: string) => {
     setSelectedGuestId(guestId);
@@ -84,8 +112,8 @@ export const Souvenirs: React.FC = () => {
     try {
       const response = await apiRequest(
         apiUrl(`/api/guests/${selectedGuestId}/souvenirs`),
-          { method: "DELETE" }
-        );
+        { method: "DELETE" }
+      );
       const responseData = await response.json();
 
       if (responseData.success) {
@@ -255,6 +283,12 @@ export const Souvenirs: React.FC = () => {
           <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5 rounded-b-none">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-3 md:gap-4">
+                <button onClick={() => setIsQRScannerOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-4 py-3 transition min-h-[48px] hover:opacity-90 active:scale-95" >
+                  <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <QrCode className="w-4 h-4" />
+                  </span>
+                  <span className="font-medium text-sm">Scan QR</span>
+                </button>
                 <button onClick={() => setIsSearchModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-3 py-2 md:px-5 md:py-3 transition min-h-[44px]" >
                   <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
                     <Search className="w-3 h-3 md:w-4 md:h-4" />
@@ -467,6 +501,15 @@ export const Souvenirs: React.FC = () => {
           <NoticeModal open={infoOpen} onClose={() => { setInfoOpen(false); setSelectedInfo(null); }} title="Information" confirmLabel="Close" >
             <div className="text-sm whitespace-pre-line">{selectedInfo}</div>
           </NoticeModal>
+          {/* QR Scanner Modal - now includes all guests */}
+          <CheckInModal
+            open={isQRScannerOpen}
+            onClose={() => setIsQRScannerOpen(false)}
+            guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode }))}
+            onQRCodeScanned={handleQRCodeScanned}
+            mode="scan"
+            context="gift"
+          />
 
         </div>
       </div>
