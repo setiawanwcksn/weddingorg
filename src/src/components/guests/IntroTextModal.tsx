@@ -26,19 +26,19 @@ export interface IntroTextModalProps {
 
 const fetcher = async (url: string, userId?: string) => {
   console.log('Fetching intro text from URL:', url);
-  
+
   try {
     const response = await fetch(url, {
       headers: getAuthHeaders(userId),
     });
-    
+
     const data = await response.json();
     console.log('Intro text fetch response:', data);
-    
+
     if (!response.ok) {
       throw new Error(data.error || data.message || 'Failed to fetch intro text');
     }
-    
+
     return data;
   } catch (error) {
     console.error('Fetcher error:', error);
@@ -97,15 +97,15 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
 
   React.useEffect(() => {
     if (!open) return;
-    
+
     console.log('IntroTextModal opened, introTextData:', introTextData);
-    
+
     if (introTextData && introTextData.success && introTextData.data) {
       // Set form data based on fetched intro text
       const template: IntroTemplate = 'Formal';
-      setForm({ 
-        template, 
-        content: introTextData.data.formalText || defaultFormal 
+      setForm({
+        template,
+        content: introTextData.data.formalText || defaultFormal
       });
     } else if (introTextData && !introTextData.success) {
       console.error('API returned error:', introTextData.error);
@@ -114,7 +114,7 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
 
   const updateTemplate = (t: IntroTemplate) => {
     const currentData = introTextData?.data;
-    const content = t === 'Formal' 
+    const content = t === 'Formal'
       ? (currentData?.formalText || defaultFormal)
       : (currentData?.casualText || defaultCasual);
     setForm((s) => ({ template: t, content }));
@@ -124,19 +124,19 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
 
   const saveIntroText = async (data: IntroTextFormData) => {
     if (!user) return;
-    
+
     setIsSaving(true);
     try {
       const method = introTextData?.data ? 'PUT' : 'POST';
-      
+
       const apiUrl = getApiUrl('/api/intro-text');
       console.log('Saving intro text to:', apiUrl);
-      
+
       // Get current intro text data for fallback
       const currentData = introTextData?.data;
       const currentFormalText = currentData?.formalText || defaultFormal;
       const currentCasualText = currentData?.casualText || defaultCasual;
-      
+
       const response = await fetch(apiUrl, {
         method,
         headers: getAuthHeaders(user?.id),
@@ -192,7 +192,7 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
             <div className="text-red-600 text-center">
               <p className="font-semibold mb-2">Failed to load intro text</p>
               <p className="text-sm text-gray-600 mb-4">{error.message || 'Please try again.'}</p>
-              <button 
+              <button
                 onClick={onClose}
                 className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90"
               >
@@ -206,29 +206,33 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50" style={{ marginTop: 'unset' }}>
+    <div className="fixed inset-0 z-50">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-text/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-3 md:p-4">
-        <div className="w-full max-w-[95vw] sm:max-w-md md:max-w-lg rounded-xl border border-border bg-white shadow-xl overflow-hidden max-h-[90vh] sm:max-h-[85vh]">
+      <div className="absolute inset-0 flex items-center justify-center p-3">
+        <div className="w-full max-w-[92vw] sm:max-w-[640px] md:max-w-[720px] rounded-2xl border border-border bg-white shadow-2xl overflow-hidden max-h-[84vh]">
           {/* Header */}
-          <div className="flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 bg-primary text-white">
-            <div className="font-semibold text-sm sm:text-base md:text-lg">TEKS PENGANTAR</div>
-            <button aria-label="Close" className="p-2 rounded-lg hover:bg-white/20 transition-colors" onClick={onClose}>
-              <X className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+          <div className="flex items-center justify-between px-5 py-3 bg-primary text-white">
+            <div className="font-semibold text-lg sm:text-xl">TEKS PENGANTAR</div>
+            <button
+              aria-label="Close"
+              className="p-2 rounded-md hover:bg-white/20 transition-colors"
+              onClick={onClose}
+            >
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
           {/* Body */}
-          <form onSubmit={submit} className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-5">
+          <form onSubmit={submit} className="p-5 space-y-4 text-sm">
             <div>
-              <label className="block text-sm font-medium mb-2">Pilih Teks Pengantar</label>
+              <label className="block font-medium mb-2">Pilih Teks Pengantar</label>
               <select
                 value={form.template}
                 onChange={(e) => updateTemplate(e.target.value as IntroTemplate)}
-                className="w-full rounded-lg border border-border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                className="w-full rounded-lg border border-border px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
               >
                 <option value="Formal">Formal</option>
                 <option value="Casual">Casual</option>
@@ -236,22 +240,24 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Isi Teks Pengantar</label>
+              <label className="block font-medium mb-2">Isi Teks Pengantar</label>
+              {/* Tinggi textarea dibuat tetap dan scroll di dalamnya */}
               <textarea
                 value={form.content}
                 onChange={(e) => updateContent(e.target.value)}
-                rows={4}
-                className="w-full rounded-lg border border-border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                className="w-full h-[320px] sm:h-[360px] rounded-lg border border-border px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none overflow-y-auto"
                 placeholder="Tulis teks pengantar di sini"
               />
-              <p className="mt-2 text-xs text-text/60">Note: Jangan menghapus token seperti {`{nama}`}, {`{link-undangan}`}, {`{mempelai}`}</p>
+              <p className="mt-2 text-xs text-text/60">
+                Note: Jangan menghapus token seperti {`{nama}`}, {`{link-undangan}`}, {`{mempelai}`}
+              </p>
             </div>
 
-            <div className="flex items-center justify-end pt-3 sm:pt-4">
-              <button 
-                type="submit" 
+            <div className="flex items-center justify-end pt-2">
+              <button
+                type="submit"
                 disabled={isSaving}
-                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 sm:px-6 py-2 sm:py-3 text-white text-sm md:text-base font-medium shadow-sm hover:opacity-90 transition-opacity min-h-[40px] sm:min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-6 py-2.5 text-white text-sm font-medium shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? 'Menyimpan...' : 'Simpan'}
               </button>
@@ -260,5 +266,6 @@ export function IntroTextModal({ open, onClose, onSave }: IntroTextModalProps) {
         </div>
       </div>
     </div>
+
   );
 }

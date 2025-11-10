@@ -17,7 +17,6 @@ import {
   Loader2,
   RefreshCw,
   MessageCircle,
-  Copy,
   Share2
 } from 'lucide-react';
 import { ExcelImportModal } from '../components/guests/ExcelImportModal';
@@ -30,7 +29,19 @@ import { useGuests } from '../contexts/GuestsContext';
 import { Guest } from '../../../shared/types';
 import { Toast } from '../components/common/Toast';
 import { NoticeModal } from '../components/common/NoticeModal';
+import { TableFilterPopover } from '../components/guests/TableFilterPopover';
 import { apiUrl } from '../lib/api';
+import kelolaTamuAct from '../assets/KelolaTamuAct.png';
+import sendReminder from '../assets/SendReminder.png';
+import TambahTamu from '../assets/TambahTamu.png';
+import EditTeksPengantar from '../assets/EditTeksPengantar.png';
+import setting from '../assets/setting.png';
+import filter from '../assets/filter.png';
+import edit from '../assets/Edit.png';
+import Whatsapp from '../assets/Whatsapp.png';
+import shared from '../assets/shared.png';
+import Copy from '../assets/Copy.png';
+import Delete from '../assets/Delete.png';
 
 const ManageGuests: React.FC = () => {
   const navigate = useNavigate();
@@ -44,8 +55,25 @@ const ManageGuests: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
   const [openExcelImport, setOpenExcelImport] = useState(false);
+  const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
+    no: true,
+    name: true,
+    phone: true,
+    kode: true,
+    kategori: true,
+    informasi: true,
+    sesi: true,
+    limit: true,
+    meja: true,
+    pengantar: true,
+    teks: true,
+    kirim: true,
+    status: true,
+    ditambahkan: true,
+  });
 
   const { guests, loading, error, refresh, setGuests } = useGuests();
 
@@ -719,17 +747,17 @@ const ManageGuests: React.FC = () => {
           {/* Header Tiles */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 md:mb-7">
             <div className="rounded-xl border border-border p-5 flex items-center gap-3 bg-primary shadow-sm justify-center">
-              <LayoutGrid className="w-5 h-5 text-background" />
+              <img src={kelolaTamuAct} className="w-5 h-5 text-background" />
               <div className="font-semibold text-background">Kelola Tamu</div>
             </div>
 
 
             <button
               onClick={() => navigate('/guests/send-reminder')}
-              className="rounded-xl border border-border bg-secondary p-5 flex items-center gap-3 shadow-sm hover:bg-accent transition-colors bg-secondary"
+              className="rounded-xl border border-border bg-secondary p-5 flex items-center gap-3 shadow-sm hover:bg-accent transition-colors bg-secondary justify-center"
             >
               <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shadow-sm">
-                <Bell className="w-5 h-5 text-primary" />
+                <img src={sendReminder} className="w-5 h-5 text-primary" />
               </div>
               <div className="font-semibold">Send Reminder</div>
             </button>
@@ -742,7 +770,7 @@ const ManageGuests: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm shadow-sm hover:bg-primary/90 transition-colors flex-shrink-0 bg-primary text-white" onClick={() => setOpenAdd(true)}>
-                  <Plus className="w-4 h-4" /> Tambah Tamu
+                  <img src={TambahTamu} className="w-4 h-4" /> Tambah Tamu
                 </button>
                 <button
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm  transition-colors flex-shrink-0 bg-primary text-white"
@@ -751,14 +779,45 @@ const ManageGuests: React.FC = () => {
                   <Download className="w-4 h-4" /> Import Excel
                 </button>
                 <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm transition-colors flex-shrink-0 bg-primary text-white" onClick={() => setOpenIntro(true)}>
-                  <FileText className="w-4 h-4" /> Teks Pengantar
+                  <img src={EditTeksPengantar} className="w-4 h-4" /> Teks Pengantar
                 </button>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <button className="p-2 rounded-lg border border-border transition-colors bg-primary" aria-label="Filter">
-                  <Filter className="w-4 h-4" />
-                </button>
-                <button className="p-2 rounded-lg border border-border transition-colors bg-primary" aria-label="Settings"><Cog className="w-4 h-4" /></button>
+                <div className="relative">
+                  <button
+                    onClick={() => setFilterOpen(true)}
+                    className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors"
+                    title="Filter columns"
+                  >
+                    <img src={filter} className="w-4 h-4" />
+                  </button>
+                  <TableFilterPopover
+                    open={filterOpen}
+                    onClose={() => setFilterOpen(false)}
+                    options={[
+                      { key: 'no', label: 'No', checked: visibleCols.no },
+                      { key: 'name', label: 'Nama', checked: visibleCols.name },
+                      { key: 'phone', label: 'WhatsApp', checked: visibleCols.phone },
+                      { key: 'status', label: 'Status', checked: visibleCols.status },
+                      { key: 'kode', label: 'kode', checked: visibleCols.kode },
+                      { key: 'kategori', label: 'kategori', checked: visibleCols.kategori },
+                      { key: 'informasi', label: 'informasi', checked: visibleCols.informasi },
+                      { key: 'teks', label: 'Teks Pengantar', checked: visibleCols.teks },
+                      { key: 'sesi', label: 'Sesi', checked: visibleCols.sesi },
+                      { key: 'limit', label: 'Limit Tamu', checked: visibleCols.limit },
+                      { key: 'meja', label: 'No. Meja', checked: visibleCols.meja },
+                      { key: 'kirim', label: 'Kirim', checked: visibleCols.kirim },
+                      { key: 'ditambahkan', label: 'Ditambahkan', checked: visibleCols.ditambahkan },
+                    ]}
+                    onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                    onToggleAll={(checked) => {
+                      const keys = ['no', 'name', 'phone', 'status', 'kode', 'kategori', 'informasi', 'sesi', 'limit', 'meja', 'kirim', 'ditambahkan', 'teks'];
+                      setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
+                    }}
+                  />
+
+                </div>
+                <button className="p-2 rounded-lg border border-border transition-colors bg-primary" aria-label="Settings"><img src={setting} className="w-4 h-4" /></button>
               </div>
             </div>
           </div>
@@ -780,114 +839,119 @@ const ManageGuests: React.FC = () => {
               </form>
             </div>
             <div ref={scrollRef} className={`overflow-x-auto w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
-              <div className="min-w-[768px]">
-                <table className="w-full text-left">
+              <div className="w-full overflow-x-auto">
+                <table className="table-auto w-full min-w-[1200px] text-left">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">No</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70 sticky bg-gray-50 left-0">Nama</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">WhatsApp</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Kode</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Kategori</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Informasi</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Sesi</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Limit</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">No. Meja</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Teks Pengantar</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70 text-center">Kirim</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Status</th>
-                      <th className="px-4 py-3 text-xs font-medium text-text/70">Ditambahkan</th>
+                      {visibleCols.no && <th className="px-4 py-3 text-xs font-medium text-text/70">No</th>}
+                      {visibleCols.name && <th className="px-4 py-3 text-xs font-medium text-text/70 sticky bg-gray-50 left-0">Nama</th>}
+                      {visibleCols.phone && <th className="px-4 py-3 text-xs font-medium text-text/70">WhatsApp</th>}
+                      {visibleCols.kode && <th className="px-4 py-3 text-xs font-medium text-text/70">Kode</th>}
+                      {visibleCols.kategori && <th className="px-4 py-3 text-xs font-medium text-text/70">Kategori</th>}
+                      {visibleCols.informasi && <th className="px-4 py-3 text-xs font-medium text-text/70">Informasi</th>}
+                      {visibleCols.sesi && <th className="px-4 py-3 text-xs font-medium text-text/70">Sesi</th>}
+                      {visibleCols.limit && <th className="px-4 py-3 text-xs font-medium text-text/70">Limit</th>}
+                      {visibleCols.meja && <th className="px-4 py-3 text-xs font-medium text-text/70">No. Meja</th>}
+                      {visibleCols.teks && <th className="px-4 py-3 text-xs font-medium text-text/70">Teks Pengantar</th>}
+
+                      {/* Kolom Kirim - beri min-width agar cukup untuk ikon */}
+                      {visibleCols.kirim && <th className="px-4 py-3 text-xs font-medium text-text/70 text-center whitespace-nowrap min-w-[200px]">
+                        Kirim
+                      </th>}
+
+                      {visibleCols.status && <th className="px-4 py-3 text-xs font-medium text-text/70">Status</th>}
+                      {visibleCols.ditambahkan && <th className="px-4 py-3 text-xs font-medium text-text/70">Ditambahkan</th>}
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-border">
                     {filteredGuests.map((guest: Guest, index: number) => (
                       <tr key={guest._id} className="hover:bg-accent/50 transition-colors">
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{String(index + 1).padStart(2, '0')}</td>
-                        <td className="px-4 py-4 text-sm whitespace-nowrap sticky left-0 bg-white z-10">{guest.name}</td>
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.phone || '-'}</td>
-                        <td className="px-4 py-4 text-sm whitespace-nowrap text-primary">{guest.code || '-'}</td>
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || 'Reguler'}</td>
+                        {visibleCols.no && <td className="px-4 py-4 text-sm whitespace-nowrap">{String(index + 1).padStart(2, '0')}</td> }
+                        {visibleCols.name && <td className="px-4 py-4 text-sm whitespace-nowrap sticky left-0 bg-white z-10">{guest.name}</td>}
+                        {visibleCols.phone && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.phone || '-'}</td> }
+                        {visibleCols.kode && <td className="px-4 py-4 text-sm whitespace-nowrap text-primary">{guest.code || '-'}</td>}
+                        {visibleCols.kategori && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || 'Reguler'}</td> }
 
-                        {/* Info badge (truncate to ~5 chars, tooltip with full) */}
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">
+                        {/* Informasi */}
+                        {visibleCols.informasi && <td className="px-4 py-4 text-sm whitespace-nowrap max-w-[160px] truncate">
                           {guest.info ? (
                             <button
                               type="button"
                               onClick={() => { setSelectedInfo(guest.info as string); setInfoOpen(true); }}
                               title={guest.info}
-                              className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs shadow-sm max-w-[9rem] truncate"
+                              className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs shadow-sm"
                             >
                               {guest.info.length > 6 ? guest.info.slice(0, 6) + '…' : guest.info}
                             </button>
                           ) : '-'}
-                        </td>
+                        </td> }
 
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.session || '-'}</td>
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.limit ?? '-'}</td>
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.tableNo || '-'}</td>
+                        {visibleCols.sesi && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.session || '-'}</td>}
+                        {visibleCols.limit && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.limit ?? '-'}</td>}
+                        {visibleCols.meja && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.tableNo || '-'}</td>}
 
-                        {/* Intro text dropdown cell: keep compact */}
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">
+                        {/* Teks Pengantar */}
+                        {visibleCols.teks && <td className="px-4 py-4 text-sm whitespace-nowrap">
                           <IntroTextCategoryDropdown
                             guestId={guest._id || ''}
                             currentCategory={guest.introTextCategory || 'Formal'}
                             onCategoryChange={handleIntroTextCategoryChange}
                           />
-                        </td>
+                        </td>}
 
-                        {/* Action buttons (Kirim) - center */}
-                        <td className="px-4 py-4 text-sm whitespace-nowrap text-center">
-                          <div className="flex items-center justify-center gap-2">
+                        {/* Kolom Kirim */}
+                        {visibleCols.kirim && <td className="py-4 text-sm text-center whitespace-nowrap min-w-[200px]">
+                          <div className="inline-flex items-center justify-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => { setSelectedGuest(guest); setOpenEdit(true); }}
+                              title="Edit"
+                              className="p-2 rounded-md bg-yellow-500 text-yellow-700 hover:bg-yellow-200 transition-shadow shadow-sm shrink-0"
+                            >
+                              <img src={edit} className="w-4 h-4" />
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => handleWhatsAppSend(guest)}
                               title="Send WhatsApp"
-                              className="p-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-shadow shadow-sm"
+                              className="p-2 rounded-md bg-green-600 text-white hover:bg-green-700 transition-shadow shadow-sm shrink-0"
                             >
-                              <MessageCircle className="w-4 h-4" />
+                              <img src={Whatsapp} className="w-4 h-4" />
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleShareGuest(guest)}
                               title="Share"
-                              className="p-2 rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200 transition-shadow shadow-sm"
+                              className="p-2 rounded-md bg-blue-500 hover:bg-blue-200 transition-shadow shadow-sm shrink-0"
                             >
-                              <Share2 className="w-4 h-4" />
+                              <img src={shared} className="w-4 h-4" />
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleCopyWhatsAppMessage(guest)}
                               title="Copy"
-                              className="p-2 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 transition-shadow shadow-sm"
+                              className="p-2 rounded-md bg-gray-300 text-blue-700 hover:bg-gray-200 transition-shadow shadow-sm shrink-0"
                             >
-                              <Copy className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => { setSelectedGuest(guest); setOpenEdit(true); }}
-                              title="Edit"
-                              className="p-2 rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-shadow shadow-sm"
-                            >
-                              <Edit3 className="w-4 h-4" />
+                              <img src={Copy} className="w-4 h-4" />
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleDeleteGuest(guest._id)}
                               title="Delete"
-                              className="p-2 rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-shadow shadow-sm"
+                              className="p-2 rounded-md bg-red-500 text-red-700 hover:bg-red-00 transition-shadow shadow-sm shrink-0"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <img src={Delete} className="w-4 h-4" />
                             </button>
                           </div>
-                        </td>
+                        </td>}
 
-                        {/* Status checkbox */}
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">
+                        {/* Status */}
+                        {visibleCols.status && <td className="px-4 py-4 text-sm whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
                             <input
                               type="checkbox"
@@ -900,11 +964,12 @@ const ManageGuests: React.FC = () => {
                               <span className="text-xs text-purple-600 font-medium">Terjadwal</span>
                             )}
                           </div>
-                        </td>
+                        </td>}
 
-                        <td className="px-4 py-4 text-sm whitespace-nowrap">{formatDate(guest.createdAt)}</td>
+                        {visibleCols.ditambahkan && <td className="px-4 py-4 text-sm whitespace-nowrap">{formatDate(guest.createdAt)}</td> }
                       </tr>
                     ))}
+
                     {filteredGuests.length === 0 && (
                       <tr>
                         <td colSpan={13} className="px-4 py-8 text-center text-text/60">No guests found</td>
@@ -913,6 +978,7 @@ const ManageGuests: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+
             </div>
 
             <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">

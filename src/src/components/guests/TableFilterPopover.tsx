@@ -25,18 +25,24 @@ function Switch({ checked, onChange }: { checked: boolean; onChange: () => void 
       type="button"
       onClick={onChange}
       aria-pressed={checked}
-      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-        checked ? 'bg-primary' : 'bg-border'
-      }`}
+      className={[
+        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent",
+        "transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/40",
+        checked ? "bg-primary" : "bg-border"
+      ].join(" ")}
     >
       <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-1'
-        }`}
+        className={[
+          "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow",
+          // penting: animasi pada knob
+          "transform transition-transform duration-200 ease-in-out",
+          checked ? "translate-x-4" : "translate-x-1"
+        ].join(" ")}
       />
     </button>
   );
 }
+
 
 export function TableFilterPopover({ open, options, onToggle, onToggleAll, onClose }: TableFilterPopoverProps) {
   const ref = React.useRef<HTMLDivElement | null>(null);

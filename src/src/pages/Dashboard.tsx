@@ -2,9 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
-import { UserPlus, Play, Filter, Search as SearchIcon, Eye, Edit3, Trash2 } from 'lucide-react';
+import { UserPlus, Play, Filter, Search as SearchIcon, Eye, Info, Edit3, Trash2 } from 'lucide-react';
 import useSWR from 'swr';
 import { apiUrl } from '../lib/api';
+import stats from '../assets/stats.png';
+import tanyaCustomerCare from '../assets/TanyaCustomerCare.png';
+import penerimaTamu from '../assets/PenerimaTamu.png';
+import kelolaTamuDshbd from '../assets/KelolaTamuDshbd.png';
+import information from '../assets/Information.png';
 
 interface DashboardAccountInfo {
   id: string;
@@ -47,6 +52,7 @@ const Dashboard: React.FC = () => {
   const { user, apiRequest, hasPermission } = useAuth();
   const [account, setAccount] = useState<DashboardAccountInfo | null>(null);
   const [countdown, setCountdown] = useState<WeddingCountdown | null>(null);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   // Use shared guests and stats from context (loaded once globally)
   const { stats: sharedStats } = useGuests();
@@ -54,8 +60,8 @@ const Dashboard: React.FC = () => {
   // Fetch wedding countdown
   const { data: weddingCountdown } = useSWR<WeddingCountdown>(
     user ? apiUrl(`/api/auth/wedding/countdown`) : null,
-      (url) => apiRequest(url).then(res => res.json()).then(data => data.data)
-    );
+    (url) => apiRequest(url).then(res => res.json()).then(data => data.data)
+  );
 
   useEffect(() => {
     const loadAccount = async () => {
@@ -114,7 +120,7 @@ const Dashboard: React.FC = () => {
       // Try to load uploaded photo first using authenticated request
       // Now we can check without specifying extension - server will find any matching file
       try {
-        const response = await apiRequest(apiUrl(`/api/upload/${user.id}/exists`));
+        const response = await apiRequest(apiUrl(`/api/upload/${user.id}_weddingPhotoUrl_dashboard/exists`));
         const result = await response.json();
 
         if (response.ok && result.success && result.exists) {
@@ -138,16 +144,16 @@ const Dashboard: React.FC = () => {
   }, [user?.id, account?.photoUrl, account?.photoUrl_dashboard, apiRequest]);
 
   const displayStats = [
-    { label: 'Total Tamu', value: sharedStats.totalWithPlusOne + sharedStats.tamuTambahan },
-    { label: 'Tamu Undangan', value: sharedStats.invitedGuests },
-    { label: 'Tamu VIP', value: sharedStats.vip },
-    { label: 'Tamu Tambahan', value: sharedStats.tamuTambahan },
+    { label: 'Total Tamu', value: sharedStats.totalWithPlusOne + sharedStats.tamuTambahan, help: 'Jumlah total tamu termasuk tamu tambahan.' },
+    { label: 'Tamu Undangan', value: sharedStats.invitedGuests, help: 'Jumlah tamu yang diundang.' },
+    { label: 'Tamu VIP', value: sharedStats.vip, help: 'Jumlah tamu dengan kategori VIP.' },
+    { label: 'Tamu Tambahan', value: sharedStats.tamuTambahan, help: 'Jumlah tamu tambahan diluar undangan resmi.' },
   ];
 
   return (
     // page bg: very light gray like reference
     <div className="bg-accent text-gray-800">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Top grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Hero image card */}
@@ -161,26 +167,53 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Data Tamu card with purple header */}
-          <div className="rounded-xl overflow-hidden border border-border/60 bg-white shadow-sm" style={{ height: '100%' }}>
-            <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base rounded-t-xl">
+          <div className="rounded-xl overflow-visible border border-border/60 bg-white shadow-sm" style={{ height: '100%' }}>
+            <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base rounded-t-xl flex items-center gap-2">
+              <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
               Data Tamu
             </div>
-
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-gray-100 px-4 py-4">
               {displayStats.map((row, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center justify-between px-5 py-4 bg-white"
+                  className="relative flex items-center justify-between px-5 py-4 bg-white"
                 >
-                  <div className="flex items-center gap-3">
-                    {/* purple soft square */}
+                  <div className="flex items-center gap-2">
+                    {/* kotak ungu */}
                     <span className="w-3 h-3 rounded-sm bg-primary/20 flex-shrink-0" />
-                    <span className="text-sm text-gray-700">{row.label}</span>
+
+                    {/* label + info icon */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm ">{row.label}</span>
+                      <button
+                        type="button"
+                        className="ml-0.5 inline-flex items-center justify-center w-3.5 h-3.5 text-primary/70 hover:bg-white hover:text-primary transition"
+                        style={{ marginBottom: `9px` }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenIdx(openIdx === idx ? null : idx);
+                        }}
+                        onBlur={() => setOpenIdx((cur) => (cur === idx ? null : cur))}
+                      >
+                        <img src={information} className="w-[9px] h-[9px]" />
+                      </button>
+                    </div>
+
+                    {/* popover */}
+                    {openIdx === idx && (
+                      <div className="absolute left-20 top-10 z-10 w-64 rounded-lg border border-gray-200 bg-white shadow-lg p-3 text-xs text-gray-700">
+                        <div className="font-medium mb-1">{row.label}</div>
+                        <p>{row.help ?? 'Tidak ada keterangan.'}</p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* value kanan */}
                   <span className="text-sm font-medium text-gray-900">{row.value}</span>
                 </li>
               ))}
             </ul>
+
           </div>
         </div>
 
@@ -188,9 +221,9 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6">
           {/* Left: Countdown & CTA */}
           <div className="rounded-xl border border-border/60 bg-white p-5 sm:p-6 shadow-sm">
-            <h3 className="text-2xl font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500 mt-1">{dateText}</p>
-            <p className="text-sm text-gray-500">{location}</p>
+            <h3 className="text-2xl font-semibold">{title}</h3>
+            <p className="text-sm   mt-1">{dateText}</p>
+            <p className="text-sm  ">{location}</p>
 
             <div className="mt-6 grid grid-cols-4 gap-3 max-w-md">
               {countdown ? (
@@ -198,19 +231,19 @@ const Dashboard: React.FC = () => {
                   <>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">00</div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Bulan</div>
+                      <div className="text-xs   mt-1 font-semibold">Bulan</div>
                     </div>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">00</div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Hari</div>
+                      <div className="text-xs   mt-1 font-semibold">Hari</div>
                     </div>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">00</div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Jam</div>
+                      <div className="text-xs   mt-1 font-semibold">Jam</div>
                     </div>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">00</div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Menit</div>
+                      <div className="text-xs   mt-1 font-semibold">Menit</div>
                     </div>
                   </>
                 ) : (
@@ -219,25 +252,25 @@ const Dashboard: React.FC = () => {
                       <div className="text-lg sm:text-2xl font-semibold">
                         {String(countdown.months).padStart(2, '0')}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Bulan</div>
+                      <div className="text-xs   mt-1 font-semibold">Bulan</div>
                     </div>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">
                         {String(countdown.days).padStart(2, '0')}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Hari</div>
+                      <div className="text-xs   mt-1 font-semibold">Hari</div>
                     </div>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">
                         {String(countdown.hours).padStart(2, '0')}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1  font-semibold">Jam</div>
+                      <div className="text-xs   mt-1  font-semibold">Jam</div>
                     </div>
                     <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                       <div className="text-lg sm:text-2xl font-semibold">
                         {String(countdown.minutes).padStart(2, '0')}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 font-semibold">Menit</div>
+                      <div className="text-xs   mt-1 font-semibold">Menit</div>
                     </div>
                   </>
                 )
@@ -245,19 +278,19 @@ const Dashboard: React.FC = () => {
                 <>
                   <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                     <div className="text-lg sm:text-2xl font-semibold ">--</div>
-                    <div className="text-xs text-gray-500 mt-1 font-semibold">Bulan</div>
+                    <div className="text-xs   mt-1 font-semibold">Bulan</div>
                   </div>
                   <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                     <div className="text-lg sm:text-2xl font-semibold ">--</div>
-                    <div className="text-xs text-gray-500 mt-1 font-semibold">Hari</div>
+                    <div className="text-xs   mt-1 font-semibold">Hari</div>
                   </div>
                   <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                     <div className="text-lg sm:text-2xl font-semibold ">--</div>
-                    <div className="text-xs text-gray-500 mt-1 font-semibold">Jam</div>
+                    <div className="text-xs   mt-1 font-semibold">Jam</div>
                   </div>
                   <div className="rounded-xl border border-border/60 bg-accent p-3 text-center">
                     <div className="text-lg sm:text-2xl font-semibold ">--</div>
-                    <div className="text-xs text-gray-500 mt-1 font-semibold">Menit</div>
+                    <div className="text-xs   mt-1 font-semibold">Menit</div>
                   </div>
                 </>
               )}
@@ -279,16 +312,19 @@ const Dashboard: React.FC = () => {
                 title: 'Kelola Tamu',
                 desc: 'Kelola daftar tamu, kirim reminder, dan atur kursi.',
                 permission: 'guests',
+                icon: kelolaTamuDshbd,
                 onClick: () => navigate('/guests')
               },
               {
                 title: 'Penerima Tamu',
                 desc: 'Atur penerima tamu dan proses check-in.',
                 permission: 'reception',
+                icon: penerimaTamu,
                 onClick: () => navigate('/reception')
               },
               {
                 title: 'Tanya Customer Care',
+                icon: tanyaCustomerCare,
                 desc: 'Hubungi customer care untuk bantuan lebih lanjut.'
               }
             ].map((card, idx) => {
@@ -304,10 +340,10 @@ const Dashboard: React.FC = () => {
                     }`}
                 >
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
-                    <div className="w-5 h-5 rounded-full bg-primary/20"></div>
+                    <img src={card.icon} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-sm sm:text-base text-gray-900">{card.title}</div>
+                    <div className="font-bold text-xl sm:text-xl">{card.title}</div>
                     <div className="text-xs text-gray-500 mt-1 max-w-md">{card.desc}</div>
                   </div>
                   {isDisabled && (

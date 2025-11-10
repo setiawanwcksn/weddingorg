@@ -48,13 +48,13 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
   React.useEffect(() => {
     if (!open) return;
     // Reset form when opened to ensure a clean state
-    setForm({ 
-      name: '', 
-      info: '', 
-      phone: '', 
-      session: '', 
-      limit: 1, 
-      tableNo: '', 
+    setForm({
+      name: '',
+      info: '',
+      phone: '',
+      session: '',
+      limit: 1,
+      tableNo: '',
       category: 'Regular',
       guestCount: 1,
     });
@@ -87,7 +87,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
       });
 
       const data = await response.json();
-      
+
       if (data.success && data.data.exists) {
         setNameError('Guest name already exists. Please use a different name.');
         return false;
@@ -106,18 +106,18 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
   const submit: React.FormEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
-    
+
     // Validate phone number
     const phoneError = getPhoneValidationError(form.phone);
     if (phoneError) {
       setPhoneError(phoneError);
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Validate name on submission
       const isNameValid = await validateName(form.name);
@@ -125,7 +125,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
         setIsSubmitting(false);
         return;
       }
-      
+
       // Format phone number before saving
       const formattedPhone = formatIndonesianPhone(form.phone);
       if (!formattedPhone) {
@@ -133,7 +133,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
         setIsSubmitting(false);
         return;
       }
-      
+
       onSave({
         ...form,
         phone: formattedPhone
@@ -149,45 +149,49 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50" style={{ marginTop: 'unset' }}>
+    <div className="fixed inset-0 z-50">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-text/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-3 md:p-4">
-        <div className="w-full max-w-[95vw] sm:max-w-sm md:max-w-md rounded-xl border border-border bg-white shadow-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+      {/* Modal wrapper */}
+      <div className="absolute inset-0 flex items-center justify-center p-2">
+        <div className="w-full max-w-sm rounded-lg border border-border bg-white shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 rounded-t-xl bg-primary text-white">
-            <div className="font-semibold text-sm sm:text-base md:text-lg">DETAIL TAMU</div>
-            <button aria-label="Close" className="p-2 rounded-lg hover:bg-white/20 transition-colors" onClick={onClose}>
-              <X className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+          <div className="flex items-center justify-between px-4 py-2 rounded-t-lg bg-primary text-white">
+            <div className="font-semibold text-base">DETAIL TAMU</div>
+            <button
+              aria-label="Close"
+              onClick={onClose}
+              className="p-1 rounded-md hover:bg-white/20 transition-colors"
+            >
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Body */}
-          <form onSubmit={submit} className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-5">
+          <form
+            onSubmit={submit}
+            className="p-4 space-y-3 text-sm"
+          >
+            {/* Nama */}
             <div>
-              <label className="block text-sm font-medium mb-2">Nama Tamu *</label>
+              <label className="block font-medium mb-1">Nama Tamu *</label>
               <input
                 required
                 value={form.name}
                 onChange={(e) => update('name', e.target.value)}
-                className={`w-full rounded-lg border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary ${
-                  nameError ? 'border-red-500' : 'border-border'
-                }`}
+                className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary ${nameError ? 'border-red-500' : 'border-border'
+                  }`}
                 placeholder="Masukkan nama tamu"
               />
-              {checkingName && (
-                <p className="text-xs text-primary mt-1">Checking name availability...</p>
-              )}
-              {nameError && !checkingName && (
-                <p className="text-xs text-red-500 mt-1">{nameError}</p>
-              )}
+              {checkingName && <p className="text-xs text-primary mt-1">Checking name...</p>}
+              {nameError && !checkingName && <p className="text-xs text-red-500 mt-1">{nameError}</p>}
             </div>
 
+            {/* Info */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium">Informasi *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-medium">Informasi *</label>
                 <span className="text-xs text-text/60">{form.info.length}/{infoMax}</span>
               </div>
               <input
@@ -195,97 +199,89 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
                 value={form.info}
                 maxLength={infoMax}
                 onChange={(e) => update('info', e.target.value)}
-                className="w-full rounded-lg border border-border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Contoh: Rekan kerja, keluarga, dsb."
               />
             </div>
 
+            {/* WhatsApp */}
             <div>
-              <label className="block text-sm font-medium mb-2">No. WhatsApp *</label>
+              <label className="block font-medium mb-1">No. WhatsApp *</label>
               <input
                 required
                 value={form.phone}
                 onChange={(e) => update('phone', e.target.value)}
-                className={`w-full rounded-lg border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary ${
-                  phoneError ? 'border-red-500' : 'border-border'
-                }`}
-                placeholder="Contoh: 08123456789"
+                className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary ${phoneError ? 'border-red-500' : 'border-border'
+                  }`}
+                placeholder="08123456789"
               />
-              {phoneError && (
-                <p className="text-xs text-red-500 mt-1">{phoneError}</p>
-              )}
-            </div>            
+              {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+            </div>
 
+            {/* Sesi / Limit / Meja */}
             <div>
-                <label className="block text-sm font-medium mb-2">Sesi Tamu *</label>
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  value={form.session}
-                  onChange={(e) => update('session', e.target.value)}
-                  className="w-full rounded-lg border border-border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="Contoh: 1 / 2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Limit Tamu *</label>
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  value={form.limit}
-                  onChange={(e) => update('limit', parseInt(e.target.value))}
-                  className="w-full rounded-lg border border-border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Nomor Meja *</label>
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  value={form.tableNo}
-                  onChange={(e) => update('tableNo', e.target.value)}
-                  className="w-full rounded-lg border border-border px-3 sm:px-4 py-2 sm:py-3 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                  placeholder="Contoh: 12"
-                />
-              </div>
+              <label className="block font-medium mb-1">Sesi *</label>
+              <input
+                required
+                type="number"
+                min="1"
+                value={form.session}
+                onChange={(e) => update('session', e.target.value)}
+                className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Limit *</label>
+              <input
+                required
+                type="number"
+                min="1"
+                value={form.limit}
+                onChange={(e) => update('limit', parseInt(e.target.value))}
+                className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Meja *</label>
+              <input
+                required
+                type="number"
+                min="1"
+                value={form.tableNo}
+                onChange={(e) => update('tableNo', e.target.value)}
+                className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="12"
+              />
+            </div>
 
+            {/* Kategori */}
             <div>
-              <label className="block text-sm font-medium mb-3">Kategori Tamu *</label>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-                <label className="flex items-center gap-2 sm:gap-3 text-sm md:text-base cursor-pointer">
-                  <input
-                    type="radio"
-                    name="category"
-                    value="Regular"
-                    checked={form.category === 'Regular'}
-                    onChange={(e) => update('category', e.target.value)}
-                    className="w-3 h-3 sm:w-4 sm:h-4 text-primary focus:ring-primary"
-                  />
-                  <span>Regular</span>
-                </label>
-                <label className="flex items-center gap-2 sm:gap-3 text-sm md:text-base cursor-pointer">
-                  <input
-                    type="radio"
-                    name="category"
-                    value="VIP"
-                    checked={form.category === 'VIP'}
-                    onChange={(e) => update('category', e.target.value)}
-                    className="w-3 h-3 sm:w-4 sm:h-4 text-primary focus:ring-primary"
-                  />
-                  <span>VIP</span>
-                </label>
+              <label className="block font-medium mb-2">Kategori *</label>
+              <div className="flex gap-4">
+                {['Regular', 'VIP'].map((opt) => (
+                  <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="category"
+                      value={opt}
+                      checked={form.category === opt}
+                      onChange={(e) => update('category', e.target.value)}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <span>{opt}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
-            <div className="flex items-center justify-end pt-3 sm:pt-4">
-              <button 
-                type="submit" 
+            {/* Submit */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
                 disabled={isSubmitting || checkingName}
-                className="ml-auto inline-flex items-center justify-center rounded-lg bg-primary px-4 sm:px-6 py-2 sm:py-3 text-white text-sm md:text-base font-medium shadow-sm hover:opacity-90 transition-opacity min-h-[40px] sm:min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2 text-white text-sm font-medium shadow-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Saving...' : 'Simpan'}
               </button>
@@ -294,5 +290,6 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
         </div>
       </div>
     </div>
+
   );
 }

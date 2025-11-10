@@ -33,7 +33,7 @@ export function Sidebar({ mobileMenuOpen = false, onMobileMenuClose }: SidebarPr
 
   // Daftar menu
   const allNavItems = [
-    { to: '/dashboard', label: 'Dashboard', icon: Home, permission: 'dashboard' },
+    { to: '/dashboard', label: 'Dashboard', icon: Home, permission: 'guests' },
     { to: '/guests', label: 'Kelola Tamu', icon: Users, permission: 'guests' },
     { to: '/users', label: 'Users & Roles', icon: Shield, permission: 'users', adminOnly: true },
   ];

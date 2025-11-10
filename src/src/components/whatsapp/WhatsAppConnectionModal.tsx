@@ -1,187 +1,166 @@
 /**
- * WhatsApp Connection Modal Component
- * Handles WhatsApp QR code authentication and session management
+ * WhatsApp Connection Modal Component (fixed)
+ * - Render QR string -> QR code (react-qr-code)
+ * - Sinkron dengan WS backend: /api/whatsapp/ws
+ * - Start session via GET /api/whatsapp/connect
  */
-import React, { useState, useEffect } from 'react';
-import { X, QrCode, Smartphone, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react'
+import { X, QrCode, Smartphone, AlertCircle } from 'lucide-react'
+import QRCode from 'react-qr-code'
 
 interface WhatsAppConnectionModalProps {
-  open: boolean;
-  onClose: () => void;
-  onConnected: () => void;
+  open: boolean
+  onClose: () => void
+  onConnected: () => void
 }
+
+type ConnStatus = 'idle' | 'connecting' | 'qr_ready' | 'connected' | 'failed'
 
 export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = ({
   open,
   onClose,
-  onConnected
+  onConnected,
 }) => {
-  const [qrCode, setQrCode] = useState<string>('');
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'qr_ready' | 'connected' | 'failed'>('idle');
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [connectionAttempts, setConnectionAttempts] = useState(0);
-  const [maxRetries] = useState(3);
+  const [qrString, setQrString] = useState<string>('')
+  const [connectionStatus, setConnectionStatus] = useState<ConnStatus>('idle')
+  const [attempts, setAttempts] = useState(0)
+  const maxRetries = 3
+  const wsRef = useRef<WebSocket | null>(null)
+
+  // helper: buat URL WS sesuai origin
+  const makeWsUrl = () => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    // sesuaikan path ini dengan route backend kamu
+    // kalau backend kamu mount di /api/whatsapp/ws -> pakai itu
+    return `${protocol}//${window.location.host}/api/whatsapp/ws`
+  }
+
+  const connectWs = () => {
+    const url = makeWsUrl()
+    const ws = new WebSocket(url)
+    wsRef.current = ws
+
+    const timeout = setTimeout(() => {
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.close()
+        setConnectionStatus('failed')
+      }
+    }, 30000)
+
+    ws.onopen = () => {
+      clearTimeout(timeout)
+      setConnectionStatus('connecting')
+      // (tidak perlu kirim "start_whatsapp_session", backend kita tidak menanganinya)
+    }
+
+    ws.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data)
+        // Backend mengirim: { type: 'qr', value: string } dan { type: 'status', value: ... }
+        switch (data.type) {
+          case 'qr':
+            setQrString(data.value || '')
+            setConnectionStatus('qr_ready')
+            break
+          case 'status': {
+            const val = String(data.value || '')
+            if (val === 'connected') {
+              setConnectionStatus('connected')
+              onConnected?.()
+              // tutup modal sebentar lagi
+              setTimeout(() => onClose?.(), 1200)
+            } else if (val === 'connecting' || val.startsWith('disconnected')) {
+              setConnectionStatus('connecting')
+            } else if (val === 'qr') {
+              setConnectionStatus('qr_ready')
+            }
+            break
+          }
+          default:
+            // no-op
+            break
+        }
+      } catch (err) {
+        console.error('[WhatsApp Modal] JSON parse error:', err)
+      }
+    }
+
+    ws.onerror = (e) => {
+      console.error('[WhatsApp Modal] WS error:', e)
+      clearTimeout(timeout)
+      setConnectionStatus('failed')
+      if (open && attempts < maxRetries) {
+        const next = attempts + 1
+        setAttempts(next)
+        setTimeout(() => {
+          if (open && ws.readyState === WebSocket.CLOSED) connectWs()
+        }, 3000)
+      }
+    }
+
+    ws.onclose = (ev) => {
+      clearTimeout(timeout)
+      if (open && !ev.wasClean && ev.code !== 1000) {
+        setTimeout(() => {
+          if (open) connectWs()
+        }, 2000)
+      }
+    }
+  }
 
   useEffect(() => {
-    if (!open) return;
-
-    // Reset connection attempts when modal opens
-    setConnectionAttempts(0);
-
-    // Connect to WhatsApp WebSocket
-    const connectWebSocket = () => {
-      console.log('[WhatsApp Modal] Attempting WebSocket connection...');
-      // Use the same protocol as the current page (http/https)
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/__ws`;
-      console.log(`[WhatsApp Modal] Connecting to: ${wsUrl}`);
-      
-      const websocket = new WebSocket(wsUrl);
-      
-      // Connection timeout (30 seconds)
-      const connectionTimeout = setTimeout(() => {
-        if (websocket.readyState === WebSocket.CONNECTING) {
-          websocket.close();
-          setConnectionStatus('failed');
-        }
-      }, 30000);
-      
-      websocket.onopen = () => {
-        console.log('[WhatsApp Modal] WebSocket connected successfully');
-        clearTimeout(connectionTimeout);
-        setConnectionStatus('connecting');
-        try {
-          websocket.send(JSON.stringify({ action: 'start_whatsapp_session' }));
-        } catch (error) {
-          console.error('[WhatsApp Modal] Failed to send start session message:', error);
-          setConnectionStatus('failed');
-        }
-      };
-
-      websocket.onmessage = (event) => {
-        console.log('[WhatsApp Modal] Received WebSocket message:', event.data);
-        try {
-          const data = JSON.parse(event.data);
-          
-          switch (data.type) {
-            case 'qr_code':
-              setQrCode(data.qrCode);
-              setConnectionStatus('qr_ready');
-              break;
-            case 'connected':
-              setConnectionStatus('connected');
-              onConnected();
-          setTimeout(() => {
-            onClose();
-          }, 2000);
-          break;
-              break;
-            case 'error':
-              setConnectionStatus('failed');
-              console.error('WhatsApp connection error:', data.error);
-              break;
-            case 'disconnected':
-              setConnectionStatus('idle');
-              break;
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      websocket.onerror = (error) => {
-        console.error('[WhatsApp Modal] WebSocket error:', error);
-        clearTimeout(connectionTimeout);
-        setConnectionStatus('failed');
-        
-        // Auto-retry logic with attempt counter
-        if (open && connectionAttempts < maxRetries) {
-          const newAttempts = connectionAttempts + 1;
-          setConnectionAttempts(newAttempts);
-          console.log(`[WhatsApp Modal] Retrying connection (attempt ${newAttempts}/${maxRetries})...`);
-          
-          setTimeout(() => {
-            if (open && websocket.readyState === WebSocket.CLOSED) {
-              connectWebSocket();
-            }
-          }, 3000);
-        } else if (connectionAttempts >= maxRetries) {
-          console.error('[WhatsApp Modal] Max connection attempts reached');
-        }
-      };
-
-      websocket.onclose = (event) => {
-        console.log('WebSocket connection closed:', event.code, event.reason);
-        clearTimeout(connectionTimeout);
-        setConnectionStatus('idle');
-        // Auto-retry if not manually closed and modal is still open
-        if (!event.wasClean && event.code !== 1000 && open) {
-          setTimeout(() => {
-            if (open) {
-              connectWebSocket();
-            }
-          }, 2000);
-        }
-      };
-
-      setWs(websocket);
-    };
-
-    connectWebSocket();
+    if (!open) return
+    setAttempts(0)
+    setConnectionStatus('idle')
+    setQrString('')
+    connectWs()
 
     return () => {
-      console.log('[WhatsApp Modal] Cleaning up WebSocket connection...');
-      if (ws) {
-        ws.close();
-        setWs(null);
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
       }
-      setConnectionStatus('idle');
-      setQrCode('');
-      setConnectionAttempts(0);
-    };
-  }, [open]);
+      setConnectionStatus('idle')
+      setQrString('')
+      setAttempts(0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const handleStart = async () => {
+    try {
+      setConnectionStatus('connecting')
+      // panggil endpoint untuk inisialisasi WA + scheduler
+      const res = await fetch('/api/whatsapp/connect')
+      if (!res.ok) throw new Error('connect failed')
+      // setelah ini, WS akan mengirim status / qr sendiri
+    } catch (e) {
+      console.error('[WhatsApp Modal] connect error:', e)
+      setConnectionStatus('failed')
+    }
+  }
 
   const handleRetry = () => {
-    console.log('[WhatsApp Modal] Manual retry requested');
-    setConnectionStatus('idle');
-    setQrCode('');
-    setConnectionAttempts(0);
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(JSON.stringify({ action: 'start_whatsapp_session' }));
-      } catch (error) {
-        console.error('[WhatsApp Modal] Failed to send retry message:', error);
-        // If current connection is broken, create a new one
-        if (ws) {
-          ws.close();
-        }
-        setTimeout(() => {
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${protocol}//${window.location.host}/api/__ws`;
-          const newWs = new WebSocket(wsUrl);
-          setWs(newWs);
-        }, 1000);
-      }
+    setConnectionStatus('idle')
+    setQrString('')
+    setAttempts(0)
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      // biarkan backend kirim update baru; optionally panggil connect lagi
+      handleStart()
     } else {
-      // Create new connection if current one is closed
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/__ws`;
-      const newWs = new WebSocket(wsUrl);
-      setWs(newWs);
+      connectWs()
+      handleStart()
     }
-  };
+  }
 
-  if (!open) return null;
+  if (!open) return null
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-xl font-semibold text-text">Hubungkan WhatsApp</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-accent transition-colors"
-          >
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-accent transition-colors">
             <X className="w-5 h-5 text-text/70" />
           </button>
         </div>
@@ -193,11 +172,9 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
                 <Smartphone className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-lg font-medium text-text mb-2">Menghubungkan ke WhatsApp</h3>
-              <p className="text-text/70 text-sm mb-6">
-                Klik tombol di bawah untuk memulai koneksi WhatsApp
-              </p>
+              <p className="text-text/70 text-sm mb-6">Klik tombol di bawah untuk memulai koneksi WhatsApp</p>
               <button
-                onClick={() => setConnectionStatus('connecting')}
+                onClick={handleStart}
                 className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
               >
                 Mulai Koneksi
@@ -211,31 +188,24 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
                 <Smartphone className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-lg font-medium text-text mb-2">Menghubungkan...</h3>
-              <p className="text-text/70 text-sm">
-                Menyiapkan koneksi WhatsApp, mohon tunggu...
-              </p>
+              <p className="text-text/70 text-sm">Menyiapkan koneksi WhatsApp, mohon tunggu...</p>
             </div>
           )}
 
-          {connectionStatus === 'qr_ready' && qrCode && (
+          {connectionStatus === 'qr_ready' && qrString && (
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <QrCode className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-lg font-medium text-text mb-2">Scan QR Code</h3>
-              <p className="text-text/70 text-sm mb-6">
-                Gunakan WhatsApp Anda untuk memindai kode QR ini
-              </p>
-              <div className="bg-white p-4 rounded-lg border border-border mb-4">
-                <img 
-                  src={qrCode} 
-                  alt="WhatsApp QR Code" 
-                  className="w-48 h-48 mx-auto"
-                />
+              <p className="text-text/70 text-sm mb-6">Gunakan WhatsApp Anda untuk memindai kode QR ini</p>
+
+              {/* render QR dari string, bukan <img src="..."> */}
+              <div className="bg-white p-4 rounded-lg border border-border mb-4 inline-block">
+                <QRCode value={qrString} size={192} />
               </div>
-              <p className="text-xs text-text/50">
-                Kode QR akan diperbarui secara otomatis
-              </p>
+
+              <p className="text-xs text-text/50">Kode QR akan diperbarui otomatis</p>
             </div>
           )}
 
@@ -245,9 +215,7 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               </div>
               <h3 className="text-lg font-medium text-green-700 mb-2">Berhasil Terhubung!</h3>
-              <p className="text-text/70 text-sm">
-                WhatsApp Anda sekarang terhubung dan siap digunakan.
-              </p>
+              <p className="text-text/70 text-sm">WhatsApp Anda sekarang terhubung dan siap digunakan.</p>
             </div>
           )}
 
@@ -257,9 +225,7 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
                 <AlertCircle className="w-8 h-8 text-red-500" />
               </div>
               <h3 className="text-lg font-medium text-red-700 mb-2">Koneksi Gagal</h3>
-              <p className="text-text/70 text-sm mb-6">
-                Terjadi kesalahan saat menghubungkan WhatsApp. Silakan coba lagi.
-              </p>
+              <p className="text-text/70 text-sm mb-6">Terjadi kesalahan saat menghubungkan WhatsApp. Silakan coba lagi.</p>
               <button
                 onClick={handleRetry}
                 className="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors"
@@ -271,5 +237,5 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

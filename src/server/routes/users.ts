@@ -286,9 +286,6 @@ usersApp.post('/', requireAdmin, async (c) => {
       weddingTitle,
       weddingDateTime,
       weddingLocation,
-      weddingPhotoUrl,
-      weddingPhotoUrl_dashboard,
-      weddingPhotoUrl_welcome,
       permissions,
     } = body
 
@@ -297,31 +294,6 @@ usersApp.post('/', requireAdmin, async (c) => {
     if (Number.isNaN(weddingDate.getTime())) {
       return c.json({ success: false, error: 'Invalid wedding date/time format' }, 400)
     }
-
-    // photo URLs cleanup
-    const defaultPhoto =
-      weddingPhotoUrl ||
-      'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-
-    const cleanDashboard =
-      (weddingPhotoUrl_dashboard || defaultPhoto).includes('undefined/')
-        ? (weddingPhotoUrl_dashboard || defaultPhoto).replace('undefined/', '')
-        : weddingPhotoUrl_dashboard || defaultPhoto
-
-    const dashboardUrl =
-      cleanDashboard.startsWith('/api/upload/')
-        ? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-        : cleanDashboard
-
-    const cleanWelcome =
-      (weddingPhotoUrl_welcome || defaultPhoto).includes('undefined/')
-        ? (weddingPhotoUrl_welcome || defaultPhoto).replace('undefined/', '')
-        : weddingPhotoUrl_welcome || defaultPhoto
-
-    const welcomeUrl =
-      cleanWelcome.startsWith('/api/upload/')
-        ? 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-        : cleanWelcome
 
     // username unique
     const existing = await db.collection(USERS_COLLECTION).findOne({ username })
@@ -335,9 +307,6 @@ usersApp.post('/', requireAdmin, async (c) => {
       title: weddingTitle,
       dateTime: weddingDate,
       location: weddingLocation,
-      photoUrl: defaultPhoto,
-      photoUrl_dashboard: dashboardUrl,
-      photoUrl_welcome: welcomeUrl,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -441,12 +410,6 @@ usersApp.delete('/:id', requireAdmin, async (c) => {
 
     const guestDel = await db.collection(guestsCollection).deleteMany({ userId: paramId } as any)
     const filesDel = await db.collection(uploadedFilesCollection).deleteMany({ userId: paramId } as any)
-
-    await createAuditLog(currentUser.id, currentUser.username, 'user_deleted', 'users', {
-      deletedUserUsername: userDoc.username,
-      deletedGuestCount: guestDel.deletedCount,
-      deletedFileCount: filesDel.deletedCount,
-    })
 
     return c.json({
       success: true,

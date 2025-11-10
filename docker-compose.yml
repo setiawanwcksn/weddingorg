@@ -16,6 +16,13 @@ services:
       dockerfile: src/server/Dockerfile
     container_name: backend
     ports: [ "8787:8787" ]
+    environment:
+      - WA_AUTH_DIR=/app/auth
+      - NODE_ENV=production
+      - PORT=8787
+      - TZ=Asia/Jakarta
+    volumes:
+      - ./wa_auth:/app/auth
     restart: unless-stopped
 
   frontend:
@@ -28,6 +35,9 @@ services:
     restart: unless-stopped
     environment:
       - VITE_API_URL=/api
+    volumes:
+      - ./src/src:/app
+      - /app/node_modules
 
 volumes:
   mongo_data:

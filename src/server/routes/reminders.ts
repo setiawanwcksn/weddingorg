@@ -8,6 +8,7 @@ import { zValidator } from '@hono/zod-validator';
 import { db } from '../db.js';
 import { ObjectId } from 'mongodb';
 import type { AppEnv, ContextUser } from '@shared/types';
+import { stat } from 'node:fs/promises';
 
 const reminders = new Hono<AppEnv>();
 
@@ -21,6 +22,7 @@ const reminderSchema = z.object({
   type: z.enum(['wedding_invitation', 'reminder', 'thank_you']),
   status: z.string().optional(), // Allow optional status field
   introTextCategory: z.string().optional(), // Allow optional intro text category
+  attempts: z.number().min(0).optional(),
 }).strict(); // Strict mode to reject extra fields
 
 type ReminderBody = z.infer<typeof reminderSchema>;
@@ -59,18 +61,6 @@ reminders.get('/', async (c: Context<AppEnv>) => {
       collection.find(query).sort({ scheduledAt: -1 }).skip(skip).limit(limitNum).toArray(),
       collection.countDocuments(query),
     ]);
-
-    // Log audit
-    if (user?.email) {
-      await db.collection('94884219_audit_logs').insertOne({
-        action: 'view_reminders',
-        userId: user.id,
-        userEmail: user.email,
-        accountId,
-        timestamp: new Date(),
-        details: { search, status, type, page, limit },
-      });
-    }
 
     return c.json({
       success: true,
@@ -221,6 +211,8 @@ reminders.put(
         {
           $set: {
             ...body,
+            status: "pending",
+            attempts: 0,
             updatedAt: new Date(),
           },
         },
@@ -230,24 +222,11 @@ reminders.put(
         return c.json({ error: 'Reminder not found' }, 404);
       }
 
-      // Log audit
-      if (user?.email) {
-        await db.collection('94884219_audit_logs').insertOne({
-          action: 'update_reminder',
-          userId: user.id,
-          userEmail: user.email,
-          accountId,
-          timestamp: new Date(),
-          details: { reminderId: id, ...body },
-        });
-      }
-
       const reminder = await collection.findOne({ _id: new ObjectId(id) });
       if (!reminder) {
         return c.json({ error: 'Reminder not found after update' }, 404);
       }
 
-      // Jika scheduledAt berubah -> update guest
       if (body.scheduledAt) {
         try {
           const guestsCollection = db.collection('94884219_guests');
@@ -291,32 +270,26 @@ reminders.put(
 );
 
 // Delete reminder
-reminders.delete('/:id', async (c: Context<AppEnv>) => {
-  const accountId = c.get('accountId') as string | undefined;
+reminders.delete('/:id', async (c: Context<AppEnv>) => {  
   const user = c.get('user') as ContextUser | undefined;
   const id = c.req.param('id');
-
-  if (!accountId) {
-    return c.json({ error: 'Account ID not found' }, 400);
-  }
+  const guestId = c.req.param('id');
 
   try {
     const collection = db.collection('94884219_reminders');
 
     // Ambil reminder sebelum dihapus (untuk update guest)
     const reminderToDelete = await collection.findOne({
-      _id: new ObjectId(id),
-      accountId,
+      guestId: id,
     });
-
+    console.log('Reminder to delete:', guestId, id);
     if (!reminderToDelete) {
       return c.json({ error: 'Reminder not found' }, 404);
     }
 
     // Hapus reminder
     const result = await collection.deleteOne({
-      _id: new ObjectId(id),
-      accountId,
+      guestId,
     });
 
     if (!result.deletedCount) {
@@ -336,18 +309,6 @@ reminders.delete('/:id', async (c: Context<AppEnv>) => {
       console.log('[reminders] Cleared guest reminderScheduledAt field and reset status to pending');
     } catch (guestUpdateError: any) {
       console.error('[reminders] Error clearing guest reminderScheduledAt:', guestUpdateError?.message);
-    }
-
-    // Log audit
-    if (user?.email) {
-      await db.collection('94884219_audit_logs').insertOne({
-        action: 'delete_reminder',
-        userId: user.id,
-        userEmail: user.email,
-        accountId,
-        timestamp: new Date(),
-        details: { reminderId: id },
-      });
     }
 
     return c.json({ success: true });

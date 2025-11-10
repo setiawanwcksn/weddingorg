@@ -278,12 +278,14 @@ export interface ContextUser {
   username?: string
   role?: 'admin' | 'user'
   accountId?: string
+  guestId?: string
   email?: string
 }
 
 export interface Vars {
   user?: ContextUser
   accountId?: string
+  guestId?: string
 }
 
 export type AppEnv = { Bindings: Bindings; Variables: Vars }

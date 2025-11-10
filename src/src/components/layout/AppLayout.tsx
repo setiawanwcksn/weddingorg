@@ -197,7 +197,7 @@ export function AppLayout() {
               )}
             </div>
           </div>
-          <div className="flex-1 flex flex-col bg-gray-50 text-gray-800">
+          <div className="flex-1 flex flex-col bg-accent text-gray-800">
             <Outlet />
           </div>
         </main>

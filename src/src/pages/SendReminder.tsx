@@ -13,7 +13,6 @@ import {
   Filter,
   Search,
   Share2,
-  Copy,
   Trash2,
   ChevronDown,
   Circle,
@@ -30,6 +29,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
 import { useToast } from '../contexts/ToastContext';
 import { apiUrl } from '../lib/api';
+import { IntroTextModal } from '../components/guests/IntroTextModal';
+import kelolaTamu from '../assets/KelolaTamu.png';
+import sendReminderAct from '../assets/SendReminderAct.png';
+import TambahTamu from '../assets/TambahTamu.png';
+import EditTeksPengantar from '../assets/EditTeksPengantar.png';
+import setting from '../assets/setting.png';
+import filter from '../assets/filter.png';
+import edit from '../assets/Edit.png';
+import Whatsapp from '../assets/Whatsapp.png';
+import shared from '../assets/shared.png';
+import Copy from '../assets/Copy.png';
+import Delete from '../assets/Delete.png';
 
 interface ReminderItem {
   id: string;
@@ -60,9 +71,10 @@ const SendReminder: React.FC = () => {
   const { apiRequest, user } = useAuth();
   const { showToast } = useToast();
 
-  const [openNotice, setOpenNotice] = useState(false);
+  const [openNotice, setOpenNotice] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [openIntro, setOpenIntro] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [selectedGuest, setSelectedGuest] = useState<string>('');
@@ -89,7 +101,7 @@ const SendReminder: React.FC = () => {
   // Check WhatsApp connection status
   const { data: whatsAppStatus, error: whatsAppError } = useSWR(
     user ? '/api/whatsapp/status' : null,
-    async (url) => {      
+    async (url) => {
       try {
         const response = await apiRequest(apiUrl(`${url}`));
         console.log(`[SendReminder] WhatsApp status response: ${response.status}`);
@@ -117,7 +129,11 @@ const SendReminder: React.FC = () => {
 
   useEffect(() => {
     if (whatsAppStatus) {
-      setWhatsAppConnected(whatsAppStatus.connected);
+      const isConnected =
+        whatsAppStatus.ready === true ||
+        whatsAppStatus.status === 'connected' ||
+        whatsAppStatus.connected === true;
+      setWhatsAppConnected(isConnected);
       setWhatsAppLoading(false);
     }
   }, [whatsAppStatus]);
@@ -129,6 +145,29 @@ const SendReminder: React.FC = () => {
       showToast(`WhatsApp status check failed: ${whatsAppError.message}`, 'error');
     }
   }, [whatsAppError]);
+
+  const handleDeleteReminder = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this schedule?')) return;
+
+    try {
+      const response = await apiRequest(apiUrl(`/api/reminders/${id}`), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        method: 'DELETE',
+        body: JSON.stringify({ guestId: id })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete guest');
+      }
+
+      showToast('Scheduler deleted successfully', 'success');
+      refresh();
+    } catch (error: any) {
+      showToast(`Scheduler deleted failed, ${error}`, 'error');
+    }
+  };
 
   // Filter guests based on search term
   const filteredGuests = guests.filter(guest =>
@@ -179,16 +218,16 @@ const SendReminder: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-7">
               <button
                 onClick={() => navigate('/guests')}
-                className="rounded-lg sm:rounded-xl border border-border bg-secondary p-4 sm:p-5 flex items-center gap-2 sm:gap-3 shadow-sm hover:bg-accent transition-colors bg-secondary"
+                className="rounded-lg sm:rounded-xl border border-border bg-secondary p-4 sm:p-5 flex items-center gap-2 sm:gap-3 shadow-sm hover:bg-accent transition-colors bg-secondary justify-center"
               >
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center shadow-sm">
-                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                  <img src={kelolaTamu} className="w-5 h-5 text-background" />
                 </div>
                 <div className="font-semibold text-sm sm:text-base">Kelola Tamu</div>
               </button>
 
               <div className="rounded-lg sm:rounded-xl border border-border p-4 sm:p-5 flex items-center gap-2 sm:gap-3 bg-primary shadow-sm justify-center">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-background" />
+                <img src={sendReminderAct} className="w-5 h-5 text-background" />
                 <div className="font-semibold text-background text-sm sm:text-base">Send Reminder</div>
               </div>
             </div>
@@ -197,25 +236,28 @@ const SendReminder: React.FC = () => {
             <div className="rounded-lg sm:rounded-xl border border-border p-3 sm:p-4 shadow-sm bg-white rounded-b-none">
               <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <button
-                    onClick={() => navigate('/message-templates')}
-                    className="inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg bg-primary text-white text-xs sm:text-sm transition-colors"
-                  >
-                    <span className="w-3 h-3 sm:w-4 sm:h-4 inline-flex items-center justify-center rounded-sm">✎</span>
-                    Teks Pengantar
+                  <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm transition-colors flex-shrink-0 bg-primary text-white" onClick={() => setOpenIntro(true)}>
+                    <img src={EditTeksPengantar} className="w-4 h-4" /> Teks Pengantar
                   </button>
                   <button
-                    onClick={() => setWhatsAppModalOpen(true)}
-                    disabled={whatsAppLoading}
-                    className={`inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-white text-xs sm:text-sm transition-colors ${whatsAppLoading
+                    onClick={() => {
+                      if (!whatsAppConnected && !whatsAppLoading) setWhatsAppModalOpen(true);
+                    }}
+                    disabled={whatsAppLoading || whatsAppConnected}
+                    className={`inline-flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-white text-xs sm:text-sm transition-colors
+    ${whatsAppLoading
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : whatsAppConnected
-                          ? 'bg-green-500 hover:bg-green-600'
+                          ? 'bg-green-500 cursor-not-allowed'
                           : 'bg-primary hover:bg-primary/90'
                       }`}
                   >
                     <Smartphone className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {whatsAppLoading ? 'Checking...' : whatsAppConnected ? 'WhatsApp Terhubung' : 'Hubungkan WhatsApp'}
+                    {whatsAppLoading
+                      ? 'Checking...'
+                      : whatsAppConnected
+                        ? 'WhatsApp Terhubung'
+                        : 'Hubungkan WhatsApp'}
                   </button>
 
                 </div>
@@ -232,22 +274,21 @@ const SendReminder: React.FC = () => {
                       open={filterOpen}
                       onClose={() => setFilterOpen(false)}
                       options={[
-                        { key: 'no', label: 'No' },
-                        { key: 'name', label: 'Nama' },
-                        { key: 'phone', label: 'WhatsApp' },
-                        { key: 'status', label: 'Status' },
-                        { key: 'terjadwal', label: 'Terjadwal' },
-                        { key: 'reminder', label: 'Set Reminder' },
-                        { key: 'share', label: 'Bagikan' },
+                        { key: 'no', label: 'No', checked: visibleCols.no },
+                        { key: 'name', label: 'Nama', checked: visibleCols.name },
+                        { key: 'phone', label: 'WhatsApp', checked: visibleCols.phone },
+                        { key: 'status', label: 'Status', checked: visibleCols.status },
+                        { key: 'terjadwal', label: 'Terjadwal', checked: visibleCols.terjadwal },
+                        { key: 'reminder', label: 'Set Reminder', checked: visibleCols.reminder },
+                        { key: 'share', label: 'Bagikan', checked: visibleCols.share },
                       ]}
-                      visible={visibleCols}
                       onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
                       onToggleAll={(checked) => {
-                        const allKeys = ['no', 'name', 'phone', 'status', 'terjadwal', 'reminder', 'share'];
-                        const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {});
-                        setVisibleCols(newState);
+                        const keys = ['no', 'name', 'phone', 'status', 'terjadwal', 'reminder', 'share'];
+                        setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
                       }}
                     />
+
                   </div>
                   <button className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors" title="Settings">
                     <Cog className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
@@ -331,8 +372,8 @@ const SendReminder: React.FC = () => {
                                     setReminderSettingsOpen(true);
                                   }}
                                   className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors min-h-[28px] ${guest.status === 'Confirmed' || hasReminder
-                                      ? 'bg-green-500 text-white hover:bg-green-600'
-                                      : 'bg-red-500 text-white hover:bg-red-600'
+                                    ? 'bg-green-500 text-white hover:bg-green-600'
+                                    : 'bg-red-500 text-white hover:bg-red-600'
                                     }`}
                                 >
                                   {guest.status === 'Confirmed' || hasReminder ? 'Done' : 'Setting'}
@@ -361,6 +402,7 @@ const SendReminder: React.FC = () => {
                               <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
                                 <input
                                   type="checkbox"
+                                  disabled = {true}
                                   checked={guest.status === 'confirmed' || guest.status === 'scheduled' || !!guest.reminderScheduledAt}
                                   onChange={async (e) => {
                                     try {
@@ -412,59 +454,31 @@ const SendReminder: React.FC = () => {
                                 <div className="flex items-center gap-1 sm:gap-2">
                                   <button
                                     onClick={() => {
+                                      showToast('Share action coming soon', 'info');
+                                    }}
+                                    className="p-2 rounded-md bg-blue-500 hover:bg-blue-200 transition-shadow shadow-sm shrink-0"
+                                    title="Share"
+                                  >
+                                    <img src={shared} className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
                                       const message = `Dear ${guest.name}, this is a reminder for your upcoming event.`;
                                       navigator.clipboard.writeText(message);
                                       showToast('Message copied to clipboard!', 'success');
                                     }}
-                                    className="p-1 sm:p-1.5 rounded-md bg-secondary hover:bg-primary/10 transition-colors min-h-[32px]"
+                                    className="p-2 rounded-md bg-gray-300 text-blue-700 hover:bg-gray-200 transition-shadow shadow-sm shrink-0"
                                     title="Copy message"
                                   >
-                                    <Copy className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                                    <img src={Copy} className="w-4 h-4" />
                                   </button>
                                   <button
-                                    onClick={async () => {
-                                      if (hasReminder) {
-                                        showToast('Guest already has a reminder', 'info');
-                                        return;
-                                      }
-
-                                      try {
-                                        const reminderData = {
-                                          guestId: guest._id,
-                                          guestName: guest.name,
-                                          phone: guest.phone || '',
-                                          message: `Dear ${guest.name}, this is a reminder for your upcoming event.`,
-                                          scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-                                          type: 'reminder'
-                                          // Note: status and accountId are set server-side
-                                        };
-
-                                        await apiRequest(apiUrl(`/api/reminders`), {
-                                          method: 'POST',
-                                          headers: { 'Content-Type': 'application/json' },
-                                          body: JSON.stringify(reminderData)
-                                        });
-                                        showToast('Reminder created successfully', 'success');
-                                        // Refresh both reminders and guests data
-                                        await mutateReminders();
-                                        await refresh();
-                                      } catch (error: any) {
-                                        showToast(`Error creating reminder: ${error.message}`, 'error');
-                                      }
-                                    }}
-                                    className="p-1 sm:p-1.5 rounded-md bg-secondary hover:bg-primary/10 transition-colors min-h-[32px]"
-                                    title="Create reminder"
+                                    type="button"
+                                    title="Delete"
+                                    onClick={() => handleDeleteReminder(guest._id)}
+                                    className="p-2 rounded-md bg-red-500 text-red-700 hover:bg-red-00 transition-shadow shadow-sm shrink-0"
                                   >
-                                    <Bell className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      showToast('Share action coming soon', 'info');
-                                    }}
-                                    className="p-1 sm:p-1.5 rounded-md bg-secondary hover:bg-primary/10 transition-colors min-h-[32px]"
-                                    title="Share"
-                                  >
-                                    <Share2 className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                                    <img src={Delete} className="w-4 h-4" />
                                   </button>
                                 </div>
                               </td>
@@ -518,6 +532,12 @@ const SendReminder: React.FC = () => {
               }}
             />
           )}
+
+          <IntroTextModal
+            open={openIntro}
+            onClose={() => setOpenIntro(false)}
+            onSave={() => setOpenIntro(false)}
+          />
 
           {/* WhatsApp Connection Modal */}
           <WhatsAppConnectionModal

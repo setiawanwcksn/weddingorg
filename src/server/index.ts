@@ -19,7 +19,7 @@ import welcomeDisplayApp from './routes/welcome-display.js'
 import realtimeGuestsApp from './routes/realtime-guests.js'
 import uploadApp from './routes/upload.js'
 import type { Bindings, Vars } from '@shared/types'
-
+import { createNodeWebSocket } from '@hono/node-ws'
 import { connectDb, db } from './db.js'
 
 await connectDb(process.env.MONGO_URI ?? 'mongodb://mongo:27017/app', process.env.MONGO_DB ?? 'app');
@@ -30,6 +30,7 @@ await connectDb(process.env.MONGO_URI ?? 'mongodb://mongo:27017/app', process.en
 // atau langsung:
 const rootApp = new Hono<{ Bindings: Bindings; Variables: Vars }>()
 
+const { upgradeWebSocket, injectWebSocket } = createNodeWebSocket({ app: rootApp })
 // Middleware
 rootApp.use(
   '*',
@@ -78,6 +79,12 @@ rootApp.use('*', async (c, next) => {
     return next()
   }
 
+  const upgrade = c.req.header('upgrade')
+  // ⚡ lewati middleware kalau ini koneksi WebSocket
+  if (upgrade && upgrade.toLowerCase() === 'websocket') {
+    return await next()
+  }
+
   const authHeader = c.req.header('Authorization')
   const userIdHeader = c.req.header('user-id')
 
@@ -117,7 +124,7 @@ rootApp.use('*', async (c, next) => {
       console.log(`[auth] Extracted userId: ${userId}`)
 
       if (userId) {
-         user = await findUserFlexible(userId)
+        user = await findUserFlexible(userId)
 
         console.log(`[auth] User found via token:`, user ? 'Yes' : 'No')
       } else {
@@ -173,6 +180,10 @@ rootApp.get('/api/health', async (c) => {
     )
   }
 })
+rootApp.use('*', async (c, next) => {
+  console.log('REQ', c.req.method, c.req.path, 'upgrade:', c.req.header('upgrade'))
+  await next()
+})
 
 // Mount route modules
 rootApp.route('/api/auth', authApp)
@@ -183,7 +194,7 @@ rootApp.route('/api/users', usersApp)
 rootApp.route('/api/intro-text', introTextApp)
 rootApp.route('/api/bulk-import', bulkImportApp)
 rootApp.route('/api/gift-distributions', giftDistributionsApp)
-rootApp.route('/api/whatsapp', whatsAppApp)
+rootApp.route('/api/whatsapp', whatsAppApp({ upgradeWebSocket }))
 rootApp.route('/api/welcome-display', welcomeDisplayApp)
 rootApp.route('/api/realtime-guests', realtimeGuestsApp)
 rootApp.route('/api/upload', uploadApp)
@@ -211,5 +222,6 @@ rootApp.notFound((c) => {
     404,
   )
 })
+export { upgradeWebSocket, injectWebSocket }
 
 export default rootApp

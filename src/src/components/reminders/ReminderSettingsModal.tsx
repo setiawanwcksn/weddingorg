@@ -82,9 +82,6 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
         const data = await response.json();
         if (data.success) {
           setIntroTextContent(data.data.text);
-        } else {
-          // Fallback to default message if API returns success: false
-          setIntroTextContent(`Dear ${guestName}, this is a reminder for your upcoming event.`);
         }
       } else {
         // Fallback to default message if API call fails

@@ -9,6 +9,7 @@
     "@nextui-org/system": "^2.4.6",
     "@nextui-org/theme": "^2.4.5",
     "@zxing/library": "0.21.3",
+    "baileys": "github:WhiskeySockets/Baileys",
     "framer-motion": "^11.12.0",
     "hono": "^4.10.4",
     "lucide-react": "0.294.0",
@@ -16,6 +17,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "4.11.0",
+    "react-qr-code": "^2.0.18",
     "react-router-dom": "^6.20.1",
     "swr": "^2.2.4",
     "zod": "^3.23.8"
@@ -25,6 +27,7 @@
     "@rsbuild/plugin-react": "^0.6.5",
     "@types/react": "^18.2.75",
     "@types/react-dom": "^18.2.24",
+    "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15"
@@ -35,5 +38,8 @@
     "preview": "rsbuild preview"
   },
   "private": true,
-  "workspaces": ["src/src", "src/server"]
+  "workspaces": [
+    "src/src",
+    "src/server"
+  ]
 }
