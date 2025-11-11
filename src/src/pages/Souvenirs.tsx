@@ -3,7 +3,7 @@
  * Integrates with consolidated guest data for souvenir tracking
  */
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Edit3, QrCode, Trash2, UserPlus, Filter, FileSpreadsheet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
@@ -232,7 +232,26 @@ export const Souvenirs: React.FC = () => {
 
       return matchesSearch && matchesCategory;
     });
-  }, [allGuests, searchTerm, selectedCategory]);
+  }, [allGuests, searchTerm, selectedCategory]);// pagination
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); // 10/25/50/100
+
+  // derived untuk pagination
+  const totalItems = filteredGuests.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filteredGuests.slice(pageStart, pageStart + pageSize);
+
+  // jaga page tetap valid saat filter/data berubah
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  // reset ke page 1 saat keyword berubah
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // Get unique categories
   const categories = useMemo(() => {
@@ -314,13 +333,20 @@ export const Souvenirs: React.FC = () => {
                     aria-label="Filter options" >
                     <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>
-                  <TableFilterPopover open={filterOpen} onClose={() => setFilterOpen(false)} options={[{ key: 'no', label: 'No' }, { key: 'name', label: 'Nama' }, { key: 'phone', label: 'WhatsApp' }, { key: 'status', label: 'Status' }, { key: 'terjadwal', label: 'Terjadwal' }, {
-                    key: 'reminder',
-                    label: 'Set Reminder'
-                  }, { key: 'share', label: 'Bagikan' },]} visible={visibleCols} onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))} onToggleAll={(checked) => {
-                    const allKeys = ['no', 'name',
-                      'phone', 'status', 'terjadwal', 'reminder', 'share']; const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {}); setVisibleCols(newState);
-                  }} />
+                  <TableFilterPopover open={filterOpen} onClose={() => setFilterOpen(false)} options={[
+                    { key: 'no', label: 'No', checked: visibleCols.no },
+                    { key: 'name', label: 'Nama', checked: visibleCols.name },
+                    { key: 'phone', label: 'WhatsApp', checked: visibleCols.phone },
+                    { key: 'status', label: 'Status', checked: visibleCols.status },
+                    { key: 'terjadwal', label: 'Terjadwal', checked: visibleCols.terjadwal },
+                    {
+                      key: 'reminder', label: 'Set Reminder', checked: visibleCols.reminder
+                    }, { key: 'share', label: 'Bagikan', checked: visibleCols.share},
+                  ]}
+                    onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))} onToggleAll={(checked) => {
+                      const allKeys = ['no', 'name',
+                        'phone', 'status', 'terjadwal', 'reminder', 'share']; const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {}); setVisibleCols(newState);
+                    }} />
                 </div>
               </div>
             </div>
@@ -329,8 +355,19 @@ export const Souvenirs: React.FC = () => {
           {/* Guest Table - Mobile Optimized */}
           <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6  rounded-t-none" style={{ marginTop: '0px' }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
-              <div className="text-sm text-text/70">
-                Show [ {filteredGuests.length} ] entries
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+                  className="border border-border rounded-md px-2 py-1 bg-white"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span>entries</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative w-full sm:w-64">
@@ -355,11 +392,11 @@ export const Souvenirs: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-border">
-                  {filteredGuests.map((guest, index) => {
+                  {pageRows.map((guest, index) => {
                     const souvenirStatus = getSouvenirStatus(guest); return (
                       <tr key={guest._id} className="hover:bg-accent">
                         <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text/70">
-                          {index + 1}
+                          {(page - 1) * pageSize + index + 1}
                         </td>
                         <td className="px-4 lg:px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10 hover:bg-accent">
                           <div>
@@ -412,6 +449,26 @@ export const Souvenirs: React.FC = () => {
                   })}
                 </tbody>
               </table>
+            </div>
+            <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 text-xs sm:text-sm">
+              <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Previous
+                </button>
+                <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Next
+                </button>
+              </div>
             </div>
 
             {/* Mobile Cards */}

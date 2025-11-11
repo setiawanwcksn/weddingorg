@@ -1,15 +1,4 @@
-/**
- * Doorprize page
- * Renders the exact UI per reference: header with actions (Tambah Peserta, Start To Play),
- * filter button on the right, a search input, and a datatable with columns:
- * No, Nama, Kode, Kategori, Informasi, Sesi, Limit, No. Meja, Jumlah Tamu, Tanggal, Waktu, Edit.
- *
- * Relationship:
- * - Standalone page; does not modify any other pages.
- * - Automatically lists guests who have already checked in by fetching from the server.
- * - Now integrated with backend API for real data with account-based authentication.
- */
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UserPlus, Play, Filter, Search as SearchIcon, Eye, Edit3, Trash2 } from 'lucide-react';
 import useSWR from 'swr';
 import { Toast } from '../components/common/Toast';
@@ -89,16 +78,16 @@ export function Doorprize(): JSX.Element {
   const { data, error, isLoading } = useSWR<{ items: CheckedInGuest[] }>(
     user ? 'doorprize-checked-in' : null,
     () => fetcher(apiUrl(`/api/doorprize/checked-in`), apiRequest),
-      {
-        ...swrGuestConfig,
-        revalidateOnMount: true, // Force revalidation on mount to ensure data is fetched
-      }
-    );
+    {
+      ...swrGuestConfig,
+      revalidateOnMount: true, // Force revalidation on mount to ensure data is fetched
+    }
+  );
 
   // Add detailed request logging
   React.useEffect(() => {
     if (user) {
-      console.log(`[Doorprize] Fetching checked-in guests for user:`, user);      
+      console.log(`[Doorprize] Fetching checked-in guests for user:`, user);
       console.log(`[Doorprize] Token available: ${token ? 'Yes' : 'No'}`);
       if (token) {
         console.log(`[Doorprize] Token preview: ${token.substring(0, 20)}...`);
@@ -169,6 +158,22 @@ export function Doorprize(): JSX.Element {
     return guests.filter(r => r.name.toLowerCase().includes(term) || r.code.toLowerCase().includes(term));
   }, [q, guests]);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filtered.slice(pageStart, pageStart + pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  // reset ke page 1 saat keyword berubah
+  useEffect(() => {
+    setPage(1);
+  }, [q]);
+
   return (
     <div className="flex flex-col flex-1">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -189,8 +194,19 @@ export function Doorprize(): JSX.Element {
           {/* Table controls */}
           <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6 rounded-t-none" style={{ marginTop: '0px' }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
-              <div className="text-sm text-text/70 order-2 sm:order-1">
-                Show [ {filtered.length} ] entries {isLoading && <span className="ml-2 text-primary">Loading...</span>}
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+                  className="border border-border rounded-md px-2 py-1 bg-white"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span>entries</span>
               </div>
               <div className="flex items-center gap-2 w-full sm:w-64 order-1 sm:order-2 mb-3 sm:mb-0">
                 <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-text/70 flex-shrink-0" />
@@ -251,7 +267,7 @@ export function Doorprize(): JSX.Element {
                         {data?.items?.length === 0 ? 'No checked-in guests found' : 'No matching guests found'}
                       </td>
                     </tr>
-                  ) : (filtered.map((r, idx) => (
+                  ) : (pageRows.map((r, idx) => (
                     <tr key={idx}>
                       <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.no}</td>
                       <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>
@@ -335,9 +351,25 @@ export function Doorprize(): JSX.Element {
             </div>
 
             {/* Footer */}
-            <div className="mt-3 flex items-center justify-between text-xs text-text/70">
-              <span>Showing {filtered.length} of {filtered.length} entries</span>
-              <span>Previous/Next</span>
+            <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
+              <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Previous
+                </button>
+                <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
 

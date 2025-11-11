@@ -21,7 +21,7 @@ interface DashboardAccountInfo {
   photoUrl: string;
 }
 
-const DEFAULT_PHOTO = 'https://cdn-tos-cn.bytedance.net/obj/aipa-tos/e076dab9-d4e2-49fa-810a-5cfdc56d223e/image.png';
+const DEFAULT_PHOTO = ' "https://images.unsplash.com/photo-1517244683847-7456b63c5969?q=80&w=1600&auto=format&fit=crop"';
 
 // Convert Google Drive sharing links to direct image URLs
 const convertGoogleDriveUrl = (url: string): string => {
@@ -109,14 +109,7 @@ const Dashboard: React.FC = () => {
   const [photoUrl, setPhotoUrl] = useState<string>(DEFAULT_PHOTO);
 
   useEffect(() => {
-    const loadPhoto = async () => {
-      if (!user?.id) {
-        // Use dashboard-specific photo if available, otherwise fallback to regular photo
-        const dashboardPhoto = account?.photoUrl_dashboard || account?.photoUrl;
-        setPhotoUrl(convertGoogleDriveUrl(dashboardPhoto || ''));
-        return;
-      }
-
+    const loadPhoto = async () => {      
       // Try to load uploaded photo first using authenticated request
       // Now we can check without specifying extension - server will find any matching file
       try {
@@ -134,9 +127,6 @@ const Dashboard: React.FC = () => {
         }
       } catch (error) {
         console.log('Uploaded photo not found, using account photo or default');
-        // Fallback to dashboard-specific photo, then regular photo, then default
-        const dashboardPhoto = account?.photoUrl_dashboard || account?.photoUrl;
-        setPhotoUrl(convertGoogleDriveUrl(dashboardPhoto || ''));
       }
     };
 
@@ -169,7 +159,7 @@ const Dashboard: React.FC = () => {
           {/* Data Tamu card with purple header */}
           <div className="rounded-xl overflow-visible border border-border/60 bg-white shadow-sm" style={{ height: '100%' }}>
             <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base rounded-t-xl flex items-center gap-2">
-              <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" />
+              <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
               Data Tamu
             </div>
             <ul className="divide-y divide-gray-100 px-4 py-4">

@@ -43,6 +43,7 @@ const UsersRoles: React.FC = () => {
     password: '',
     role: 'user' as 'admin' | 'user',
     weddingTitle: '',
+    linkUndangan: '',
     weddingDateTime: '',
     weddingLocation: '',
     weddingPhotoUrl: '',
@@ -155,6 +156,7 @@ const UsersRoles: React.FC = () => {
     // Validasi seperti sebelumnya
     if (!formData.username.trim()) return showToast('Username is required', 'error');
     if (!formData.password.trim()) return showToast('Password is required', 'error');
+    if (!formData.linkUndangan.trim()) return showToast('Link undangan is required', 'error');
     if (!formData.weddingTitle.trim()) return showToast('Wedding title is required', 'error');
     if (!formData.weddingDateTime) return showToast('Wedding date and time is required', 'error');
     if (!formData.weddingLocation.trim()) return showToast('Wedding location is required', 'error');
@@ -166,6 +168,7 @@ const UsersRoles: React.FC = () => {
         password: formData.password.trim(),
         role: formData.role,
         phone: formData.phone.trim(),
+        linkUndangan: formData.linkUndangan.trim(),
         weddingTitle: formData.weddingTitle.trim(),
         weddingDateTime: new Date(formData.weddingDateTime).toISOString(),
         weddingLocation: formData.weddingLocation.trim(),
@@ -214,6 +217,7 @@ const UsersRoles: React.FC = () => {
         phone: '',
         password: '',
         role: 'user',
+        linkUndangan: '',
         weddingTitle: '',
         weddingDateTime: '',
         weddingLocation: '',
@@ -242,6 +246,7 @@ const UsersRoles: React.FC = () => {
       });
 
       let accountData = {
+        linkUndangan: '',
         weddingTitle: '',
         weddingDateTime: '',
         weddingLocation: '',
@@ -254,6 +259,7 @@ const UsersRoles: React.FC = () => {
         const result = await response.json();
         if (result.success && result.data) {
           accountData = {
+            linkUndangan: result.data.linkUndangan || '',
             weddingTitle: result.data.title || '',
             weddingDateTime: result.data.dateTime ? new Date(result.data.dateTime).toISOString().slice(0, 16) : '',
             weddingLocation: result.data.location || '',
@@ -269,6 +275,7 @@ const UsersRoles: React.FC = () => {
         phone: user.phone || '',
         password: '', // Leave empty for edit
         role: user.role,
+        linkUndangan: accountData.linkUndangan,
         weddingTitle: accountData.weddingTitle,
         weddingDateTime: accountData.weddingDateTime,
         weddingLocation: accountData.weddingLocation,
@@ -286,6 +293,7 @@ const UsersRoles: React.FC = () => {
         phone: user.phone || '',
         password: '',
         role: user.role,
+        linkUndangan: '',
         weddingTitle: '',
         weddingDateTime: '',
         weddingLocation: '',
@@ -309,6 +317,7 @@ const UsersRoles: React.FC = () => {
 
     if (!selectedUser) return showToast('No user selected', 'error');
     if (!formData.username.trim()) return showToast('Username is required', 'error');
+    if (!formData.linkUndangan.trim()) return showToast('Link Undangan is required', 'error');
     if (!formData.weddingTitle.trim()) return showToast('Wedding title is required', 'error');
     if (!formData.weddingDateTime) return showToast('Wedding date and time is required', 'error');
     if (!formData.weddingLocation.trim()) return showToast('Wedding location is required', 'error');
@@ -319,6 +328,7 @@ const UsersRoles: React.FC = () => {
         username: formData.username.trim(),
         phone: formData.phone.trim(),
         role: formData.role,
+        linkUndangan: formData.linkUndangan.trim(),
         weddingTitle: formData.weddingTitle.trim(),
         weddingDateTime: new Date(formData.weddingDateTime).toISOString(),
         weddingLocation: formData.weddingLocation.trim(),
@@ -856,6 +866,22 @@ const UsersRoles: React.FC = () => {
                           className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
                         />
                       </div>
+                      <div>
+                        <label className="block text-sm font-medium text-text mb-2">
+                          Link Undangan
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.linkUndangan}
+                          onChange={(e) =>
+                            setFormData({ ...formData, linkUndangan: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
+                        />
+                        <span className="text-sm text-gray-600 truncate max-w-32">
+                          contoh: https://attarivitation.com/aaaa-xxxx
+                        </span>
+                      </div>
 
                       {/* Wedding Date */}
                       <div>
@@ -955,7 +981,7 @@ const UsersRoles: React.FC = () => {
                           Welcome Photo
                         </label>
                         <div className="flex items-center space-x-3">
-                           <input
+                          <input
                             type="file"
                             accept="image/*,video/mp4,video/webm,video/quicktime"
                             onChange={handleWelcomePhotoChange}
@@ -1113,6 +1139,19 @@ const UsersRoles: React.FC = () => {
                           className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
                           required
                         />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-text mb-2">Link Undangan</label>
+                        <input
+                          type="text"
+                          value={formData.linkUndangan}
+                          onChange={(e) => setFormData({ ...formData, linkUndangan: e.target.value })}
+                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
+                          required
+                        />
+                        <span className="text-sm text-gray-600 truncate max-w-32">
+                          contoh: https://attarivitation.com/aaaa-xxxx
+                        </span>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-text mb-2">Wedding Date & Time</label>

@@ -3,7 +3,7 @@
  * Page redesigned to match the provided reference exactly: header tiles, action buttons,
  * datatable controls, and a table with Set Reminder, Schedule, Status, and Share actions.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import {
@@ -28,6 +28,7 @@ import { WhatsAppConnectionModal } from '../components/whatsapp/WhatsAppConnecti
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
 import { useToast } from '../contexts/ToastContext';
+import { Guest } from '../../shared/types';
 import { apiUrl } from '../lib/api';
 import { IntroTextModal } from '../components/guests/IntroTextModal';
 import kelolaTamu from '../assets/KelolaTamu.png';
@@ -76,7 +77,7 @@ const SendReminder: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openIntro, setOpenIntro] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [page, setPage] = useState(1);
+
   const [selectedGuest, setSelectedGuest] = useState<string>('');
   const [showGuestDropdown, setShowGuestDropdown] = useState(false);
   const [reminderSettingsOpen, setReminderSettingsOpen] = useState(false);
@@ -94,6 +95,148 @@ const SendReminder: React.FC = () => {
     reminder: true,
     share: true,
   });
+
+  // Handle copying WhatsApp message to clipboard
+  const handleCopyWhatsAppMessage = async (guest: Guest) => {
+    try {
+      if (!guest.introTextCategory) {
+        showToast('Please select an intro text category first', 'error');
+        return;
+      }
+
+      // Get the intro text for the selected category
+      const response = await apiRequest(apiUrl(`/api/intro-text/category/${guest.introTextCategory}`), {
+        headers: {
+          'user-id': user?.id || '',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch intro text');
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch intro text');
+      }
+
+      let introText = result.data.text;
+
+      // Get account information for mempelai
+      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+
+      let accountName = 'Mempelai'; // Default fallback
+      let linkUndangan = ''
+      if (accountResponse.ok) {
+        const accountResult = await accountResponse.json();
+        if (accountResult.success && accountResult.data?.account) {
+          accountName = accountResult.data.account.name || 'Mempelai';
+          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
+        }
+      }
+
+      // Replace placeholders with actual guest data
+      // Map guest category to invitation category: VIP = 1, Regular = 2
+      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+
+      introText = introText
+        .replace(/\[nama\]/g, guest.name)
+        .replace(/\[mempelai\]/g, accountName)
+        .replace(/\[link-undangan\]/g, invitationLink);
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(introText);
+
+      showToast('WhatsApp message copied to clipboard', 'success');
+    } catch (error: any) {
+      showToast('Failed to copy WhatsApp message', 'error');
+    }
+  };
+
+  // Handle sharing guest information via native share API
+  const handleShareGuest = async (guest: Guest) => {
+    try {
+
+      if (!guest.introTextCategory) {
+        showToast('Please select an intro text category first', 'error');
+        return;
+      }
+
+      // Get the intro text for the selected category
+      const response = await apiRequest(apiUrl(`/api/intro-text/category/${guest.introTextCategory}`), {
+        headers: {
+          'user-id': user?.id || '',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch intro text');
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch intro text');
+      }
+
+      let introText = result.data.text;
+
+      // Get account information for mempelai
+      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        }
+      });
+
+      let accountName = 'Mempelai'; // Default fallback
+      let linkUndangan = ''
+      if (accountResponse.ok) {
+        const accountResult = await accountResponse.json();
+        if (accountResult.success && accountResult.data?.account) {
+          accountName = accountResult.data.account.name || 'Mempelai';
+          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
+        }
+      }
+
+      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+
+      introText = introText
+        .replace(/\[nama\]/g, guest.name)
+        .replace(/\[mempelai\]/g, accountName)
+        .replace(/\[link-undangan\]/g, invitationLink);
+
+      // Check if Web Share API is available
+      if (navigator.share) {
+        // Use native share API
+        const shareData = {
+          title: `Wedding Invitation for ${guest.name}`,
+          text: introText,
+          url: invitationLink
+        };
+
+        await navigator.share(shareData);
+        showToast('Shared successfully', 'success');
+      }
+    } catch (error: any) {
+      console.error(`[handleShareGuest] Error:`, error);
+
+      // Handle specific share API errors
+      if (error.name === 'AbortError') {
+        // User cancelled the share dialog - this is not an error
+        console.log('[handleShareGuest] User cancelled share dialog');
+        return;
+      }
+
+      showToast('Failed to share message', 'error');
+    }
+  };
 
   // Use the shared guests data from context
   const { guests, loading, error, refresh } = useGuests();
@@ -175,8 +318,21 @@ const SendReminder: React.FC = () => {
     guest.phone?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = 1;
-  const totalGuests = filteredGuests.length;
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = filteredGuests.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filteredGuests.slice(pageStart, pageStart + pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  // reset ke page 1 saat keyword berubah
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // Filter guests for reminder creation (guests without active reminders)
   const { data: remindersData, error: remindersError, isLoading: remindersLoading, mutate: mutateReminders } = useSWR(
@@ -237,7 +393,7 @@ const SendReminder: React.FC = () => {
               <div className="flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm transition-colors flex-shrink-0 bg-primary text-white" onClick={() => setOpenIntro(true)}>
-                    <img src={EditTeksPengantar} className="w-4 h-4" /> Teks Pengantar
+                    <img src={EditTeksPengantar} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} /> Teks Pengantar
                   </button>
                   <button
                     onClick={() => {
@@ -265,10 +421,10 @@ const SendReminder: React.FC = () => {
                   <div className="relative">
                     <button
                       onClick={() => setFilterOpen(true)}
-                      className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors"
+                      className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors"
                       title="Filter columns"
                     >
-                      <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                      <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                     </button>
                     <TableFilterPopover
                       open={filterOpen}
@@ -290,8 +446,8 @@ const SendReminder: React.FC = () => {
                     />
 
                   </div>
-                  <button className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors" title="Settings">
-                    <Cog className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" />
+                  <button className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors" title="Settings">
+                    <Cog className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </button>
                 </div>
               </div>
@@ -302,8 +458,19 @@ const SendReminder: React.FC = () => {
 
               {/* Datatable controls */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-xs sm:text-sm mb-4 sm:mb-6">
-                <div className="text-xs sm:text-sm text-text/70">
-                  Show [ {guests.length} ] entries
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
+                  <span>Show</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+                    className="border border-border rounded-md px-2 py-1 bg-white"
+                  >
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>entries</span>
                 </div>
                 <div className="flex items-center gap-1 sm:gap-2">
                   <div className="relative w-full sm:w-48 md:w-64">
@@ -327,7 +494,7 @@ const SendReminder: React.FC = () => {
                       {visibleCols.reminder && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Set Reminder</th>}
                       {visibleCols.terjadwal && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden md:table-cell">Terjadwal</th>}
                       {visibleCols.status && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Status</th>}
-                      {visibleCols.share && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Bagikan</th>}
+                      {visibleCols.share && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium text-center">Bagikan</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -353,11 +520,11 @@ const SendReminder: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredGuests.map((guest: any, index: number) => {
+                      pageRows.map((guest: any, index: number) => {
                         const hasReminder = reminders.some((reminder: ReminderItem) => reminder.guestId === guest._id);
                         return (
                           <tr key={guest._id} className="hover:bg-accent transition">
-                            {visibleCols.no && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">{(page - 1) * 10 + index + 1}</td>}
+                            {visibleCols.no && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">{(page - 1) * pageSize + index + 1}</td>}
                             {visibleCols.name && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap sticky left-0 bg-white z-10 text-sm sm:text-base">{guest.name}</td>}
                             {visibleCols.phone && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">{guest.phone || '-'}</td>}
                             {visibleCols.reminder && (
@@ -402,7 +569,7 @@ const SendReminder: React.FC = () => {
                               <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
                                 <input
                                   type="checkbox"
-                                  disabled = {true}
+                                  disabled={true}
                                   checked={guest.status === 'confirmed' || guest.status === 'scheduled' || !!guest.reminderScheduledAt}
                                   onChange={async (e) => {
                                     try {
@@ -450,24 +617,18 @@ const SendReminder: React.FC = () => {
                               </td>
                             )}
                             {visibleCols.share && (
-                              <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
-                                <div className="flex items-center gap-1 sm:gap-2">
+                              <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 min-w-[12rem] text-center">
+                                <div className="inline-flex flex-nowrap items-center justify-end gap-2">
                                   <button
-                                    onClick={() => {
-                                      showToast('Share action coming soon', 'info');
-                                    }}
-                                    className="p-2 rounded-md bg-blue-500 hover:bg-blue-200 transition-shadow shadow-sm shrink-0"
+                                    onClick={() => { handleShareGuest(guest) }}
+                                    className="flex-shrink-0 p-2 w-8 h-8 rounded-md bg-blue-500 hover:bg-blue-400 transition-all shadow-sm flex items-center justify-center"
                                     title="Share"
                                   >
                                     <img src={shared} className="w-4 h-4" />
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      const message = `Dear ${guest.name}, this is a reminder for your upcoming event.`;
-                                      navigator.clipboard.writeText(message);
-                                      showToast('Message copied to clipboard!', 'success');
-                                    }}
-                                    className="p-2 rounded-md bg-gray-300 text-blue-700 hover:bg-gray-200 transition-shadow shadow-sm shrink-0"
+                                    onClick={() => { handleCopyWhatsAppMessage(guest) }}
+                                    className="flex-shrink-0 p-2 w-8 h-8 rounded-md bg-gray-300 text-blue-700 hover:bg-gray-200 transition-all shadow-sm flex items-center justify-center"
                                     title="Copy message"
                                   >
                                     <img src={Copy} className="w-4 h-4" />
@@ -476,7 +637,7 @@ const SendReminder: React.FC = () => {
                                     type="button"
                                     title="Delete"
                                     onClick={() => handleDeleteReminder(guest._id)}
-                                    className="p-2 rounded-md bg-red-500 text-red-700 hover:bg-red-00 transition-shadow shadow-sm shrink-0"
+                                    className="flex-shrink-0 p-2 w-8 h-8 rounded-md bg-red-500 hover:bg-red-400 transition-all shadow-sm flex items-center justify-center"
                                   >
                                     <img src={Delete} className="w-4 h-4" />
                                   </button>
@@ -491,7 +652,7 @@ const SendReminder: React.FC = () => {
                 </table>
               </div>
               <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 text-xs sm:text-sm">
-                <p className="text-xs sm:text-sm">Showing {filteredGuests.length} to {filteredGuests.length} of {totalGuests} entries</p>
+                <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
                 <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => setPage(Math.max(1, page - 1))}
@@ -549,7 +710,7 @@ const SendReminder: React.FC = () => {
             }}
           />
         </div>
-      </div>
+      </div >
     </>
   );
 };

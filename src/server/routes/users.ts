@@ -10,6 +10,7 @@ import { zValidator } from '@hono/zod-validator'
 import { ObjectId } from 'mongodb'
 import { db } from '../db.js'
 import type { AppEnv } from '@shared/types'
+import { link } from 'fs'
 
 const usersApp = new Hono<AppEnv>()
 
@@ -76,6 +77,7 @@ const createUserSchema = z.object({
   phone: z.string().optional(),
 
   // Wedding account (required saat create user oleh admin)
+  linkUndangan: z.string().optional(),
   weddingTitle: z.string().min(2, 'Wedding title is required'),
   weddingDateTime: z.string().min(1, 'Wedding date/time is required'), // ISO string
   weddingLocation: z.string().min(2, 'Wedding location is required'),
@@ -107,6 +109,7 @@ const updateUserSchema = z.object({
   status: z.enum(['active', 'inactive']).optional(),
 
   // Wedding updates
+  linkUndangan: z.string().optional(),
   weddingTitle: z.string().min(2, 'Wedding title must be at least 2 characters').optional()
     .or(z.literal('')),
   weddingDateTime: z.string().optional().or(z.literal('')),
@@ -283,6 +286,7 @@ usersApp.post('/', requireAdmin, async (c) => {
       password,
       role,
       phone,
+      linkUndangan,
       weddingTitle,
       weddingDateTime,
       weddingLocation,
@@ -305,6 +309,7 @@ usersApp.post('/', requireAdmin, async (c) => {
     const accountDoc = {
       name: weddingTitle,
       title: weddingTitle,
+      linkUndangan: linkUndangan || '',
       dateTime: weddingDate,
       location: weddingLocation,
       createdAt: new Date(),
@@ -446,6 +451,7 @@ usersApp.get('/:id/account', requireAdmin, async (c) => {
         id: account._id.toString(),
         name: account.name,
         title: account.title,
+        linkUndangan: account.linkUndangan,
         dateTime: account.dateTime,
         location: account.location,
         photoUrl: account.photoUrl,
@@ -502,6 +508,7 @@ usersApp.patch(
       // wedding account updates
       if (
         updates.weddingTitle !== undefined ||
+        updates.linkUndangan !== undefined ||
         updates.weddingDateTime !== undefined ||
         updates.weddingLocation !== undefined ||
         updates.weddingPhotoUrl !== undefined ||
@@ -516,6 +523,9 @@ usersApp.patch(
         if (updates.weddingTitle !== undefined) {
           accountUpdates.name = updates.weddingTitle || ''
           accountUpdates.title = updates.weddingTitle || ''
+        }
+        if (updates.linkUndangan !== undefined) {
+          accountUpdates.linkUndangan = updates.linkUndangan || ''
         }
 
         if (updates.weddingDateTime !== undefined) {
@@ -572,6 +582,7 @@ usersApp.patch(
         )
 
         // bersihkan field dari updates user
+        delete (updates as any).linkUndangan
         delete (updates as any).weddingTitle
         delete (updates as any).weddingDateTime
         delete (updates as any).weddingLocation
@@ -586,11 +597,6 @@ usersApp.patch(
           { $set: { ...updates, updatedAt: new Date() } },
         )
       }
-
-      await createAuditLog(currentUser.id, currentUser.username, 'user_updated', 'users', {
-        updatedUserUsername: userDoc.username,
-        updates,
-      })
 
       return c.json({ success: true, message: 'User updated successfully' })
     } catch (err: any) {

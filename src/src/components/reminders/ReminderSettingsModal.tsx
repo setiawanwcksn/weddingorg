@@ -7,6 +7,7 @@ import { X, Calendar, Clock } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiUrl } from '../../lib/api';
+import { getApiUrl, getAuthHeaders, handleApiResponse } from '../../utils/api';
 
 interface ReminderSettingsModalProps {
   open: boolean;
@@ -120,6 +121,7 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
       const reminderData = {
         guestId,
         guestName,
+        userId: user.id,
         phone,
         message: introTextContent || `Dear ${guestName}, this is a reminder for your upcoming event.`,
         scheduledAt: scheduledAt.toISOString(),
@@ -130,9 +132,7 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
 
       const response = await apiRequest(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(user.id),
         body: JSON.stringify(reminderData)
       });
 

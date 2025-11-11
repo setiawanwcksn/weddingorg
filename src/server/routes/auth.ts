@@ -408,6 +408,7 @@ authApp.get('/accounts/:accountId', async (c: Context<AppEnv>) => {
         account: {
           id: account._id.toString(),
           name: account.name,
+          linkUndangan: account.linkUndangan,
           title: account.title ?? account.name,
           dateTime: account.dateTime,
           location: account.location,

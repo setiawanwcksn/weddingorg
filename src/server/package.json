@@ -16,9 +16,7 @@
     "mongodb": "^6.8.0",
     "zod": "^3.23.8",
     "@whiskeysockets/baileys": "github:WhiskeySockets/Baileys",
-    "pino": "^9.0.0",
-    "react-qr-code": "^2.0.15",
-    "lucide-react": "^0.378.0"
+    "pino": "^9.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

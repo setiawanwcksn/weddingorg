@@ -13,10 +13,10 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { CameraView } from './CameraView';
 
-export type RegisteredGuest = { 
-  id: string; 
-  name: string; 
-  code?: string; 
+export type RegisteredGuest = {
+  id: string;
+  name: string;
+  code?: string;
   extra?: string;
   checkInDate?: string | Date;
   category?: string;
@@ -84,7 +84,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
     if (showDropdown && inputRef.current) {
       const inputRect = inputRef.current.getBoundingClientRect();
       const dropdownWidth = Math.min(320, inputRect.width); // max 320px width
-      
+
       setDropdownStyle({
         position: 'fixed',
         top: `${inputRect.bottom + 4}px`,
@@ -118,7 +118,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
         }
       }
       if (mode === 'add') return 'TAMBAH TAMU';
-      
+
       // Dynamic header based on context for scan mode
       switch (context) {
         case 'gift':
@@ -148,7 +148,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
   const handleGuestSelection = (guest: RegisteredGuest) => {
     // Check if guest is already checked in by looking for check-in date
     const isAlreadyCheckedIn = guests.find(g => g.id === guest.id && (g as any).checkInDate);
-    
+
     if (isAlreadyCheckedIn) {
       setPendingGuestSelection(guest);
       setShowAlreadyCheckedInAlert(true);
@@ -162,14 +162,14 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
     try {
       // QR code now contains only the guest name
       const guestName = qrData.trim();
-      
+
       console.log('[CheckInModal] QR code data received:', qrData);
       console.log('[CheckInModal] Trimmed guest name:', guestName);
       console.log('[CheckInModal] Raw QR data length:', qrData.length);
       console.log('[CheckInModal] Trimmed guest name length:', guestName.length);
       console.log('[CheckInModal] QR data type:', typeof qrData);
       console.log('[CheckInModal] QR data bytes:', Array.from(qrData).map(c => c.charCodeAt(0)));
-      
+
       if (!guestName) {
         console.error('[CheckInModal] Empty QR code data');
         alert('QR code appears to be empty. Please try scanning again or upload a different QR code.');
@@ -179,7 +179,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
       console.log('[CheckInModal] Searching for guest with name:', guestName);
       console.log('[CheckInModal] Total guests in list:', guests.length);
       console.log('[CheckInModal] Available guests:', guests.map(g => ({ name: g.name, id: g.id })));
-      
+
       // Find guest by name in the provided guests list (case-insensitive)
       const foundGuest = guests.find(g => {
         const guestNameLower = g.name.toLowerCase();
@@ -187,7 +187,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
         console.log(`[CheckInModal] Comparing: "${guestNameLower}" === "${scannedNameLower}"`, guestNameLower === scannedNameLower);
         return guestNameLower === scannedNameLower;
       });
-      
+
       if (foundGuest) {
         console.log('[CheckInModal] Found matching guest:', foundGuest);
         if (onPickRegisteredGuest) {
@@ -196,26 +196,26 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
         }
       } else {
         console.log('[CheckInModal] No matching guest found for name:', guestName);
-        
+
         // Try fuzzy matching for similar names
         const similarGuests = guests.filter(g => {
           const guestNameLower = g.name.toLowerCase();
           const scannedNameLower = guestName.toLowerCase();
-          
+
           // Check for partial matches
-          return guestNameLower.includes(scannedNameLower) || 
-                 scannedNameLower.includes(guestNameLower) ||
-                 guestNameLower.split(' ').some(part => scannedNameLower.includes(part)) ||
-                 scannedNameLower.split(' ').some(part => guestNameLower.includes(part));
+          return guestNameLower.includes(scannedNameLower) ||
+            scannedNameLower.includes(guestNameLower) ||
+            guestNameLower.split(' ').some(part => scannedNameLower.includes(part)) ||
+            scannedNameLower.split(' ').some(part => guestNameLower.includes(part));
         });
-        
+
         if (similarGuests.length > 0) {
           console.log('[CheckInModal] Found similar guests:', similarGuests);
           alert(`No exact match found for "${guestName}". Found ${similarGuests.length} similar guest(s). Switching to search mode...`);
         } else {
           alert(`No guest found with name "${guestName}". Switching to search mode...`);
         }
-        
+
         // Switch to search mode with the scanned name pre-filled
         setQ(guestName);
         setMode('search');
@@ -295,9 +295,9 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
               <div className="rounded-lg border border-border bg-accent">
                 <div className="h-[200px] sm:h-[240px] md:h-[300px]">
                   {/* Camera preview - auto opens when modal opens */}
-                  <CameraView 
-                    key={cam} 
-                    facingMode={cam === 'user' ? 'user' : 'environment'} 
+                  <CameraView
+                    key={cam}
+                    facingMode={cam === 'user' ? 'user' : 'environment'}
                     className="w-full h-full"
                     onQRCodeScanned={handleQRCodeScanned}
                     onFileUpload={handleQRCodeScanned}
@@ -319,14 +319,14 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
 
               {/* Actions - Dynamic based on context */}
               <div className="mt-5 space-y-3">
-              {context === 'reception' && (
-                <button
-                  type="button"
-                  onClick={onSearchClick}
-                  className="w-full rounded-xl px-4 py-3 text-sm sm:text-base font-medium bg-primary text-background shadow hover:opacity-90 transition-opacity min-h-[44px]"
-                >
-                  Cari Tamu Terdaftar
-                </button> )}
+                {context === 'reception' && (
+                  <button
+                    type="button"
+                    onClick={onSearchClick}
+                    className="w-full rounded-xl px-4 py-3 text-sm sm:text-base font-medium bg-primary text-background shadow hover:opacity-90 transition-opacity min-h-[44px]"
+                  >
+                    Cari Tamu Terdaftar
+                  </button>)}
                 {context === 'reception' && (
                   <button
                     type="button"
@@ -345,7 +345,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
                     }}
                     className="w-full rounded-xl px-4 py-3 text-sm sm:text-base font-medium bg-accent text-text border border-border shadow hover:bg-accent/80 transition-colors min-h-[44px]"
                   >
-                    Tambah Tamu Tidak Terdaftar
+                    Tambah Tamu Tambahan
                   </button>
                 )}
               </div>
@@ -380,7 +380,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
                   placeholder="Cari Nama Tamu"
                 />
               </div>
-              
+
               {/* Dropdown Portal */}
               {showDropdown && createPortal(
                 <div className="w-full bg-white rounded-lg shadow-lg border border-border" style={dropdownStyle}>
@@ -397,7 +397,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
                             }}
                             className="w-full rounded-lg px-3 py-2 text-sm font-medium bg-primary text-background hover:bg-primary/90 transition-colors"
                           >
-                            Tambah Tamu Tidak Terdaftar
+                            Tambah Tamu Tambahan
                           </button>
                         )}
                       </div>

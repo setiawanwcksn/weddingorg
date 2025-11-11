@@ -90,6 +90,22 @@ export const Gifts: React.FC = () => {
     });
   }, [allGuests, searchTerm, selectedCategory, selectedGiftStatus]);
 
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = filteredGuests.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filteredGuests.slice(pageStart, pageStart + pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  // reset ke page 1 saat keyword berubah
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   // Get unique categories
   const categories = useMemo(() => {
     const cats = Array.from(new Set(allGuests.map(guest => guest.category)));
@@ -233,8 +249,19 @@ export const Gifts: React.FC = () => {
           {/* Guest Table - Mobile Optimized */}
           <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              <div className="text-sm text-text/70 order-2 sm:order-1">
-                Show [ {filteredGuests.length} ] entries
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+                  className="border border-border rounded-md px-2 py-1 bg-white"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span>entries</span>
               </div>
               <div className="w-full sm:w-auto order-1 sm:order-2">
                 <div className="relative w-full sm:w-80">
@@ -268,9 +295,9 @@ export const Gifts: React.FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-border">
                   {/* Guest gift givers */}
-                  {filteredGuests.map((guest, index) => (
+                  {pageRows.map((guest, index) => (
                     <tr key={guest._id} className="hover:bg-accent">
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{index + 1}</td>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{(page - 1) * pageSize + index + 1}</td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-text">{guest.name}</div>
@@ -382,6 +409,26 @@ export const Gifts: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
+              <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Previous
+                </button>
+                <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Next
+                </button>
+              </div>
             </div>
 
             {filteredGuests.length === 0 && (

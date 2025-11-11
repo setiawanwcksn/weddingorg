@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Share2
 } from 'lucide-react';
+import { getApiUrl, getAuthHeaders, handleApiResponse } from '../utils/api';
 import { ExcelImportModal } from '../components/guests/ExcelImportModal';
 import { AddGuestModal } from '../components/guests/AddGuestModal';
 import { EditGuestModal } from '../components/guests/EditGuestModal';
@@ -26,10 +27,11 @@ import { IntroTextModal } from '../components/guests/IntroTextModal';
 import { IntroTextCategoryDropdown } from '../components/guests/IntroTextCategoryDropdown';
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
-import { Guest } from '../../../shared/types';
+import { Guest } from '../../shared/types';
 import { Toast } from '../components/common/Toast';
 import { NoticeModal } from '../components/common/NoticeModal';
 import { TableFilterPopover } from '../components/guests/TableFilterPopover';
+import { SettingsDropdown, ConfirmModal } from '../components/common/SettingsPopover';
 import { apiUrl } from '../lib/api';
 import kelolaTamuAct from '../assets/KelolaTamuAct.png';
 import sendReminder from '../assets/SendReminder.png';
@@ -75,12 +77,69 @@ const ManageGuests: React.FC = () => {
     ditambahkan: true,
   });
 
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [settingsLoading, setSettingsLoading] = React.useState<"delete" | null>(null);
+  const btnRef = React.useRef<HTMLButtonElement | null>(null);
+  const source = "Tamu";
+
+  const onDeleteAll = async () => {
+    setSettingsLoading("delete");
+    try {
+      const token = localStorage.getItem('token');
+      const res = await apiRequest(apiUrl(`/api/guests/bulk/all`), {
+        method: "DELETE",
+        headers: getAuthHeaders(user?.id),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Gagal menghapus data");
+      // TODO: refresh data tabel
+      alert(`Deleted ${json.deletedCount ?? json.deletedGuests ?? 0} ${source}`);
+      setToast({ message: 'Delete semua data sukses', type: 'success' });
+    } catch (e: any) {
+      setToast({ message: 'Delete semua data gagal', type: 'error' });
+    } finally {
+      setSettingsLoading(null);
+      setConfirmOpen(false);
+    }
+  };
+
+  const onDownloadQr = async () => {
+    const r = await fetch('/api/whatsapp/qrcode'); // sesuaikan endpoint
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'qr.png'; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const onBlast = async () => {
+    // buka modal/aksi blast
+    console.log('blast…');
+  };
+
   const { guests, loading, error, refresh, setGuests } = useGuests();
 
   const filteredGuests = guests.filter(guest =>
     guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (guest.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const totalItems = filteredGuests.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const pageStart = (page - 1) * pageSize;
+  const pageRows = filteredGuests.slice(pageStart, pageStart + pageSize);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  // reset ke page 1 saat keyword berubah
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
 
   // Handle search - only trigger when search term changes
   const handleSearch = (e: React.FormEvent) => {
@@ -143,7 +202,7 @@ const ManageGuests: React.FC = () => {
         phone: guestData.phone,
         email: guestData.email || '',
         category: guestData.category || 'Regular',
-        notes: guestData.info || '',
+        info: guestData.info || '',
         session: guestData.session,
         limit: guestData.limit,
         tableNo: guestData.tableNo,
@@ -199,7 +258,6 @@ const ManageGuests: React.FC = () => {
         category: guestData.category || 'Regular',
         status: 'Pending',
         plusOne: false,
-        notes: guestData.info || '',
         code: uniqueCode, // Use the same unique code
         session: guestData.session,
         limit: guestData.limit,
@@ -321,16 +379,7 @@ const ManageGuests: React.FC = () => {
       const responseData = await response.json();
       console.log(`[handleStatusChange] Server response:`, responseData);
 
-      if (!response.ok) {
-        console.error(`[handleStatusChange] Server error, reverting optimistic update`);
-        // Revert optimistic update on error
-        setGuests(prevGuests =>
-          prevGuests.map(guest =>
-            guest._id === guestId
-              ? { ...guest, status: currentStatus, reminderScheduledAt: guest.reminderScheduledAt }
-              : guest
-          )
-        );
+      if (!response.ok) {        
         throw new Error(responseData.error || 'Failed to update guest status');
       }
 
@@ -427,8 +476,6 @@ const ManageGuests: React.FC = () => {
   // Handle sharing guest information via native share API
   const handleShareGuest = async (guest: Guest) => {
     try {
-      console.log(`[handleShareGuest] Starting share for guest: ${guest.name} (${guest._id})`);
-      console.log(`[handleShareGuest] Guest introTextCategory: ${guest.introTextCategory}`);
 
       if (!guest.introTextCategory) {
         setToast({ message: 'Please select an intro text category first', type: 'error' });
@@ -447,14 +494,12 @@ const ManageGuests: React.FC = () => {
       }
 
       const result = await response.json();
-      console.log(`[handleShareGuest] Intro text response:`, result);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch intro text');
       }
 
       let introText = result.data.text;
-      console.log(`[handleShareGuest] Original intro text:`, introText);
 
       // Get account information for mempelai
       const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
@@ -464,24 +509,22 @@ const ManageGuests: React.FC = () => {
       });
 
       let accountName = 'Mempelai'; // Default fallback
+      let linkUndangan = ''
       if (accountResponse.ok) {
         const accountResult = await accountResponse.json();
         if (accountResult.success && accountResult.data?.account) {
           accountName = accountResult.data.account.name || 'Mempelai';
+          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
         }
-      }
+      }      
 
-      // Replace placeholders with actual guest data
-      // Map guest category to invitation category: VIP = 1, Regular = 2
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `https://attarivitation.com/hamid-khalisha/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
         .replace(/\[mempelai\]/g, accountName)
         .replace(/\[link-undangan\]/g, invitationLink);
-
-      console.log(`[handleShareGuest] Processed intro text:`, introText);
 
       // Check if Web Share API is available
       if (navigator.share) {
@@ -497,7 +540,7 @@ const ManageGuests: React.FC = () => {
       } else {
         // Fallback: copy to clipboard
         await navigator.clipboard.writeText(introText);
-        setToast({ message: 'Message copied to clipboard (Share API not available)', type: 'info' });
+        setToast({ message: 'Message copied to clipboard (Share API not available)', type: 'error' });
       }
     } catch (error: any) {
       console.error(`[handleShareGuest] Error:`, error);
@@ -536,14 +579,12 @@ const ManageGuests: React.FC = () => {
       }
 
       const result = await response.json();
-      console.log(`[handleCopyWhatsAppMessage] Intro text response:`, result);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch intro text');
       }
 
       let introText = result.data.text;
-      console.log(`[handleCopyWhatsAppMessage] Original intro text:`, introText);
 
       // Get account information for mempelai
       const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
@@ -553,24 +594,24 @@ const ManageGuests: React.FC = () => {
       });
 
       let accountName = 'Mempelai'; // Default fallback
+      let linkUndangan = ''
       if (accountResponse.ok) {
         const accountResult = await accountResponse.json();
         if (accountResult.success && accountResult.data?.account) {
           accountName = accountResult.data.account.name || 'Mempelai';
+          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
         }
-      }
+      }  
 
       // Replace placeholders with actual guest data
       // Map guest category to invitation category: VIP = 1, Regular = 2
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `https://attarivitation.com/hamid-khalisha/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
         .replace(/\[mempelai\]/g, accountName)
         .replace(/\[link-undangan\]/g, invitationLink);
-
-      console.log(`[handleCopyWhatsAppMessage] Processed intro text:`, introText);
 
       // Copy to clipboard
       await navigator.clipboard.writeText(introText);
@@ -770,7 +811,7 @@ const ManageGuests: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-white text-sm shadow-sm hover:bg-primary/90 transition-colors flex-shrink-0 bg-primary text-white" onClick={() => setOpenAdd(true)}>
-                  <img src={TambahTamu} className="w-4 h-4" /> Tambah Tamu
+                  <img src={TambahTamu} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} /> Tambah Tamu
                 </button>
                 <button
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm  transition-colors flex-shrink-0 bg-primary text-white"
@@ -779,17 +820,17 @@ const ManageGuests: React.FC = () => {
                   <Download className="w-4 h-4" /> Import Excel
                 </button>
                 <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm transition-colors flex-shrink-0 bg-primary text-white" onClick={() => setOpenIntro(true)}>
-                  <img src={EditTeksPengantar} className="w-4 h-4" /> Teks Pengantar
+                  <img src={EditTeksPengantar} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} /> Teks Pengantar
                 </button>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="relative">
                   <button
                     onClick={() => setFilterOpen(true)}
-                    className="p-1.5 sm:p-2 rounded-lg border border-border bg-accent hover:bg-primary/10 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors"
                     title="Filter columns"
                   >
-                    <img src={filter} className="w-4 h-4" />
+                    <img src={filter} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}  />
                   </button>
                   <TableFilterPopover
                     open={filterOpen}
@@ -817,7 +858,39 @@ const ManageGuests: React.FC = () => {
                   />
 
                 </div>
-                <button className="p-2 rounded-lg border border-border transition-colors bg-primary" aria-label="Settings"><img src={setting} className="w-4 h-4" /></button>
+                <div className="relative">
+                  <button
+                    className="p-2 rounded-lg border border-border transition-colors bg-primary"
+                    aria-label="Settings"
+                    onClick={() => setSettingsOpen(v => !v)}
+                  >
+                    <img src={setting} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                  </button>
+
+                  <SettingsDropdown
+                    open={settingsOpen}
+                    source={source}
+                    onClose={() => setSettingsOpen(false)}
+                    onRequestDeleteAll={() => setConfirmOpen(true)}
+                    onDownloadQr={onDownloadQr}
+                    onBlast={onBlast}
+                  />
+
+                  <ConfirmModal
+                    open={confirmOpen}
+                    title="Hapus Semua Data?"
+                    description={
+                      <>Tindakan ini akan menghapus <b>semua</b> data <code>{source}</code>.
+                        <br />Jika akun Anda admin, ini akan menghapus <b>seluruh koleksi</b>.</>
+                    }
+                    variant="danger"
+                    confirmText="Ya, Hapus"
+                    cancelText="Batal"
+                    loading={settingsLoading === "delete"}
+                    onCancel={() => setConfirmOpen(false)}
+                    onConfirm={onDeleteAll}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -827,7 +900,20 @@ const ManageGuests: React.FC = () => {
           <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6  rounded-t-none" style={{ marginTop: '0px' }} >
             {/* Meta + Search */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
-              <div className="text-text/70">Show [ {guests.length} ]entries</div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+                  className="border border-border rounded-md px-2 py-1 bg-white"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span>entries</span>
+              </div>
               <form onSubmit={handleSearch} className="relative w-full sm:w-auto">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text/50" />
                 <input
@@ -865,13 +951,13 @@ const ManageGuests: React.FC = () => {
                   </thead>
 
                   <tbody className="divide-y divide-border">
-                    {filteredGuests.map((guest: Guest, index: number) => (
+                    {pageRows.map((guest: any, index: number) => (
                       <tr key={guest._id} className="hover:bg-accent/50 transition-colors">
-                        {visibleCols.no && <td className="px-4 py-4 text-sm whitespace-nowrap">{String(index + 1).padStart(2, '0')}</td> }
+                        {visibleCols.no && <td className="px-4 py-4 text-sm whitespace-nowrap">{(page - 1) * pageSize + index + 1}</td>}
                         {visibleCols.name && <td className="px-4 py-4 text-sm whitespace-nowrap sticky left-0 bg-white z-10">{guest.name}</td>}
-                        {visibleCols.phone && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.phone || '-'}</td> }
+                        {visibleCols.phone && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.phone || '-'}</td>}
                         {visibleCols.kode && <td className="px-4 py-4 text-sm whitespace-nowrap text-primary">{guest.code || '-'}</td>}
-                        {visibleCols.kategori && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || 'Reguler'}</td> }
+                        {visibleCols.kategori && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || 'Reguler'}</td>}
 
                         {/* Informasi */}
                         {visibleCols.informasi && <td className="px-4 py-4 text-sm whitespace-nowrap max-w-[160px] truncate">
@@ -885,7 +971,7 @@ const ManageGuests: React.FC = () => {
                               {guest.info.length > 6 ? guest.info.slice(0, 6) + '…' : guest.info}
                             </button>
                           ) : '-'}
-                        </td> }
+                        </td>}
 
                         {visibleCols.sesi && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.session || '-'}</td>}
                         {visibleCols.limit && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.limit ?? '-'}</td>}
@@ -966,7 +1052,7 @@ const ManageGuests: React.FC = () => {
                           </div>
                         </td>}
 
-                        {visibleCols.ditambahkan && <td className="px-4 py-4 text-sm whitespace-nowrap">{formatDate(guest.createdAt)}</td> }
+                        {visibleCols.ditambahkan && <td className="px-4 py-4 text-sm whitespace-nowrap">{formatDate(guest.createdAt)}</td>}
                       </tr>
                     ))}
 
@@ -982,8 +1068,24 @@ const ManageGuests: React.FC = () => {
             </div>
 
             <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
-              <p>Showing {filteredGuests.length} of {guests.length} entries</p>
-              <div className="text-text/60">Previous/Next</div>
+              <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Previous
+                </button>
+                <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page >= totalPages}
+                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
 

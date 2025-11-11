@@ -3,7 +3,7 @@
  */
 
 import { Hono, Context } from 'hono'
-import { date, z } from 'zod'
+import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { broadcastGuestUpdate } from './realtime-guests.js'
 import type { AppEnv } from '@shared/types'
@@ -22,6 +22,22 @@ function requireUser(c: Context<AppEnv>): CtxUser | null {
   const user = u as Partial<CtxUser>
   if (!user.id) return null
   return user as CtxUser
+}
+
+function isAdmin(user: CtxUser | null): boolean {
+  return !!user && user.role === 'admin'
+}
+
+function ownerFilter(user: CtxUser, base: any = {}) {
+  // Admin melihat semua data; non-admin dibatasi oleh userId
+  if (isAdmin(user)) return { ...base }
+  return { ...base, userId: user.id }
+}
+
+function byIdFilter(user: CtxUser, id: string) {
+  const f: any = { _id: new ObjectId(id) }
+  if (!isAdmin(user)) f.userId = user.id
+  return f
 }
 
 function errMsg(error: unknown): string {
@@ -68,7 +84,7 @@ type UpdateGuestBody = z.infer<typeof updateGuestSchema>
 
 // ------------------------ routes ------------------------
 
-// Get all guests (user-specific)
+// Get all guests (admin: semua, user: miliknya)
 guestsApp.get('/', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -79,7 +95,7 @@ guestsApp.get('/', async (c: Context<AppEnv>) => {
       isInvitedParam === 'true' ? true : isInvitedParam === 'false' ? false : undefined
 
     const collection = db.collection('94884219_guests')
-    const query: any = { userId: user.id }
+    const query: any = ownerFilter(user)
     if (isInvited !== undefined) query.isInvited = isInvited
 
     const guests = await collection.find(query).toArray()
@@ -89,7 +105,7 @@ guestsApp.get('/', async (c: Context<AppEnv>) => {
   }
 })
 
-// Search guests (user-specific)
+// Search guests (admin: semua, user: miliknya)
 guestsApp.get('/search', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -101,7 +117,7 @@ guestsApp.get('/search', async (c: Context<AppEnv>) => {
 
     const guests = await collection
       .find({
-        userId: user.id,
+        ...ownerFilter(user),
         $or: [{ name: searchRegex }, { phone: searchRegex }, { invitationCode: searchRegex }],
       })
       .toArray()
@@ -112,7 +128,7 @@ guestsApp.get('/search', async (c: Context<AppEnv>) => {
   }
 })
 
-// Get guest by ID (user-specific)
+// Get guest by ID (admin: semua, user: miliknya)
 guestsApp.get('/:id', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -120,7 +136,7 @@ guestsApp.get('/:id', async (c: Context<AppEnv>) => {
 
     const id = c.req.param('id')
     const collection = db.collection('94884219_guests')
-    const guest = await collection.findOne({ _id: new ObjectId(id), userId: user.id })
+    const guest = await collection.findOne(byIdFilter(user, id))
 
     if (!guest) return c.json({ success: false, error: 'Guest not found' }, 404)
     return c.json({ success: true, data: guest })
@@ -129,7 +145,7 @@ guestsApp.get('/:id', async (c: Context<AppEnv>) => {
   }
 })
 
-// Create new guest (user-specific)
+// Create new guest (tetap tersimpan pada user yang membuat — admin pun ke user.id admin)
 guestsApp.post('/', zValidator('json', guestSchema), async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -138,7 +154,7 @@ guestsApp.post('/', zValidator('json', guestSchema), async (c: Context<AppEnv>) 
     const guestData = (c.req as any).valid('json') as GuestBody
     const collection = db.collection('94884219_guests')
 
-    // unique (name, user) check
+    // unique (name, user) check — admin: unik terhadap akun admin sendiri
     const existingGuestByName = await collection.findOne({ userId: user.id, name: guestData.name })
     if (existingGuestByName) {
       return c.json(
@@ -182,7 +198,7 @@ guestsApp.post('/', zValidator('json', guestSchema), async (c: Context<AppEnv>) 
   }
 })
 
-// Create non-invited guest (walk-in) - user-specific
+// Create non-invited guest (walk-in)
 guestsApp.post(
   '/non-invited',
   zValidator(
@@ -260,7 +276,7 @@ guestsApp.post(
   },
 )
 
-// Update guest (user-specific)
+// Update guest
 guestsApp.put('/:id', zValidator('json', updateGuestSchema), async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -271,19 +287,20 @@ guestsApp.put('/:id', zValidator('json', updateGuestSchema), async (c: Context<A
 
     const collection = db.collection('94884219_guests')
 
-    const existingGuest = await collection.findOne({ _id: new ObjectId(id), userId: user.id })
+    const existingGuest = await collection.findOne(byIdFilter(user, id))
     if (!existingGuest) return c.json({ success: false, error: 'Guest not found' }, 404)
 
     const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id), userId: user.id },
+      byIdFilter(user, id),
       { $set: { ...updateData, updatedAt: new Date() } },
       { returnDocument: 'after' },
     )
 
-    // result dari driver lama bisa berupa dokumen langsung; jadikan aman:
     const updated = (result && (result as any).value) || result
 
-    broadcastGuestUpdate('guest_updated', id, user.id)
+    // kirim ke pemilik data sebenarnya
+    const targetOwnerId = (existingGuest as any)?.userId ?? user.id
+    broadcastGuestUpdate('guest_updated', id, String(targetOwnerId))
 
     return c.json({ success: true, data: updated })
   } catch (error: unknown) {
@@ -291,7 +308,7 @@ guestsApp.put('/:id', zValidator('json', updateGuestSchema), async (c: Context<A
   }
 })
 
-// Clear guest check-in (user-specific)
+// Clear guest check-in
 guestsApp.post('/:id/clear-checkin', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -299,25 +316,26 @@ guestsApp.post('/:id/clear-checkin', async (c: Context<AppEnv>) => {
 
     const id = c.req.param('id')
     const collection = db.collection('94884219_guests')
+    const before = await collection.findOne(byIdFilter(user, id))
 
     const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id), userId: user.id },
+      byIdFilter(user, id),
       { $set: { checkInDate: null, guestCount: 1, updatedAt: new Date() } },
       { returnDocument: 'after' },
     )
 
     const updated = (result && (result as any).value) || result
-
     if (!updated) return c.json({ success: false, error: 'Guest not found' }, 404)
 
-    broadcastGuestUpdate('guest_checkin_cleared', id, user.id)
+    const targetOwnerId = (before as any)?.userId ?? user.id
+    broadcastGuestUpdate('guest_checkin_cleared', id, String(targetOwnerId))
     return c.json({ success: true, data: updated })
   } catch (error: unknown) {
     return c.json({ success: false, error: errMsg(error) }, 500)
   }
 })
 
-// Check-in guest (user-specific)
+// Check-in guest
 guestsApp.post('/:id/checkin', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -337,8 +355,10 @@ guestsApp.post('/:id/checkin', async (c: Context<AppEnv>) => {
 
     const collection = db.collection('94884219_guests')
 
+    const before = await collection.findOne(byIdFilter(user, id))
+
     const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id), userId: user.id },
+      byIdFilter(user, id),
       {
         $set: {
           checkInDate: new Date(),
@@ -354,14 +374,15 @@ guestsApp.post('/:id/checkin', async (c: Context<AppEnv>) => {
 
     if (!updated) return c.json({ success: false, error: 'Guest not found' }, 404)
 
-    broadcastGuestUpdate('guest_checked_in', id, user.id)
+    const targetOwnerId = (before as any)?.userId ?? user.id
+    broadcastGuestUpdate('guest_checked_in', id, String(targetOwnerId))
     return c.json({ success: true, data: updated })
   } catch (error: unknown) {
     return c.json({ success: false, error: errMsg(error) }, 500)
   }
 })
 
-// Assign souvenir to guest (user-specific)
+// Assign souvenir to guest
 guestsApp.post(
   '/:id/souvenirs',
   zValidator('json', z.object({ count: z.number().min(1) })),
@@ -376,7 +397,7 @@ guestsApp.post(
       const collection = db.collection('94884219_guests')
 
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id), userId: user.id },
+        byIdFilter(user, id),
         { $set: { souvenirCount: count, souvenirRecordedAt: new Date(), updatedAt: new Date() } },
         { returnDocument: 'after' },
       )
@@ -391,7 +412,7 @@ guestsApp.post(
   },
 )
 
-// Delete souvenir data from guest (user-specific)
+// Delete souvenir data from guest
 guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -400,30 +421,25 @@ guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
 
     const id = c.req.param('id')
     const collection = db.collection('94884219_guests')
-    const guest = await collection.findOne({
-      _id: new ObjectId(id),
-      userId: user.id,
-    })
+    const guest = await collection.findOne(byIdFilter(user, id))
 
     if (!guest)
       return c.json({ success: false, error: 'Guest not found' }, 404)
 
     let result
 
-    if (guest.invited === false) {
-      result = await collection.deleteOne({
-        _id: new ObjectId(id),
-        userId: user.id,
-      })
+    // BUGFIX: field yang benar adalah isInvited (bukan invited)
+    if ((guest as any).isInvited === false) {
+      result = await collection.deleteOne(byIdFilter(user, id))
 
       return c.json({
         success: true,
         message: 'Guest deleted because not invited',
-        deletedCount: result.deletedCount,
+        deletedCount: (result as any)?.deletedCount ?? 0,
       })
     } else {
       const updateResult = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id), userId: user.id },
+        byIdFilter(user, id),
         {
           $set: {
             souvenirCount: 0,
@@ -434,7 +450,7 @@ guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
         { returnDocument: 'after' },
       )
 
-      const updated = updateResult?.value || updateResult
+      const updated = (updateResult as any)?.value || updateResult
       if (!updated)
         return c.json({ success: false, error: 'Guest not found after update' }, 404)
 
@@ -449,8 +465,7 @@ guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
   }
 })
 
-
-// Assign gift to guest (user-specific)
+// Assign gift to guest
 guestsApp.post(
   '/:id/gifts',
   zValidator(
@@ -468,16 +483,16 @@ guestsApp.post(
       if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
       const id = c.req.param('id')
-      const { type, count, kado, angpao } = (c.req as any).valid('json') as { type: 'Angpao' | 'Kado'; count: number; kado?: number; angpao?: number }
+      const { type, count, kado, angpao } = (c.req as any).valid('json') as { type?: 'Angpao' | 'Kado'; count: number; kado?: number; angpao?: number }
 
       const collection = db.collection('94884219_guests')
 
-      const existingGuest = await collection.findOne({ _id: new ObjectId(id), userId: user.id })
+      const existingGuest = await collection.findOne(byIdFilter(user, id))
       if (!existingGuest) return c.json({ success: false, error: 'Guest not found' }, 404)
 
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id), userId: user.id },
-        { $set: { giftType: type, kadoCount: kado, angpaoCount: angpao, giftCount: count, updatedAt: new Date(), giftRecordedAt: new Date() } },
+        byIdFilter(user, id),
+        { $set: { giftType: type ?? null, kadoCount: kado ?? 0, angpaoCount: angpao ?? 0, giftCount: count, updatedAt: new Date(), giftRecordedAt: new Date() } },
         { returnDocument: 'after' },
       )
 
@@ -489,7 +504,7 @@ guestsApp.post(
   },
 )
 
-// Schedule reminder for guest (user-specific)
+// Schedule reminder for guest
 guestsApp.post(
   '/:id/reminders',
   zValidator('json', z.object({ scheduledAt: z.string().datetime() })),
@@ -504,7 +519,7 @@ guestsApp.post(
       const collection = db.collection('94884219_guests')
 
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id), userId: user.id },
+        byIdFilter(user, id),
         { $set: { reminderScheduledAt: new Date(scheduledAt), updatedAt: new Date() } },
         { returnDocument: 'after' },
       )
@@ -519,7 +534,7 @@ guestsApp.post(
   },
 )
 
-// Update guest status (user-specific)
+// Update guest status
 guestsApp.patch(
   '/:id/status',
   zValidator(
@@ -542,7 +557,7 @@ guestsApp.patch(
 
       const collection = db.collection('94884219_guests')
 
-      const existingGuest = await collection.findOne({ _id: new ObjectId(id), userId: user.id })
+      const existingGuest = await collection.findOne(byIdFilter(user, id))
       if (!existingGuest) return c.json({ success: false, error: 'Guest not found' }, 404)
 
       // If set back to Pending, clean reminders for the same account (if available)
@@ -550,16 +565,12 @@ guestsApp.patch(
         try {
           const remindersCollection = db.collection('94884219_reminders')
           const usersCollection = db.collection('94884219_users')
-          // user.id format bisa string ObjectId; aman pakai try-catch
+
+          // user.id bisa ObjectId atau string
           let userDoc: any = null;
           try {
-            // coba sebagai ObjectId
             userDoc = await usersCollection.findOne({ _id: new ObjectId(user.id) });
           } catch (_) {
-            // userId bukan ObjectId yang valid → lanjut fallback
-          }
-          if (!userDoc) {
-            // fallback: _id tersimpan sebagai string
             userDoc = await usersCollection.findOne({ _id: user.id as any });
           }
           const accountId = userDoc?.accountId
@@ -578,7 +589,7 @@ guestsApp.patch(
       }
 
       const result = await collection.findOneAndUpdate(
-        { _id: new ObjectId(id), userId: user.id },
+        byIdFilter(user, id),
         { $set: update },
         { returnDocument: 'after' },
       )
@@ -592,25 +603,35 @@ guestsApp.patch(
   },
 )
 
-// Delete guest (user-specific)
+// Delete guest by ID
 guestsApp.delete('/:id', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
     const id = c.req.param('id')
-    const collection = db.collection('94884219_guests')
-    const result = await collection.deleteOne({ _id: new ObjectId(id), userId: user.id })
+    const guestsCol = db.collection('94884219_guests')
+    const remindersCol = db.collection('94884219_reminders')
 
-    if (!result.deletedCount) return c.json({ success: false, error: 'Guest not found' }, 404)
+    // byIdFilter(user, id) adalah helper-mu yang sudah aware admin/non-admin
+    const result = await guestsCol.deleteOne(byIdFilter(user, id))
+    if (!result.deletedCount) {
+      return c.json({ success: false, error: 'Guest not found' }, 404)
+    }
 
-    return c.json({ success: true })
+    const remRes = await remindersCol.deleteMany({ guestId: id })
+
+    return c.json({
+      success: true,
+      deletedGuestId: id,
+      deletedReminders: remRes.deletedCount ?? 0,
+    })
   } catch (error: unknown) {
     return c.json({ success: false, error: errMsg(error) }, 500)
   }
 })
 
-// Check if guest name exists (user-specific)
+// Check if guest name exists (admin: cek global)
 guestsApp.get('/check-name/:name', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
@@ -620,7 +641,7 @@ guestsApp.get('/check-name/:name', async (c: Context<AppEnv>) => {
     const collection = db.collection('94884219_guests')
 
     const existingGuest = await collection.findOne({
-      userId: user.id,
+      ...ownerFilter(user),
       name: { $regex: new RegExp(`^${name}$`, 'i') },
     })
 
@@ -630,14 +651,14 @@ guestsApp.get('/check-name/:name', async (c: Context<AppEnv>) => {
   }
 })
 
-// Get guest statistics for dashboard (user-specific)
+// Get guest statistics for dashboard (admin: global, user: miliknya)
 guestsApp.get('/stats', async (c: Context<AppEnv>) => {
   try {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
     const collection = db.collection('94884219_guests')
-    const guests = await collection.find({ userId: user.id }).toArray()
+    const guests = await collection.find(ownerFilter(user)).toArray()
 
     const totalGuests = guests.length
     const confirmedGuests = guests.filter((g: any) => g.status === 'Confirmed').length
@@ -673,5 +694,44 @@ guestsApp.get('/stats', async (c: Context<AppEnv>) => {
     return c.json({ success: false, error: errMsg(error) }, 500)
   }
 })
+
+// Delete all guests (self or admin-wide) + cascade reminders
+guestsApp.delete('/bulk/all', async (c: Context<AppEnv>) => {
+  try {
+    const user = requireUser(c)
+    if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
+
+    const guestsCol = db.collection('94884219_guests')
+    const remindersCol = db.collection('94884219_reminders')
+
+    // Tentukan filter sesuai role
+    const guestFilter: any = isAdmin(user) ? {} : { userId: user.id }
+    // Untuk reminders, kita manfaatkan userId/accountId yang memang sudah ada
+    const reminderFilter: any = isAdmin(user)
+      ? {}
+      : {
+        $or: [
+          { userId: user.id },
+        ],
+      }
+
+    console.log('[guests:delete-all] guestFilter:')
+    console.log('[guests:delete-all] reminderFilter:')
+
+    // Eksekusi penghapusan
+    const guestRes = await guestsCol.deleteMany(guestFilter)
+    const remRes = await remindersCol.deleteMany(reminderFilter)
+
+    return c.json({
+      success: true,
+      scope: isAdmin(user) ? 'all' : 'self',
+      deletedGuests: guestRes.deletedCount ?? 0,
+      deletedReminders: remRes.deletedCount ?? 0,
+    })
+  } catch (error: unknown) {
+    return c.json({ success: false, error: "asdasdasd" }, 500)
+  }
+})
+
 
 export default guestsApp

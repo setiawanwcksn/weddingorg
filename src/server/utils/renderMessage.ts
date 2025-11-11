@@ -31,15 +31,15 @@ export async function renderMessage(template: string, reminder: any): Promise<st
 
     const guestName = guest?.name ?? reminder.guestName ?? '[Nama Tamu]'
     const mempelaiRaw = account?.title?.trim?.() || account?.name?.trim?.() || '[Nama Mempelai]'
+    const linkUndangan = account?.linkUndangan.trim().replace(/\/+$/, '') || ''
     const mempelai = mempelaiRaw
-    const slug = (account as any)?.slug || slugify(mempelaiRaw)
 
     const category = guest?.category === 'VIP' ? '1' : '2';
     const session = guest?.session ?? ''
     const limit = guest?.limit ?? 1
 
     const link =
-        `https://attarivitation.com/${slug}/` +
+        `${linkUndangan}/` +
         `?to=${encodeURIComponent(guestName)}` +
         `&sesi=${encodeURIComponent(session)}` +
         `&cat=${encodeURIComponent(category)}` +

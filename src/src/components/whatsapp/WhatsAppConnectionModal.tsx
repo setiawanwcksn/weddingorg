@@ -7,6 +7,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { X, QrCode, Smartphone, AlertCircle } from 'lucide-react'
 import QRCode from 'react-qr-code'
+import { getApiUrl, getAuthHeaders, handleApiResponse } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface WhatsAppConnectionModalProps {
   open: boolean
@@ -25,15 +27,23 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
   const [connectionStatus, setConnectionStatus] = useState<ConnStatus>('idle')
   const [attempts, setAttempts] = useState(0)
   const maxRetries = 3
+  const { user } = useAuth();
   const wsRef = useRef<WebSocket | null>(null)
 
   // helper: buat URL WS sesuai origin
-  const makeWsUrl = () => {
+  const makeWsUrl = React.useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    // sesuaikan path ini dengan route backend kamu
-    // kalau backend kamu mount di /api/whatsapp/ws -> pakai itu
-    return `${protocol}//${window.location.host}/api/whatsapp/ws`
-  }
+    const params = new URLSearchParams()
+
+    if (user?.id) params.set('userId', String(user.id))   // <— kirim userId ke backend
+
+    // kalau kamu punya token JWT yang tidak ada di cookie dan ingin kirim juga:
+    // const token = auth?.token
+    // if (token) params.set('access_token', token)
+
+    const qs = params.toString()
+    return `${protocol}//${window.location.host}/api/whatsapp/ws${qs ? `?${qs}` : ''}`
+  }, [user?.id])
 
   const connectWs = () => {
     const url = makeWsUrl()
@@ -131,7 +141,9 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
     try {
       setConnectionStatus('connecting')
       // panggil endpoint untuk inisialisasi WA + scheduler
-      const res = await fetch('/api/whatsapp/connect')
+      const res = await fetch('/api/whatsapp/connect', {
+        headers: getAuthHeaders(user?.id),
+      })
       if (!res.ok) throw new Error('connect failed')
       // setelah ini, WS akan mengirim status / qr sendiri
     } catch (e) {
@@ -194,18 +206,11 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
 
           {connectionStatus === 'qr_ready' && qrString && (
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <QrCode className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-medium text-text mb-2">Scan QR Code</h3>
-              <p className="text-text/70 text-sm mb-6">Gunakan WhatsApp Anda untuk memindai kode QR ini</p>
 
               {/* render QR dari string, bukan <img src="..."> */}
               <div className="bg-white p-4 rounded-lg border border-border mb-4 inline-block">
                 <QRCode value={qrString} size={192} />
               </div>
-
-              <p className="text-xs text-text/50">Kode QR akan diperbarui otomatis</p>
             </div>
           )}
 

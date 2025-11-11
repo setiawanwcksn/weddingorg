@@ -26,10 +26,10 @@ interface NonRegularGuestCheckInModalProps {
   onSubmit: (data: NonRegularGuestData) => Promise<void>
 }
 
-export default function NonRegularGuestCheckInModal({ 
-  isOpen, 
-  onClose, 
-  onSubmit 
+export default function NonRegularGuestCheckInModal({
+  isOpen,
+  onClose,
+  onSubmit
 }: NonRegularGuestCheckInModalProps) {
   const [formData, setFormData] = useState<NonRegularGuestData>({
     name: '',
@@ -109,7 +109,7 @@ export default function NonRegularGuestCheckInModal({
         <div className="w-full max-w-[95vw] sm:max-w-sm md:max-w-md rounded-xl border border-border bg-white shadow-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 rounded-t-xl bg-primary text-white">
-            <div className="font-semibold text-sm sm:text-base md:text-lg">TAMBAH TAMU TIDAK TERDAFTAR</div>
+            <div className="font-semibold text-sm sm:text-base md:text-lg">TAMBAH Tamu Tambahan</div>
             <button aria-label="Close" className="p-2 rounded-lg hover:bg-white/20 transition-colors" onClick={onClose}>
               <X className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
             </button>
@@ -142,9 +142,8 @@ export default function NonRegularGuestCheckInModal({
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors ${
-                    phoneError ? 'border-red-500' : 'border-border'
-                  }`}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors ${phoneError ? 'border-red-500' : 'border-border'
+                    }`}
                   placeholder="Contoh: 08123456789"
                   required
                 />

@@ -15,6 +15,7 @@ const reminders = new Hono<AppEnv>();
 // Reminder schema
 const reminderSchema = z.object({
   guestId: z.string(),
+  userId: z.string(),
   guestName: z.string(),
   phone: z.string(),
   message: z.string(),
@@ -33,7 +34,7 @@ reminders.get('/', async (c: Context<AppEnv>) => {
   const accountId = c.get('accountId') as string | undefined;
   const user = c.get('user') as ContextUser | undefined;
 
-  if (!accountId) {
+  if (!accountId && !user?.id) {
     return c.json({ error: 'Account ID not found' }, 400);
   }
 
@@ -100,7 +101,7 @@ reminders.post(
     console.log('[reminders] Creating reminder - accountId:', accountId);
     console.log('[reminders] User:', user);
 
-    if (!accountId) {
+    if (!accountId && !user?.id) {
       console.error('[reminders] Account ID not found');
       return c.json({ error: 'Account ID not found' }, 400);
     }
@@ -118,6 +119,7 @@ reminders.post(
       const reminderData = {
         ...cleanBody,
         accountId,
+        userId: user?.id,
         status: 'pending',
         introTextCategory: introTextCategory || 'Formal',
         createdAt: new Date(),
@@ -127,18 +129,6 @@ reminders.post(
       console.log('[reminders] Inserting reminder data:', reminderData);
 
       const result = await collection.insertOne(reminderData);
-
-      // Log audit
-      if (user?.email) {
-        await db.collection('94884219_audit_logs').insertOne({
-          action: 'create_reminder',
-          userId: user.id,
-          userEmail: user.email,
-          accountId,
-          timestamp: new Date(),
-          details: { reminderId: result.insertedId.toString(), ...body },
-        });
-      }
 
       const reminder = await collection.findOne({ _id: result.insertedId });
       if (!reminder) {
@@ -198,8 +188,8 @@ reminders.put(
     const user = c.get('user') as ContextUser | undefined;
     const id = c.req.param('id');
 
-    if (!accountId) {
-      return c.json({ error: 'Account ID not found' }, 400);
+    if (!user?.id) {
+      return c.json({ error: 'User ID not found' }, 400);
     }
 
     try {
@@ -207,7 +197,7 @@ reminders.put(
       const collection = db.collection('94884219_reminders');
 
       const result = await collection.updateOne(
-        { _id: new ObjectId(id), accountId },
+        { _id: new ObjectId(id), userId: user.id },
         {
           $set: {
             ...body,
@@ -270,7 +260,7 @@ reminders.put(
 );
 
 // Delete reminder
-reminders.delete('/:id', async (c: Context<AppEnv>) => {  
+reminders.delete('/:id', async (c: Context<AppEnv>) => {
   const user = c.get('user') as ContextUser | undefined;
   const id = c.req.param('id');
   const guestId = c.req.param('id');
