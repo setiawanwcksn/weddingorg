@@ -21,22 +21,20 @@ app.get('/accounts/current', async (c) => {
       console.log('No account found, returning default');
       return c.json({
         title: 'Our Wedding',
-        photoUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1920&q=80'
       });
     }
 
     console.log('Account found:', account.title);
     return c.json({
       title: account.title,
-      photoUrl: account.photoUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1920&q=80',
-      photoUrl_welcome: account.photoUrl_welcome || account.photoUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1920&q=80'
+      location: account.location,
+      dateTime: account.dateTime
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error('Error fetching account:', message);
     return c.json({
       title: 'Our Wedding',
-      photoUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1920&q=80'
     }, 500);
   }
 });

@@ -99,13 +99,13 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
     e.preventDefault();
 
     if (!scheduledDate || !scheduledTime) {
-      showToast('Please select both date and time', 'error');
+      showToast('Pilih tanggal dan waktu', 'error');
       return;
     }
 
     const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
     if (scheduledAt <= new Date()) {
-      showToast('Reminder time must be in the future', 'error');
+      showToast('Reminder tidak boleh kemarin', 'error');
       return;
     }
 
@@ -142,14 +142,14 @@ export const ReminderSettingsModal: React.FC<ReminderSettingsModalProps> = ({
       }
 
       showToast(
-        existingReminder ? 'Reminder updated successfully' : 'Reminder created successfully',
+        existingReminder ? 'Berhasil update Reminder' : 'Berhasil membuat Reminder',
         'success'
       );
 
       onSuccess?.();
       onClose();
     } catch (error: any) {
-      showToast(`Failed to save reminder: ${error.message}`, 'error');
+      showToast(`gagal menyimpan reminder: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }

@@ -19,6 +19,7 @@ import { DoorprizePicker } from './pages/DoorprizePicker';
 import MessageTemplates from './pages/MessageTemplates';
 import UsersRoles from './pages/UsersRoles';
 import Profile from './pages/Profile';
+import { PhotoProvider } from './contexts/PhotoProvider';
 import PermissionGuard from './components/common/PermissionGuard';
 
 // Configure Tailwind theme to Lavender Wedding palette with mobile-first responsive utilities
@@ -81,51 +82,53 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <HashRouter>
-          <GuestsProvider>
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/reception" element={
-                  <PermissionGuard requiredPermission="reception">
-                    <ReceptionCheckIn />
-                  </PermissionGuard>
-                } />
-                <Route path="/souvenirs" element={<Souvenirs />} />
-                <Route path="/gifts" element={<Gifts />} />
-                <Route path="/doorprize" element={<Doorprize />} />
-                <Route path="/doorprize/picker" element={<DoorprizePicker />} />
-                <Route path="/guests" element={
-                  <PermissionGuard requiredPermission="guests">
-                    <ManageGuests />
-                  </PermissionGuard>
-                } />
-                <Route path="/guests/send-reminder" element={
-                  <PermissionGuard requiredPermission="guests">
-                    <SendReminder />
-                  </PermissionGuard>
-                } />
-                <Route path="/guests/:id" element={
-                  <PermissionGuard requiredPermission="guests">
-                    <GuestDetails />
-                  </PermissionGuard>
-                } />
-                <Route path="/message-templates" element={<MessageTemplates />} />
-                <Route path="/users" element={<UsersRoles />} />
-                <Route path="/profile" element={<Profile />} />
-              </Route>
-              <Route path="/welcome-display" element={<WelcomeDisplay />} />
-            </Routes>
-          </GuestsProvider>
+          <PhotoProvider>
+            <GuestsProvider>
+              <Routes>
+                <Route path="/" element={<Login />} />
+                <Route
+                  element={
+                    <ProtectedRoute>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/reception" element={
+                    <PermissionGuard requiredPermission="reception">
+                      <ReceptionCheckIn />
+                    </PermissionGuard>
+                  } />
+                  <Route path="/souvenirs" element={<Souvenirs />} />
+                  <Route path="/gifts" element={<Gifts />} />
+                  <Route path="/doorprize" element={<Doorprize />} />
+                  <Route path="/doorprize/picker" element={<DoorprizePicker />} />
+                  <Route path="/guests" element={
+                    <PermissionGuard requiredPermission="guests">
+                      <ManageGuests />
+                    </PermissionGuard>
+                  } />
+                  <Route path="/guests/send-reminder" element={
+                    <PermissionGuard requiredPermission="guests">
+                      <SendReminder />
+                    </PermissionGuard>
+                  } />
+                  <Route path="/guests/:id" element={
+                    <PermissionGuard requiredPermission="guests">
+                      <GuestDetails />
+                    </PermissionGuard>
+                  } />
+                  <Route path="/message-templates" element={<MessageTemplates />} />
+                  <Route path="/users" element={<UsersRoles />} />
+                  <Route path="/profile" element={<Profile />} />
+                </Route>
+                <Route path="/welcome-display" element={<WelcomeDisplay />} />
+              </Routes>
+            </GuestsProvider>
+          </PhotoProvider>
         </HashRouter>
       </ToastProvider>
-    </AuthProvider>
+    </AuthProvider >
   );
 }
 

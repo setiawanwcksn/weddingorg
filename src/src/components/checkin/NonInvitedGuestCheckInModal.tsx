@@ -11,11 +11,8 @@ import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phon
 export interface NonInvitedGuestData {
   name: string
   phone: string
-  tableNo: string
   guestCount: number
   info: string
-  session?: string
-  limit?: number
   category?: 'Regular' | 'VIP'
 }
 
@@ -33,11 +30,8 @@ export default function NonInvitedGuestCheckInModal({
   const [formData, setFormData] = useState<NonInvitedGuestData>({
     name: '',
     phone: '',
-    tableNo: '',
     info: '',
     guestCount: 1,
-    session: '1',
-    limit: 1,
     category: 'Regular'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -74,11 +68,8 @@ export default function NonInvitedGuestCheckInModal({
       setFormData({
         name: '',
         phone: '',
-        tableNo: '',
         info: '',
         guestCount: 1,
-        session: '1',
-        limit: 1,
         category: 'Regular'
       })
       setPhoneError('')
@@ -109,7 +100,7 @@ export default function NonInvitedGuestCheckInModal({
         <div className="w-full max-w-[95vw] sm:max-w-sm md:max-w-md rounded-xl border border-border bg-white shadow-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 rounded-t-xl bg-primary text-white">
-            <div className="font-semibold text-sm sm:text-base md:text-lg">TAMBAH Tamu Tambahan</div>
+            <div className="font-semibold text-sm sm:text-base md:text-lg">Tambah Tamu Tambahan</div>
             <button aria-label="Close" className="p-2 rounded-lg hover:bg-white/20 transition-colors" onClick={onClose}>
               <X className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
             </button>
@@ -166,20 +157,6 @@ export default function NonInvitedGuestCheckInModal({
               )}
             </div>
 
-            {/* Session */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Sesi Tamu *</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.session}
-                onChange={(e) => handleInputChange('session', e.target.value)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                placeholder="Contoh: 1 / 2"
-                required
-              />
-            </div>
-
             {/* Guest Count */}
             <div>
               <label className="block text-sm font-medium mb-2">Jumlah Tamu *</label>
@@ -192,35 +169,6 @@ export default function NonInvitedGuestCheckInModal({
                   value={formData.guestCount}
                   onChange={(e) => handleInputChange('guestCount', parseInt(e.target.value) || 1)}
                   className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Limit */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Limit Tamu *</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.limit}
-                onChange={(e) => handleInputChange('limit', parseInt(e.target.value) || 1)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                placeholder="1"
-                required
-              />
-            </div>
-
-            {/* Table Number */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Nomor Meja *</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.tableNo}
-                  onChange={(e) => handleInputChange('tableNo', e.target.value)}
-                  className="w-full pl-2 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                  placeholder="Contoh: 12"
                   required
                 />
               </div>

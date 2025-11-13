@@ -13,6 +13,7 @@ import { QRTestUtility } from '../components/checkin/QRTestUtility';
 import NonInvitedGuestCheckInModal from '../components/checkin/NonInvitedGuestCheckInModal';
 import { NonInvitedGuestData } from '../components/checkin/NonInvitedGuestCheckInModal';
 import { apiUrl } from '../lib/api';
+import { usePhoto } from "../contexts/PhotoProvider";
 import ExportTamu from '../assets/xls-file.png';
 import Welcome from '../assets/Welcome.png';
 import StatsIMG from '../assets/stats.png';
@@ -42,6 +43,7 @@ export function ReceptionCheckIn(): JSX.Element {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [showQRTest, setShowQRTest] = React.useState(false);
   const [nonInvitedGuestModalOpen, setNonInvitedGuestModalOpen] = React.useState(false);
+  const { photoUrl, dashboardUrl, welcomeUrl } = usePhoto();
   const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>({
     no: true,
     name: true,
@@ -72,30 +74,6 @@ export function ReceptionCheckIn(): JSX.Element {
       revalidateOnReconnect: true,
     }
   );
-
-  // Use dashboard-specific photo if available, otherwise use account photoUrl or default
-  const [photoUrl, setPhotoUrl] = useState<string>(DEFAULT_PHOTO);
-
-  useEffect(() => {
-    const loadPhoto = async () => {
-      // Try to load uploaded photo first using authenticated request
-      // Now we can check without specifying extension - server will find any matching file
-      try {
-        const response = await apiRequest(apiUrl(`/api/upload/${user.id}_weddingPhotoUrl/exists`));
-        const result = await response.json();
-
-        if (response.ok && result.success && result.exists) {
-          // Use the actual filename returned by the server (includes extension)
-          const uploadedPhotoUrl = apiUrl(`/api/upload/${result.filename}`);
-          setPhotoUrl(uploadedPhotoUrl);
-        }
-      } catch (error) {
-        console.log('Uploaded photo not found, using account photo or default');
-      }
-    };
-
-    loadPhoto();
-  }, [user?.id, apiRequest]);
 
   // Tambahkan di atas return, sebelum `if (guestsLoading)`
   const [account, setAccount] = useState<DashboardAccountInfo | null>(null);
@@ -146,11 +124,8 @@ export function ReceptionCheckIn(): JSX.Element {
         body: JSON.stringify({
           name: data.name,
           phone: data.phone,
-          tableNo: data.tableNo,
           info: data.info,
           guestCount: data.guestCount,
-          session: data.session, // Include session field
-          limit: data.limit, // Include limit field
           category: data.category // Include category field
         })
       });
@@ -161,13 +136,13 @@ export function ReceptionCheckIn(): JSX.Element {
       }
 
       const result = await response.json();
-      showToast(`Non-invited guest ${data.name} added successfully`, 'success');
+      showToast(`Berhasil check-in ${data.name}`, 'success');
 
       // Refresh guests data to include new non-invited guest
       await mutateGuests();
     } catch (error) {
       console.error('Error adding non-invited guest:', error);
-      showToast(`Failed to add non-invited guest: ${error.message}`, 'error');
+      showToast(`Gagal check-in. ${error.message}`, 'error');
     }
   };
 
@@ -232,8 +207,8 @@ export function ReceptionCheckIn(): JSX.Element {
   const giftStats = React.useMemo(() => {
     const checkedInGuests = allGuests?.filter((g: any) => !!g.checkInDate) || [];
     const totalSouvenirs = checkedInGuests.reduce((sum: number, g: any) => sum + (g.souvenirCount || 0), 0);
-    const angpaoCount = checkedInGuests.filter((g: any) => g.giftType === 'Angpao').length;
-    const kadoCount = checkedInGuests.filter((g: any) => g.giftType === 'Kado').length;
+    const angpaoCount = checkedInGuests.reduce((sum: number, g: any) => sum + (g.angpaoCount || 0), 0);
+    const kadoCount = checkedInGuests.reduce((sum: number, g: any) => sum + (g.kadoCount || 0), 0);
 
     return {
       totalSouvenirs,
@@ -527,9 +502,7 @@ export function ReceptionCheckIn(): JSX.Element {
                                     if (!response.ok || !data.success) {
                                       throw new Error(data.error || 'Failed to clear guest check-in');
                                     }
-
-                                    console.log(`Guest ${r.name} check-in cleared successfully`);
-                                    showToast(`Guest ${r.name} check-in cleared successfully`, 'success');
+                                    showToast(`Berhasil menghapus check-in data Tamu ${r.name}`, 'success');
 
                                     // Refresh the guests data to reflect the change
                                     console.log('Refreshing guests data after clearing check-in...');
@@ -537,7 +510,7 @@ export function ReceptionCheckIn(): JSX.Element {
                                     console.log('Guests data refreshed');
                                   } catch (error) {
                                     console.error('Error clearing guest check-in:', error);
-                                    showToast(`Failed to clear guest check-in: ${error.message}`, 'error');
+                                    showToast(`Gagal menghapus check-in data. ${error.message}`, 'error');
                                   }
                                 }}
                               ><img src={Delete} className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 text-white" /></button>
@@ -622,7 +595,7 @@ export function ReceptionCheckIn(): JSX.Element {
                 console.log('[ReceptionCheckIn] Trimmed guest name length:', guestName.length);
 
                 if (!guestName) {
-                  showToast('Empty QR code data', 'error');
+                  showToast('QR code kosong', 'error');
                   return;
                 }
 
@@ -647,10 +620,10 @@ export function ReceptionCheckIn(): JSX.Element {
                   });
                   setPickedAt(new Date());
                   setDetailOpen(true);
-                  showToast(`Found guest: ${foundGuest.name}`, 'success');
+                  showToast(`Tamu ditemukan: ${foundGuest.name}`, 'success');
                 } else {
                   console.log('[ReceptionCheckIn] No matching guest found for name:', guestName);
-                  showToast(`Guest "${guestName}" not found in system`, 'error');
+                  showToast(`Tamu "${guestName}" tidak ada di sistem`, 'error');
 
                   // Also try searching with a more flexible approach
                   const similarGuests = allGuests?.filter((g: any) =>
@@ -659,13 +632,11 @@ export function ReceptionCheckIn(): JSX.Element {
                   ) || [];
 
                   if (similarGuests.length > 0) {
-                    console.log('[ReceptionCheckIn] Found similar guests:', similarGuests.map((g: any) => g.name));
-                    showToast(`Did you mean: ${similarGuests[0].name}?`, 'info');
+                    showToast(`Apakah maksudmu: ${similarGuests[0].name}?`, 'info');
                   }
                 }
               } catch (error) {
-                console.error('[ReceptionCheckIn] Error processing QR code:', error);
-                showToast('Invalid QR code format', 'error');
+                showToast('Invalid QR code', 'error');
               }
             }}
             context="reception"
@@ -690,7 +661,7 @@ export function ReceptionCheckIn(): JSX.Element {
             }}
             onCheckIn={(g) => {
               console.info('Checked-in guest:', g.name, 'at', pickedAt);
-              showToast(`Check-in successful for ${g.name}`, 'success');
+              showToast(`Berhasil Check-in untuk Tamu: ${g.name}`, 'success');
             }}
           />
 

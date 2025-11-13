@@ -49,6 +49,8 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
   const [dropdownStyle, setDropdownStyle] = React.useState<React.CSSProperties>({});
   const [showAlreadyCheckedInAlert, setShowAlreadyCheckedInAlert] = React.useState(false);
   const [pendingGuestSelection, setPendingGuestSelection] = React.useState<RegisteredGuest | null>(null);
+  const [nonInvitedGuestModalOpen, setNonInvitedGuestModalOpen] = React.useState(false);
+  const [checkInOpen, setCheckInOpen] = React.useState(false);
 
   type AddGuestForm = {
     name: string;
@@ -162,7 +164,10 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
     try {
       // QR code now contains only the guest name
       const guestName = qrData.trim();
-
+      if (context == "souvenir" && mode === 'scan') {
+        onQRCodeScanned(qrData)
+        return
+      }
       console.log('[CheckInModal] QR code data received:', qrData);
       console.log('[CheckInModal] Trimmed guest name:', guestName);
       console.log('[CheckInModal] Raw QR data length:', qrData.length);
@@ -189,7 +194,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
       });
 
       if (foundGuest) {
-        console.log('[CheckInModal] Found matching guest:', foundGuest);
+        console.log('[CheckInModal] Found matching guest:', foundGuest, context);
         if (onPickRegisteredGuest) {
           onPickRegisteredGuest(foundGuest);
           onClose();
@@ -231,8 +236,9 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
   };
 
   const onAddClick = () => {
-    onAddGuest?.();
-    setMode('add');
+    onAddNonInvitedGuest?.();
+    setNonInvitedGuestModalOpen(true);
+    onClose();
   };
 
   return (
@@ -283,7 +289,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
       )}
 
       {/* Modal card */}
-      <div className="absolute left-1/2 top-4 sm:top-6 -translate-x-1/2 w-[92%] sm:w-[94%] max-w-[320px] sm:max-w-[480px] md:max-w-[720px] rounded-2xl border border-border bg-background shadow-lg overflow-hidden">
+      <div className="absolute left-1/2 top-4 sm:top-6 -translate-x-1/2 w-[92%] sm:w-[94%] max-w-[320px] sm:max-w-[480px] md:max-w-[620px] rounded-2xl border border-border bg-background shadow-lg overflow-hidden">
         <Header />
 
         {/* Body */}
@@ -334,18 +340,6 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
                     className="w-full rounded-xl px-4 py-3 text-sm sm:text-base font-medium bg-primary text-background shadow hover:opacity-90 transition-opacity min-h-[44px]"
                   >
                     Tambah Tamu
-                  </button>
-                )}
-                {context === 'reception' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // When guest search fails, open non-invited guest modal
-                      onAddNonInvitedGuest?.();
-                    }}
-                    className="w-full rounded-xl px-4 py-3 text-sm sm:text-base font-medium bg-accent text-text border border-border shadow hover:bg-accent/80 transition-colors min-h-[44px]"
-                  >
-                    Tambah Tamu Tambahan
                   </button>
                 )}
               </div>

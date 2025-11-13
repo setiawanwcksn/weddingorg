@@ -83,7 +83,7 @@ const UsersRoles: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      showToast('Failed to load users', 'error');
+      showToast('Gagal memuat users', 'error');
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,7 @@ const UsersRoles: React.FC = () => {
       return true;
     } catch (err: any) {
       console.error(`[upload ${fieldName}]`, err);
-      showToast(err?.message ?? 'Failed to upload photo', 'error');
+      showToast(err?.message ?? 'Gagal untuk upload photo', 'error');
       return false;
     } finally {
       setUploading(false);
@@ -205,9 +205,9 @@ const UsersRoles: React.FC = () => {
 
       // 3) Beri info kalau ada upload yang gagal (user tetap sudah tercipta)
       if (!okWedding || !okDashboard || !okWelcome) {
-        showToast('User created, but some photos failed to upload', 'error');
+        showToast('User berhasil dibuat, beberapa foto gagal diupload', 'error');
       } else {
-        showToast('User created successfully', 'success');
+        showToast('User berhasil dibut', 'success');
       }
 
       // 4) Reset & refresh
@@ -232,7 +232,7 @@ const UsersRoles: React.FC = () => {
       fetchUsers();
     } catch (error: any) {
       console.error('Error creating user with photos:', error);
-      showToast(error?.message ?? 'Failed to create user', 'error');
+      showToast(error?.message ?? 'Gagal membuat user', 'error');
     }
   };
 
@@ -364,9 +364,9 @@ const UsersRoles: React.FC = () => {
 
       // 3️⃣ Tampilkan hasil
       if (!okWedding || !okDashboard || !okWelcome) {
-        showToast('User updated, but some photos failed to upload', 'error');
+        showToast('User berhasil diupdate, ada upload foto gagal', 'error');
       } else {
-        showToast('User updated successfully', 'success');
+        showToast('User berhasil dibuat', 'success');
       }
 
       // 4️⃣ Reset & refresh
@@ -378,7 +378,7 @@ const UsersRoles: React.FC = () => {
       fetchUsers();
     } catch (error: any) {
       console.error('Error updating user:', error);
-      showToast(error?.message ?? 'Failed to update user', 'error');
+      showToast(error?.message ?? 'Gagal update user', 'error');
     }
   };
 
@@ -422,7 +422,7 @@ const UsersRoles: React.FC = () => {
       }
     } catch (error) {
       console.error('Error updating permissions:', error);
-      showToast((error && typeof error === 'object' && 'message' in error) ? String(error.message) : 'Failed to update permissions', 'error');
+      showToast((error && typeof error === 'object' && 'message' in error) ? String(error.message) : 'Gagal untuk update permissions', 'error');
     }
   };
 
@@ -468,7 +468,7 @@ const UsersRoles: React.FC = () => {
       if (result.success) {
         const deletedGuestCount = result.data?.deletedGuestCount || 0;
         const guestMessage = deletedGuestCount > 0 ? ` and ${deletedGuestCount} guest${deletedGuestCount > 1 ? 's' : ''}` : '';
-        showToast(`User deleted successfully${guestMessage}`, 'success');
+        showToast(`User berhasil dihapus. ${guestMessage}`, 'success');
         setShowDeleteModal(false);
         setSelectedUser(null);
         fetchUsers(); // Refresh the list
@@ -477,7 +477,7 @@ const UsersRoles: React.FC = () => {
       }
     } catch (error) {
       console.error('Error deleting user:', error);
-      showToast((error && typeof error === 'object' && 'message' in error) ? String(error.message) : 'Failed to delete user', 'error');
+      showToast((error && typeof error === 'object' && 'message' in error) ? String(error.message) : 'Gagal untuk delete user', 'error');
     }
   };
 

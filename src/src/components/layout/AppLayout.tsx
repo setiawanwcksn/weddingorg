@@ -34,6 +34,8 @@ export function AppLayout() {
   const handleLogout = async () => {
     try {
       await logout();
+      localStorage.removeItem("photoCache");
+
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);

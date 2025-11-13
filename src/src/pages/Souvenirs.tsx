@@ -7,6 +7,8 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Edit3, QrCode, Trash2, UserPlus, Filter, FileSpreadsheet } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useGuests } from '../contexts/GuestsContext';
+import NonInvitedSouvenirAssignmentModal, { NonInvitedGuestData } from '../components/souvenirs/NonInvitedSouvenirAssignmentModal';
+import { useToast } from '../contexts/ToastContext';
 import SouvenirAssignmentModal from '../components/souvenirs/SouvenirAssignmentModal';
 import { Guest } from '../../shared/types';
 import { BottomBar } from '../components/navigation/BottomBar';
@@ -17,6 +19,12 @@ import { TableFilterPopover } from '../components/guests/TableFilterPopover';
 import { ConfirmModal } from "../components/common/DeleteModal";
 import { NoticeModal } from '../components/common/NoticeModal';
 import { apiUrl } from '../lib/api';
+import edit from '../assets/Edit.png';
+import Delete from '../assets/Delete.png';
+import QRimg from '../assets/qr-code.png';
+import Welcome from '../assets/Welcome.png';
+import Excel from '../assets/xls-file.png';
+import Souvenir from '../assets/Souvenir.png';
 
 export const Souvenirs: React.FC = () => {
   const { apiRequest, token } = useAuth();
@@ -27,24 +35,23 @@ export const Souvenirs: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedSouvenirStatus, setSelectedSouvenirStatus] = useState('All');
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [nonInvitedGuestModalOpen, setNonInvitedGuestModalOpen] = React.useState(false);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [isAddGuestOpen, setIsAddGuestOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
   const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>({
     no: true,
     name: true,
-    code: true,
-    category: true,
-    info: true,
-    sesi: true,
-    limit: true,
-    tableNo: true,
-    count: true,
-    date: true,
-    time: true,
+    kategori: true,
+    informasi: true,
+    souvenir: true,
+    tanggal: true,
+    waktu: true,
+    status: true,
     edit: true,
   });
 
@@ -55,11 +62,11 @@ export const Souvenirs: React.FC = () => {
   const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
 
   // Handle souvenir assignment completion
-  const handleAssignmentComplete = async (guestId: string, count: number) => {
+  const handleAssignmentComplete = async (guestId: string, count: number, kado: number, angpao: number) => {
     try {
       const response = await apiRequest(apiUrl(`/api/guests/${guestId}/souvenirs`), {
         method: 'POST',
-        body: JSON.stringify({ count })
+        body: JSON.stringify({ count, kado, angpao })
       });
       const responseData = await response.json();
       if (responseData.success) {
@@ -174,28 +181,34 @@ export const Souvenirs: React.FC = () => {
   };
 
   // Add guest save
-  const handleAddGuestSave = async (data: AddGuestFormData) => {
+  const handleAddGuestSave = async (data: NonInvitedGuestData) => {
     try {
-      const response = await apiRequest(apiUrl(`/api/guests`), {
+      // Use the new unified guests API for non-invited guests
+      const response = await apiRequest(apiUrl(`/api/guests/non-invited`), {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
           name: data.name,
-          info: data.info,
           phone: data.phone,
-          session: data.session,
-          limit: data.limit,
-          tableNo: data.tableNo,
-          category: data.category,
-          guestCount: data.guestCount || 1
+          info: data.info,
+          souvenir: data.souvenir,
+          category: data.category // Include category field
         })
       });
-      const res = await response.json();
-      if (!res.success) throw new Error(res.error || 'Failed to add guest');
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add non-invited guest');
+      }
+
+      const result = await response.json();
+      showToast(`Berhasil menambahkan data Tamu: ${data.name}`, 'success');
       setIsAddGuestOpen(false);
-      await refresh();
-    } catch (error: any) {
-      console.error('[Souvenirs] Add guest error:', error?.message || error);
-      alert(error?.message || 'Failed to add guest');
+    } catch (error) {
+      console.error('Error adding non-invited guest:', error);
+      showToast(`Gagal menambahkan data Tamu. ${error.message}`, 'error');
     }
   };
 
@@ -304,25 +317,25 @@ export const Souvenirs: React.FC = () => {
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-3 md:gap-4">
                 <button onClick={() => setIsQRScannerOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-4 py-3 transition min-h-[48px] hover:opacity-90 active:scale-95" >
                   <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <QrCode className="w-4 h-4" />
+                    <img src={QRimg} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </span>
                   <span className="font-medium text-sm">Scan QR</span>
                 </button>
                 <button onClick={() => setIsSearchModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-3 py-2 md:px-5 md:py-3 transition min-h-[44px]" >
                   <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Search className="w-3 h-3 md:w-4 md:h-4" />
+                    <img src={Welcome} className="w-3 h-3 md:w-4 md:h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </span>
                   <span className="font-medium text-sm md:text-base">Cari Tamu</span>
                 </button>
                 <button onClick={() => setIsAddGuestOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary border border-border px-3 py-2 md:px-5 md:py-3 bg-primary text-background text-sm font-medium transition min-h-[44px]" >
                   <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <UserPlus className="w-3 h-3 md:w-4 md:h-4" />
+                    <img src={Souvenir} className="w-3 h-3 md:w-4 md:h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </span>
                   <span className="font-medium text-sm md:text-base">Tambah Tamu</span>
                 </button>
                 <button onClick={exportGuestsToCSV} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary border border-border px-3 py-2 md:px-5 md:py-3 bg-primary text-background text-sm font-medium transition min-h-[44px]">
                   <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <FileSpreadsheet className="w-3 h-3 md:w-4 md:h-4" />
+                    <img src={Excel} className="w-3 h-3 md:w-4 md:h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </span>
                   <span className="font-medium text-sm md:text-base">Export Tamu</span>
                 </button>
@@ -336,16 +349,19 @@ export const Souvenirs: React.FC = () => {
                   <TableFilterPopover open={filterOpen} onClose={() => setFilterOpen(false)} options={[
                     { key: 'no', label: 'No', checked: visibleCols.no },
                     { key: 'name', label: 'Nama', checked: visibleCols.name },
-                    { key: 'phone', label: 'WhatsApp', checked: visibleCols.phone },
-                    { key: 'status', label: 'Status', checked: visibleCols.status },
-                    { key: 'terjadwal', label: 'Terjadwal', checked: visibleCols.terjadwal },
+                    { key: 'kategori', label: 'Kategori', checked: visibleCols.kategori },
+                    { key: 'informasi', label: 'Informasi', checked: visibleCols.informasi },
+                    { key: 'souvenir', label: 'Jumlah Souvenir', checked: visibleCols.souvenir },
                     {
-                      key: 'reminder', label: 'Set Reminder', checked: visibleCols.reminder
-                    }, { key: 'share', label: 'Bagikan', checked: visibleCols.share},
+                      key: 'tanggal', label: 'Tangggal', checked: visibleCols.tanggal
+                    },
+                    { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
+                    { key: 'status', label: 'Status', checked: visibleCols.status },
+                    { key: 'edit', label: 'Edit', checked: visibleCols.edit },
                   ]}
                     onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))} onToggleAll={(checked) => {
                       const allKeys = ['no', 'name',
-                        'phone', 'status', 'terjadwal', 'reminder', 'share']; const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {}); setVisibleCols(newState);
+                        'kategori', 'informasi', 'souvenir', 'tanggal', 'waktu', 'status', 'edit']; const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {}); setVisibleCols(newState);
                     }} />
                 </div>
               </div>
@@ -381,34 +397,35 @@ export const Souvenirs: React.FC = () => {
               <table className="w-full">
                 <thead className="bg-accent">
                   <tr>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">No</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky left-0 bg-accent">Nama</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kategori</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Informasi</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Jumlah Souvenir</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Tanggal</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Jam</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Edit</th>
+                    {visibleCols.no && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">No</th>}
+                    {visibleCols.name && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky left-0 bg-accent">Nama</th>}
+                    {visibleCols.kategori && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kategori</th>}
+                    {visibleCols.informasi && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Informasi</th>}
+                    {visibleCols.souvenir && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Jumlah Souvenir</th>}
+                    {visibleCols.tanggal && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Tanggal</th>}
+                    {visibleCols.waktu && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">waktu</th>}
+                    {visibleCols.status && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Status</th>}
+                    {visibleCols.edit && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Edit</th>}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-border">
                   {pageRows.map((guest, index) => {
                     const souvenirStatus = getSouvenirStatus(guest); return (
                       <tr key={guest._id} className="hover:bg-accent">
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text/70">
+                        {visibleCols.no && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text/70">
                           {(page - 1) * pageSize + index + 1}
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10 hover:bg-accent">
+                        </td>}
+                        {visibleCols.name && <td className="px-4 lg:px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10 hover:bg-accent">
                           <div>
                             <div className="text-sm font-medium text-text">{guest.name}</div>
                           </div>
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        </td>}
+                        {visibleCols.kategori && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-primary">
                             {guest.category}
                           </span>
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        </td>}
+                        {visibleCols.informasi && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-text/80 max-w-xs truncate">
                             {guest.info ? (
                               <button type="button" onClick={() => { setSelectedInfo(guest.info as string); setInfoOpen(true); }} title={guest.info} className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs shadow-sm max-w-[9rem] truncate"
@@ -416,34 +433,60 @@ export const Souvenirs: React.FC = () => {
                               </button>
                             ) : '-'}
                           </div>
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        </td>}
+                        {visibleCols.souvenir && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-text">
                             {guest.souvenirCount || 0}
                           </span>
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        </td>}
+                        {visibleCols.tanggal && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-text/80">
                             {guest.souvenirRecordedAt ? new Date(guest.souvenirRecordedAt).toLocaleDateString('id-ID') : '-'}
                           </div>
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        </td>}
+                        {visibleCols.waktu && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-text/80">
                             {guest.souvenirRecordedAt ? new Date(guest.souvenirRecordedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
                           </div>
-                        </td>
-                        <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => handleAssignSouvenir(guest)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-background bg-yellow-500 hover:opacity-90 focus:outline-none focus:ring-2
-                                              focus:ring-offset-2 focus:ring-primary transition-colors" >
-                              <Edit3 className="h-3 w-3 mr-1" />
+                        </td>}
+                        {visibleCols.status && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={guest.souvenirCount > 0}
+                              disabled={true}
+                              className="w-4 h-4 text-primary bg-white border-gray-300 rounded focus:ring-primary focus:ring-2 cursor-pointer"
+                            />
+                            <span className='text-xs text-gray-600 font-medium'>{guest.souvenirCount > 0 ? 'Diterima' : 'Belum Menerima'}</span>
+                          </div>
+                        </td>}
+                        {visibleCols.edit && <td className="py-4 text-sm text-center whitespace-nowrap ">
+                          <div className="flex items-center justify-start gap-3">
+                            <button
+                              onClick={() => handleAssignSouvenir(guest)}
+                              className="inline-flex items-center justify-center p-2 rounded-md bg-yellow-500 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                              title="Edit"
+                            >
+                              <img
+                                src={edit}
+                                className="h-4 w-4"
+                                style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}
+                              />
                             </button>
-                            <button onClick={() => handleDeleteSouvenir(guest._id)} className="inline-flex items-center px-3 py-1.5 border border-danger text-xs font-medium rounded-md text-danger bg-red-500 hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-offset-2
-                                              focus:ring-danger transition-colors" >
-                              <Trash2 className="h-3 w-3 mr-1" />
+
+                            <button
+                              onClick={() => handleDeleteSouvenir(guest._id)}
+                              className="inline-flex items-center justify-center p-2 rounded-md bg-red-500 hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger transition-colors"
+                              title="Delete"
+                            >
+                              <img
+                                src={Delete}
+                                className="h-4 w-4"
+                                style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}
+                              />
                             </button>
                           </div>
-                        </td>
+                        </td>}
                       </tr>
                     );
                   })}
@@ -518,7 +561,6 @@ export const Souvenirs: React.FC = () => {
                           </span>
                         </div>
                       </div>
-
                       <div className="flex items-center gap-2 pt-2">
                         <button onClick={() => handleAssignSouvenir(guest)} className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-background bg-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2
                                       focus:ring-primary transition-colors" >
@@ -549,9 +591,10 @@ export const Souvenirs: React.FC = () => {
             )}
           </div>
 
-          {/* Modals */} {selectedGuest && (
+          {selectedGuest && (
             <SouvenirAssignmentModal isOpen={isAssignmentModalOpen} onClose={() => { setIsAssignmentModalOpen(false); setSelectedGuest(null); }} guest={selectedGuest} onAssign={handleAssignmentComplete} />)} {isAddGuestOpen && (
-              <AddGuestModal open={isAddGuestOpen} onClose={() => setIsAddGuestOpen(false)} onSave={handleAddGuestSave} />)} {/* Search Modal - Similar to Check-in modal */}
+              <NonInvitedSouvenirAssignmentModal isOpen={isAddGuestOpen} onClose={() => setIsAddGuestOpen(false)} onSubmit={handleAddGuestSave} />)}
+          {/* Search Modal - Similar to Check-in modal */}
           <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="souvenir"
           />
           <ConfirmModal open={confirmOpen} title="Hapus Souvenir" message="Apakah kamu yakin ingin menghapus data souvenir untuk tamu ini?" onConfirm={confirmDeleteSouvenir} onCancel={() => setConfirmOpen(false)} loading={loading} />
@@ -565,7 +608,7 @@ export const Souvenirs: React.FC = () => {
             guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode }))}
             onQRCodeScanned={handleQRCodeScanned}
             mode="scan"
-            context="gift"
+            context="souvenir"
           />
 
         </div>

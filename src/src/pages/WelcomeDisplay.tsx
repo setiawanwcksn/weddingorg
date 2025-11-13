@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useRealtimeGuests } from '../hooks/useRealtimeGuests';
 import { apiUrl } from '../lib/api';
+import { usePhoto } from "../contexts/PhotoProvider";
 
 const fetcher = (url: string) => {
   return fetch(url, {
@@ -24,6 +25,7 @@ function WelcomeDisplay(): JSX.Element {
   const [showGuestWelcome, setShowGuestWelcome] = useState(false);
   const [currentGuest, setCurrentGuest] = useState<{ name: string; checkInDate: string } | null>(null);
   const [mutateKey, setMutateKey] = useState(0);
+  const { photoUrl, dashboardUrl, welcomeUrl } = usePhoto();
 
   // Auto-refresh every 2 seconds to check for new check-ins
   const { data: accountData, error: accountError, mutate: mutateAccount } = useSWR(
@@ -143,7 +145,7 @@ function WelcomeDisplay(): JSX.Element {
           <div className="animate-fade-in">
             <div className="mb-8">
               <img
-                src={account?.photoUrl_welcome || account?.photoUrl || "https://images.unsplash.com/photo-1517244683847-7456b63c5969?q=80&w=1600&auto=format&fit=crop"}
+                src={welcomeUrl}
                 alt="Wedding"
                 className="w-96 h-64 object-cover rounded-2xl shadow-2xl mx-auto mb-8 border-4 border-white/50"
               />
@@ -172,7 +174,7 @@ function WelcomeDisplay(): JSX.Element {
           <div className="animate-fade-in">
             <div className="mb-8">
               <img
-                src="https://images.unsplash.com/photo-1517244683847-7456b63c5969?q=80&w=1600&auto=format&fit=crop"
+                src={welcomeUrl}
                 alt="Welcome Guest"
                 className="w-96 h-64 object-cover rounded-2xl shadow-2xl mx-auto mb-8 border-4 border-white/50"
               />

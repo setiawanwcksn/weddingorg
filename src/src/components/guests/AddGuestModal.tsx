@@ -16,6 +16,9 @@ export interface AddGuestFormData {
   phone: string;
   session: string;
   limit: number;
+  souvenir: number;
+  kado: number;
+  angpao: number;
   tableNo: string;
   category: 'Regular' | 'VIP';
   guestCount?: number;
@@ -32,6 +35,9 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
     name: '',
     info: '',
     phone: '',
+    souvenir: 0,
+    kado: 0,
+    angpao: 0,
     session: '',
     limit: 1,
     tableNo: '',
@@ -53,6 +59,9 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
       info: '',
       phone: '',
       session: '',
+      kado: 0,
+      angpao: 0,
+      souvenir: 0,
       limit: 1,
       tableNo: '',
       category: 'Regular',

@@ -57,8 +57,6 @@ const guestSchema = z.object({
   checkInDate: z.string().datetime().optional(),
   souvenirCount: z.number().min(0).optional(),
   souvenirRecordedAt: z.string().datetime().optional(),
-  giftType: z.enum(['Angpao', 'Kado']).optional(),
-  giftCount: z.number().min(0).optional(),
   kadoCount: z.number().min(0).optional(),
   angpaoCount: z.number().min(0).optional(),
   giftNote: z.string().optional(),
@@ -74,8 +72,7 @@ const guestSchema = z.object({
   info: z.string().optional(),
   introTextCategory: z.string().optional(),
   // Additional fields
-  dietaryRequirements: z.string().optional(),
-  guestCount: z.number().min(1).optional().default(1),
+  guestCount: z.number().min(0).optional(),
 })
 type GuestBody = z.infer<typeof guestSchema>
 
@@ -207,74 +204,115 @@ guestsApp.post(
       name: z.string().min(1, 'Name is required'),
       phone: z.string().optional(),
       tableNo: z.string().optional(),
-      guestCount: z.number().min(1).default(1),
+      guestCount: z.number().min(1).optional(),
       info: z.string().optional(),
       session: z.string().optional(),
       limit: z.number().min(1).optional(),
+      kado: z.number().min(0).optional(),
+      angpao: z.number().min(0).optional(),
+      giftNote: z.string().optional(),
+      souvenir: z.number().min(0).optional(),
       category: z.enum(['Regular', 'VIP']).optional().default('Regular'),
     }),
   ),
   async (c: Context<AppEnv>) => {
     try {
-      const user = requireUser(c)
-      if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
+      const user = requireUser(c);
+      if (!user) return c.json({ success: false, error: 'No token provided' }, 401);
 
       const data = (c.req as any).valid('json') as {
-        name: string
-        phone?: string
-        tableNo?: string
-        info?: string
-        guestCount?: number
-        session?: string
-        limit?: number
-        category?: 'Regular' | 'VIP'
-      }
+        name: string;
+        phone?: string;
+        info?: string;
+        tableNo?: string;
+        guestCount?: number;
+        kado?: number;
+        angpao?: number;
+        souvenir?: number;
+        session?: string;
+        giftNote?: string;
+        limit?: number;
+        category?: 'Regular' | 'VIP';
+      };
 
-      const collection = db.collection('94884219_guests')
+      const collection = db.collection('94884219_guests');
 
-      const invitationCode = `NI-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
-      const displayCode = `NI${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+      const invitationCode = `NI-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const displayCode = `NI${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const now = new Date();
 
-      const newGuest = {
+      const newGuest: any = {
         userId: user.id,
         name: data.name,
-        phone: data.phone || '',
+        phone: data.phone ?? '',
         invitationCode,
-        category: data.category || 'Regular',
-        status: 'Checked-In',
-        isInvited: false,
-        checkInDate: new Date(),
-        tableNo: data.tableNo || '',
-        info: data.info || '',
-        guestCount: data.guestCount || 1,
-        plusOne: (data.guestCount || 1) > 1,
         code: displayCode,
-        session: data.session || '',
-        limit: data.limit || data.guestCount || 1,
-        giftType: null,
+        category: data.category ?? 'Regular',
+        isInvited: false,
+
+        tableNo: data.tableNo ?? '',
+        info: data.info ?? '',
+        session: data.session ?? '',
+
+        guestCount: data.guestCount ?? 0,
+        limit: data.limit ?? 0,
+
+        // hadiah & souvenir (konsisten dengan endpoint /souvenirs)
         kadoCount: 0,
         angpaoCount: 0,
-        giftCount: 0,
         souvenirCount: 0,
         souvenirRecordedAt: null,
+
+        // status check-in opsional
+        status: null,
+        checkInDate: null,
+
         reminderScheduledAt: null,
         reminderSentAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // Isi kalau ada di body
+      if (typeof data.souvenir === 'number' && data.souvenir > 0) {
+        newGuest.souvenirCount = data.souvenir;
+        newGuest.souvenirRecordedAt = now;
+      }
+      if (typeof data.angpao === 'number' && data.angpao > 0) {
+        newGuest.angpaoCount = data.angpao;
+        newGuest.giftRecordedAt = now;
+      }
+      if (typeof data.kado === 'number' && data.kado > 0) {
+        newGuest.kadoCount = data.kado;
+        newGuest.giftRecordedAt = now;
+      }
+      if (typeof data.giftNote === 'string') {
+        newGuest.giftNote = data.giftNote;
+        newGuest.giftRecordedAt = now;
       }
 
-      const result = await collection.insertOne(newGuest)
+      if (
+        typeof data.souvenir !== 'number' &&
+        typeof data.angpao !== 'number' &&
+        typeof data.kado !== 'number'
+      ) {
+        newGuest.status = 'Checked-In';
+        newGuest.checkInDate = now;
+      }
+
+      const result = await collection.insertOne(newGuest);
 
       return c.json({
         success: true,
         data: { ...newGuest, _id: result.insertedId },
         message: 'Non-invited guest added successfully',
-      })
+      });
     } catch (error: unknown) {
-      return c.json({ success: false, error: errMsg(error) }, 500)
+      return c.json({ success: false, error: errMsg(error) }, 500);
     }
   },
-)
+);
+
 
 // Update guest
 guestsApp.put('/:id', zValidator('json', updateGuestSchema), async (c: Context<AppEnv>) => {
@@ -385,32 +423,59 @@ guestsApp.post('/:id/checkin', async (c: Context<AppEnv>) => {
 // Assign souvenir to guest
 guestsApp.post(
   '/:id/souvenirs',
-  zValidator('json', z.object({ count: z.number().min(1) })),
+  zValidator(
+    'json',
+    z.object({
+      count: z.number().min(1),
+      kado: z.number().min(0).optional(),
+      angpao: z.number().min(0).optional(),
+    }),
+  ),
   async (c: Context<AppEnv>) => {
     try {
-      const user = requireUser(c)
-      if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
+      const user = requireUser(c);
+      if (!user) return c.json({ success: false, error: 'No token provided' }, 401);
 
-      const id = c.req.param('id')
-      const { count } = (c.req as any).valid('json') as { count: number }
+      const id = c.req.param('id');
+      const { count, kado, angpao } = (c.req as any).valid('json') as {
+        count: number;
+        kado?: number;
+        angpao?: number;
+      };
 
-      const collection = db.collection('94884219_guests')
+      const collection = db.collection('94884219_guests');
+
+      const $set: Record<string, any> = {
+        souvenirCount: count,
+        souvenirRecordedAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      if (typeof kado === 'number') {
+        $set.kadoCount = kado;
+        $set.giftRecordedAt = new Date()
+      }
+      if (typeof angpao === 'number') {
+        $set.angpaoCount = angpao;
+        $set.giftRecordedAt = new Date()
+      }
 
       const result = await collection.findOneAndUpdate(
         byIdFilter(user, id),
-        { $set: { souvenirCount: count, souvenirRecordedAt: new Date(), updatedAt: new Date() } },
+        { $set },
         { returnDocument: 'after' },
-      )
+      );
 
-      const updated = (result && (result as any).value) || result
-      if (!updated) return c.json({ success: false, error: 'Guest not found' }, 404)
+      const updated = (result && (result as any).value) || result;
+      if (!updated)
+        return c.json({ success: false, error: 'Guest not found' }, 404);
 
-      return c.json({ success: true, data: updated })
+      return c.json({ success: true, data: updated });
     } catch (error: unknown) {
-      return c.json({ success: false, error: errMsg(error) }, 500)
+      return c.json({ success: false, error: errMsg(error) }, 500);
     }
   },
-)
+);
 
 // Delete souvenir data from guest
 guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
@@ -428,8 +493,7 @@ guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
 
     let result
 
-    // BUGFIX: field yang benar adalah isInvited (bukan invited)
-    if ((guest as any).isInvited === false) {
+    if ((guest as any).isInvited === false && (guest as any).status !== 'Checked-In') {
       result = await collection.deleteOne(byIdFilter(user, id))
 
       return c.json({
@@ -444,6 +508,60 @@ guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
           $set: {
             souvenirCount: 0,
             souvenirRecordedAt: null,
+            updatedAt: new Date(),
+          },
+        },
+        { returnDocument: 'after' },
+      )
+
+      const updated = (updateResult as any)?.value || updateResult
+      if (!updated)
+        return c.json({ success: false, error: 'Guest not found after update' }, 404)
+
+      return c.json({
+        success: true,
+        message: 'Souvenir reset for invited guest',
+        data: updated,
+      })
+    }
+  } catch (error: unknown) {
+    return c.json({ success: false, error: errMsg(error) }, 500)
+  }
+})
+
+// Delete souvenir data from guest
+guestsApp.delete('/:id/gifts', async (c: Context<AppEnv>) => {
+  try {
+    const user = requireUser(c)
+    if (!user)
+      return c.json({ success: false, error: 'No token provided' }, 401)
+
+    const id = c.req.param('id')
+    const collection = db.collection('94884219_guests')
+    const guest = await collection.findOne(byIdFilter(user, id))
+
+    if (!guest)
+      return c.json({ success: false, error: 'Guest not found' }, 404)
+
+    let result
+
+    if ((guest as any).isInvited === false && (guest as any).status !== 'Checked-In') {
+      result = await collection.deleteOne(byIdFilter(user, id))
+
+      return c.json({
+        success: true,
+        message: 'Guest deleted because not invited',
+        deletedCount: (result as any)?.deletedCount ?? 0,
+      })
+    } else {
+      const updateResult = await collection.findOneAndUpdate(
+        byIdFilter(user, id),
+        {
+          $set: {
+            kadoCount: 0,
+            angpaoCount: 0,
+            giftNote: '',
+            giftRecordedAt: null,
             updatedAt: new Date(),
           },
         },
@@ -492,7 +610,7 @@ guestsApp.post(
 
       const result = await collection.findOneAndUpdate(
         byIdFilter(user, id),
-        { $set: { giftType: type ?? null, kadoCount: kado ?? 0, angpaoCount: angpao ?? 0, giftCount: count, updatedAt: new Date(), giftRecordedAt: new Date() } },
+        { $set: { giftType: type ?? null, kadoCount: kado ?? 0, angpaoCount: angpao ?? 0, updatedAt: new Date(), giftRecordedAt: new Date() } },
         { returnDocument: 'after' },
       )
 

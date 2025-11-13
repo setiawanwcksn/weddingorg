@@ -81,6 +81,7 @@ export interface Guest {
 
   // Timestamps
   createdAt?: Date;
+  giftRecordedAt?: Date;
   updatedAt?: Date;
 }
 

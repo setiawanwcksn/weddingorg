@@ -1,6 +1,6 @@
 /**
- * Non-Regular Guest Check-In Modal
- * Allows adding non-registered guests for check-in when guest search fails
+ * Non-Invited Guest Check-In Modal
+ * Allows adding non-invited guests (walk-ins) for check-in using unified guests collection
  * Updated to match the format of regular guest modal
  */
 
@@ -8,42 +8,37 @@ import React, { useState } from 'react'
 import { X, User, Phone, Users, MessageSquare, Hash } from 'lucide-react'
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter'
 
-export interface NonRegularGuestData {
+export interface NonInvitedGuestData {
   name: string
   phone: string
-  tableNo: string
-  dietaryRequirements: string
-  guestCount: number
-  notes: string
-  session?: string
-  limit?: number
+  souvenir: number
+  info: string
   category?: 'Regular' | 'VIP'
 }
 
-interface NonRegularGuestCheckInModalProps {
+interface NonInvitedSouvenirAssignmentModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: NonRegularGuestData) => Promise<void>
+  onSubmit: (data: NonInvitedGuestData) => Promise<void>
 }
 
-export default function NonRegularGuestCheckInModal({
+export default function NonInvitedSouvenirAssignmentModal({
   isOpen,
   onClose,
   onSubmit
-}: NonRegularGuestCheckInModalProps) {
-  const [formData, setFormData] = useState<NonRegularGuestData>({
+}: NonInvitedSouvenirAssignmentModalProps) {
+  const [formData, setFormData] = useState<NonInvitedGuestData>({
     name: '',
     phone: '',
-    tableNo: '',
-    dietaryRequirements: '',
-    guestCount: 1,
-    notes: '',
-    session: '1',
-    limit: 1,
+    info: '',
+    souvenir: 1,
     category: 'Regular'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [phoneError, setPhoneError] = useState<string>('')
+
+
+  const updateAdd = (k: keyof NonInvitedGuestData, v: string) => setFormData((s) => ({ ...s, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,24 +68,20 @@ export default function NonRegularGuestCheckInModal({
       setFormData({
         name: '',
         phone: '',
-        tableNo: '',
-        dietaryRequirements: '',
-        guestCount: 1,
-        notes: '',
-        session: '1',
-        limit: 1,
+        info: '',
+        souvenir: 1,
         category: 'Regular'
       })
       setPhoneError('')
       onClose()
     } catch (error) {
-      console.error('Error submitting non-regular guest:', error)
+      console.error('Error submitting non-invited guest:', error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleInputChange = (field: keyof NonRegularGuestData, value: string | number) => {
+  const handleInputChange = (field: keyof NonInvitedGuestData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     if (field === 'phone') {
       setPhoneError('')
@@ -109,7 +100,7 @@ export default function NonRegularGuestCheckInModal({
         <div className="w-full max-w-[95vw] sm:max-w-sm md:max-w-md rounded-xl border border-border bg-white shadow-xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 rounded-t-xl bg-primary text-white">
-            <div className="font-semibold text-sm sm:text-base md:text-lg">TAMBAH Tamu Tambahan</div>
+            <div className="font-semibold text-sm sm:text-base md:text-lg">Tambah Tamu</div>
             <button aria-label="Close" className="p-2 rounded-lg hover:bg-white/20 transition-colors" onClick={onClose}>
               <X className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
             </button>
@@ -133,6 +124,19 @@ export default function NonRegularGuestCheckInModal({
               </div>
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium">Informasi *</label>
+              </div>
+              <input
+                required
+                value={formData.info}
+                onChange={(e) => handleInputChange('info', e.target.value)}
+                className="w-full rounded-lg border border-border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Contoh: Rekan kerja, keluarga, dsb."
+              />
+            </div>
+
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium mb-2">No. WhatsApp *</label>
@@ -153,62 +157,17 @@ export default function NonRegularGuestCheckInModal({
               )}
             </div>
 
-            {/* Session */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Sesi Tamu *</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.session}
-                onChange={(e) => handleInputChange('session', e.target.value)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                placeholder="Contoh: 1 / 2"
-                required
-              />
-            </div>
-
             {/* Guest Count */}
             <div>
-              <label className="block text-sm font-medium mb-2">Jumlah Tamu *</label>
-              <div className="relative">
-                <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
+              <label className="block text-sm font-medium mb-2">Jumlah Souvenir *</label>
+              <div className="relative">                
                 <input
                   type="number"
                   min="1"
                   max="10"
-                  value={formData.guestCount}
-                  onChange={(e) => handleInputChange('guestCount', parseInt(e.target.value) || 1)}
+                  value={formData.souvenir}
+                  onChange={(e) => handleInputChange('souvenir', parseInt(e.target.value) || 1)}
                   className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Limit */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Limit Tamu *</label>
-              <input
-                type="number"
-                min="1"
-                value={formData.limit}
-                onChange={(e) => handleInputChange('limit', parseInt(e.target.value) || 1)}
-                className="w-full rounded-lg border border-border px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                placeholder="1"
-                required
-              />
-            </div>
-
-            {/* Table Number */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Nomor Meja *</label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                <input
-                  type="text"
-                  value={formData.tableNo}
-                  onChange={(e) => handleInputChange('tableNo', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                  placeholder="Contoh: 12"
                   required
                 />
               </div>
@@ -241,33 +200,6 @@ export default function NonRegularGuestCheckInModal({
                   <span>VIP</span>
                 </label>
               </div>
-            </div>
-
-            {/* Dietary Requirements */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Kebutuhan Diet Khusus</label>
-              <div className="relative">
-                <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                <input
-                  type="text"
-                  value={formData.dietaryRequirements}
-                  onChange={(e) => handleInputChange('dietaryRequirements', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors"
-                  placeholder="Any dietary restrictions or requirements"
-                />
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Catatan Tambahan</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors resize-none"
-                placeholder="Any additional information"
-              />
             </div>
 
             {/* Footer */}

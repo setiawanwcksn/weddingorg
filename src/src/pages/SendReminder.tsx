@@ -100,7 +100,7 @@ const SendReminder: React.FC = () => {
   const handleCopyWhatsAppMessage = async (guest: Guest) => {
     try {
       if (!guest.introTextCategory) {
-        showToast('Please select an intro text category first', 'error');
+        showToast('Pilih Kategori Teks Pengantar', 'error');
         return;
       }
 
@@ -153,9 +153,9 @@ const SendReminder: React.FC = () => {
       // Copy to clipboard
       await navigator.clipboard.writeText(introText);
 
-      showToast('WhatsApp message copied to clipboard', 'success');
+      showToast('Berhasil menyalin pesan WhatsApp', 'success');
     } catch (error: any) {
-      showToast('Failed to copy WhatsApp message', 'error');
+      showToast('Gagal menyalin pesan WhatsApp', 'error');
     }
   };
 
@@ -164,7 +164,7 @@ const SendReminder: React.FC = () => {
     try {
 
       if (!guest.introTextCategory) {
-        showToast('Please select an intro text category first', 'error');
+        showToast('Pilih Kategori Teks Pengantar', 'error');
         return;
       }
 
@@ -234,7 +234,7 @@ const SendReminder: React.FC = () => {
         return;
       }
 
-      showToast('Failed to share message', 'error');
+      showToast('Gagal untuk share message', 'error');
     }
   };
 
@@ -305,10 +305,10 @@ const SendReminder: React.FC = () => {
         throw new Error('Failed to delete guest');
       }
 
-      showToast('Scheduler deleted successfully', 'success');
+      showToast('Reminder berhasil terhapus', 'success');
       refresh();
     } catch (error: any) {
-      showToast(`Scheduler deleted failed, ${error}`, 'error');
+      showToast(`Reminder gagal dihapus, ${error}`, 'error');
     }
   };
 

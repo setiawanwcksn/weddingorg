@@ -1047,7 +1047,7 @@ const ManageGuests: React.FC = () => {
                               title={guest.status === 'Confirmed' ? 'Terkirim' : guest.status === 'scheduled' ? 'Terjadwal' : 'Belum'}
                             />
                             {guest.status === 'scheduled' && (
-                              <span className="text-xs text-purple-600 font-medium">Terjadwal</span>
+                            <span className="text-xs text-gray-600 font-medium">Terjadwal</span>
                             )}
                           </div>
                         </td>}

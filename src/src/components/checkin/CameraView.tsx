@@ -236,17 +236,6 @@ export function CameraView({ facingMode = 'environment', className = '', onQRCod
           <Camera size={16} />
           Camera
         </button>
-        <button
-          onClick={switchToUploadMode}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            scanMode === 'upload'
-              ? 'bg-primary text-white'
-              : 'bg-white/90 text-text hover:bg-white'
-          }`}
-        >
-          <Upload size={16} />
-          Upload
-        </button>
       </div>
 
       {scanMode === 'camera' && (

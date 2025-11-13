@@ -94,7 +94,7 @@ export function DoorprizePicker(): JSX.Element {
     // apply transform via style to enable CSS transition with pronounced ease-out deceleration
     requestAnimationFrame(() => {
       if (!wheelRef.current) return;
-      wheelRef.current.style.transition = 'transform 5s cubic-bezier(0.05, 0.9, 0.2, 1)';
+      wheelRef.current.style.transition = 'transform 15s cubic-bezier(0.05, 0.9, 0.2, 1)';
       wheelRef.current.style.transform = `rotate(${rotation + finalRotation}deg)`;
     });
 
@@ -124,7 +124,7 @@ export function DoorprizePicker(): JSX.Element {
       if (segmentAtTop !== winnerIndex) {
         console.warn(`WINNER MISMATCH DETECTED! Pointer shows segment ${segmentAtTop} but modal shows ${winnerIndex}`);
       }
-    }, 5200);
+    }, 15200);
   };
 
   const reset = () => {
@@ -255,7 +255,7 @@ export function DoorprizePicker(): JSX.Element {
                   {/* inner div counter-rotated so text upright */}
                   <div
                     style={{ transform: `rotate(${-textRotate}deg)` }}
-                    className="text-xs md:text-sm lg:text-base font-bold text-white text-center drop-shadow-lg truncate"
+                    className="text-xs md:text-sm lg:text-base font-bold text-black text-center drop-shadow-lg truncate"
                   >
                     {name.length > (wheelSize < 400 ? 12 : 18) ? name.slice(0, (wheelSize < 400 ? 11 : 17)) + '…' : name}
                   </div>
@@ -263,10 +263,7 @@ export function DoorprizePicker(): JSX.Element {
               );
             })}
           </div>
-
-
         </div>
-/* ---------- END WHEEL BLOCK ---------- */
 
         {/* controls */}
         <div className="flex flex-col items-center gap-4">
@@ -275,7 +272,7 @@ export function DoorprizePicker(): JSX.Element {
             disabled={running || guests.length === 0}
             className="px-6 py-3 md:px-12 md:py-6 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold text-lg md:text-xl shadow-2xl hover:scale-105 transition-transform disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {running ? 'SPINNING...' : 'SPIN THE WHEEL'}
+            {running ? 'SPINNING...' : 'Start'}
           </button>
 
           <div className="flex items-center gap-2 md:gap-3">
@@ -293,7 +290,7 @@ export function DoorprizePicker(): JSX.Element {
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 md:p-6 pointer-events-none">
           <div className="w-full max-w-sm md:max-w-md mx-auto pointer-events-auto bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl text-center border-4 border-yellow-400">
             <div className="text-4xl md:text-6xl mb-3 md:mb-4">🎉</div>
-            <h3 className="text-2xl md:text-3xl font-bold mb-2 text-gray-800">Winner!</h3>
+            <h3 className="text-2xl md:text-3xl font-bold mb-2 text-gray-800">Selamat!!</h3>
             <div className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{guests[winnerIdx].name}</div>
             <div className="text-base md:text-lg text-gray-600 mb-4 md:mb-6">{guests[winnerIdx].category ?? ''} {guests[winnerIdx].tableNo ? `• Table ${guests[winnerIdx].tableNo}` : ''}</div>
             <div className="flex gap-2 md:gap-3">

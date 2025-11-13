@@ -10,6 +10,7 @@ import tanyaCustomerCare from '../assets/TanyaCustomerCare.png';
 import penerimaTamu from '../assets/PenerimaTamu.png';
 import kelolaTamuDshbd from '../assets/KelolaTamuDshbd.png';
 import information from '../assets/Information.png';
+import { usePhoto } from "../contexts/PhotoProvider";
 
 interface DashboardAccountInfo {
   id: string;
@@ -53,6 +54,7 @@ const Dashboard: React.FC = () => {
   const [account, setAccount] = useState<DashboardAccountInfo | null>(null);
   const [countdown, setCountdown] = useState<WeddingCountdown | null>(null);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const { photoUrl, dashboardUrl, welcomeUrl } = usePhoto();
 
   // Use shared guests and stats from context (loaded once globally)
   const { stats: sharedStats } = useGuests();
@@ -105,34 +107,6 @@ const Dashboard: React.FC = () => {
   const dateText = account?.dateTime ? account.dateTime.toLocaleString() : '';
   const location = account?.location ?? '';
 
-  // Use dashboard-specific photo if available, otherwise use account photoUrl or default
-  const [photoUrl, setPhotoUrl] = useState<string>(DEFAULT_PHOTO);
-
-  useEffect(() => {
-    const loadPhoto = async () => {      
-      // Try to load uploaded photo first using authenticated request
-      // Now we can check without specifying extension - server will find any matching file
-      try {
-        const response = await apiRequest(apiUrl(`/api/upload/${user.id}_weddingPhotoUrl_dashboard/exists`));
-        const result = await response.json();
-
-        if (response.ok && result.success && result.exists) {
-          // Use the actual filename returned by the server (includes extension)
-          const uploadedPhotoUrl = apiUrl(`/api/upload/${result.filename}`);
-          setPhotoUrl(uploadedPhotoUrl);
-        } else {
-          // Fallback to dashboard-specific photo, then regular photo, then default
-          const dashboardPhoto = account?.photoUrl_dashboard || account?.photoUrl;
-          setPhotoUrl(convertGoogleDriveUrl(dashboardPhoto || ''));
-        }
-      } catch (error) {
-        console.log('Uploaded photo not found, using account photo or default');
-      }
-    };
-
-    loadPhoto();
-  }, [user?.id, account?.photoUrl, account?.photoUrl_dashboard, apiRequest]);
-
   const displayStats = [
     { label: 'Total Tamu', value: sharedStats.totalWithPlusOne + sharedStats.tamuTambahan, help: 'Jumlah total tamu termasuk tamu tambahan.' },
     { label: 'Tamu Undangan', value: sharedStats.invitedGuests, help: 'Jumlah tamu yang diundang.' },
@@ -145,67 +119,39 @@ const Dashboard: React.FC = () => {
     <div className="bg-accent text-gray-800">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Top grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* Hero image card */}
-          <div className="rounded-xl overflow-hidden border border-border/60 bg-white shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          {/* Gambar (mengisi penuh tinggi row) */}
+          <div className="rounded-xl overflow-hidden border border-border/60 bg-white shadow-sm h-full">
             <img
-              src={photoUrl}
+              src={dashboardUrl}
               alt="hero"
-              className="w-full h-48 sm:h-[260px] md:h-64 lg:h-72 object-cover"
+              className="w-full h-full object-cover"
             />
-            {/* optional caption area could go here */}
           </div>
 
-          {/* Data Tamu card with purple header */}
-          <div className="rounded-xl overflow-visible border border-border/60 bg-white shadow-sm" style={{ height: '100%' }}>
-            <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base rounded-t-xl flex items-center gap-2">
-              <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+          {/* Card Data Tamu (stretch) */}
+          <div className="rounded-xl overflow-hidden border border-border/60 bg-white shadow-sm h-full flex flex-col">
+            <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base flex items-center gap-2">
+              <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
               Data Tamu
             </div>
-            <ul className="divide-y divide-gray-100 px-4 py-4">
+
+            {/* isi card dibiarkan mengisi sisa tinggi */}
+            <ul className="divide-y divide-gray-100 px-4 py-4 flex-1 overflow-auto">
               {displayStats.map((row, idx) => (
-                <li
-                  key={idx}
-                  className="relative flex items-center justify-between px-5 py-4 bg-white"
-                >
+                <li key={idx} className="flex items-center justify-between px-5 py-4 bg-white">
                   <div className="flex items-center gap-2">
-                    {/* kotak ungu */}
                     <span className="w-3 h-3 rounded-sm bg-primary/20 flex-shrink-0" />
-
-                    {/* label + info icon */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm ">{row.label}</span>
-                      <button
-                        type="button"
-                        className="ml-0.5 inline-flex items-center justify-center w-3.5 h-3.5 text-primary/70 hover:bg-white hover:text-primary transition"
-                        style={{ marginBottom: `9px` }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenIdx(openIdx === idx ? null : idx);
-                        }}
-                        onBlur={() => setOpenIdx((cur) => (cur === idx ? null : cur))}
-                      >
-                        <img src={information} className="w-[9px] h-[9px]" />
-                      </button>
-                    </div>
-
-                    {/* popover */}
-                    {openIdx === idx && (
-                      <div className="absolute left-20 top-10 z-10 w-64 rounded-lg border border-gray-200 bg-white shadow-lg p-3 text-xs text-gray-700">
-                        <div className="font-medium mb-1">{row.label}</div>
-                        <p>{row.help ?? 'Tidak ada keterangan.'}</p>
-                      </div>
-                    )}
+                    <span className="text-sm">{row.label}</span>
                   </div>
-
-                  {/* value kanan */}
                   <span className="text-sm font-medium text-gray-900">{row.value}</span>
                 </li>
               ))}
             </ul>
-
           </div>
         </div>
+
 
         {/* Lower grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6">

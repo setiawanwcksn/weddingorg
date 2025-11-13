@@ -13,13 +13,26 @@ import GiftAssignmentModal from '../components/gifts/GiftAssignmentModal';
 import { Guest, GiftType } from '../../shared/types';
 import { BottomBar } from '../components/navigation/BottomBar';
 import { useNavigate } from 'react-router-dom';
+import { ConfirmModal } from "../components/common/DeleteModal";
 import { CheckInModal } from '../components/checkin/CheckInModal';
+import NonInvitedGiftAssignmentModal, { NonInvitedGuestData } from '../components/gifts/NonInvitedGiftAssignmentModal';
+import { apiUrl } from '../lib/api';
+import { useToast } from '../contexts/ToastContext';
+import GiftAct from '../assets//GiftAct.png';
+import SouvenirAct from '../assets/SouvenirAct.png';
+import edit from '../assets/Edit.png';
+import Delete from '../assets/Delete.png';
+import QRimg from '../assets/qr-code.png';
+import Welcome from '../assets/Welcome.png';
+import Excel from '../assets/xls-file.png';
+import Souvenir from '../assets/Souvenir.png';
 import { TableFilterPopover } from '../components/guests/TableFilterPopover';
 
 export const Gifts: React.FC = () => {
   const { apiRequest, token } = useAuth();
   const { guests, allGuests, loading, error, refresh } = useGuests();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedGiftStatus, setSelectedGiftStatus] = useState('All');
@@ -27,33 +40,62 @@ export const Gifts: React.FC = () => {
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isAddGuestOpen, setIsAddGuestOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>({
     no: true,
     name: true,
-    code: true,
-    category: true,
+    kode: true,
+    kategori: true,
     info: true,
-    sesi: true,
-    limit: true,
-    tableNo: true,
+    kado: true,
+    angpao: true,
     count: true,
-    date: true,
-    time: true,
+    note: true,
+    tanggal: true,
+    waktu: true,
     edit: true,
   });
 
   // Handle gift assignment completion
   const handleAssignmentComplete = async (guestId: string, giftType: GiftType, count: number) => {
     try {
-      console.log(`[Gifts] Gift assignment completed for guest ${guestId}: ${count} ${giftType}`);
 
       // Refresh guests list to ensure consistency
       await refresh();
     } catch (error: any) {
       console.error('[Gifts] Error refreshing gift data:', error?.message || error);
       throw error;
+    }
+  };
+
+  const handleDeleteGift = async (guest: Guest) => {
+    setSelectedGuest(guest);
+    setConfirmOpen(true);
+  };
+
+  const confirmDeleteGift = async () => {
+    if (!selectedGuest._id) return;
+
+    try {
+      const response = await apiRequest(
+        apiUrl(`/api/guests/${selectedGuest._id}/gifts`),
+        { method: "DELETE" }
+      );
+      const responseData = await response.json();
+
+      if (responseData.success) {
+        await refresh();
+      } else {
+        throw new Error(responseData.error || "Failed to delete souvenir data");
+      }
+      showToast(`Berhasil menghapus data gift`, 'success');
+    } catch (error: any) {
+      alert(error?.message || "Failed to delete souvenir data");
+    } finally {
+      setConfirmOpen(false);
     }
   };
 
@@ -66,7 +108,6 @@ export const Gifts: React.FC = () => {
   // Filter guests to only show those with gift data
   const filteredGuests = useMemo(() => {
     return allGuests.filter(guest => {
-      // Only show guests who have gift data (giftType and giftCount > 0)
       const hasGiftData = !!(((guest.kadoCount && guest.kadoCount > 0) || guest.angpaoCount && (guest.angpaoCount > 0)));
       if (!hasGiftData) return false;
 
@@ -125,7 +166,6 @@ export const Gifts: React.FC = () => {
       guest.giftType || '',
       String(guest.kadoCount || 0),
       String(guest.angpaoCount || 0),
-      String(guest.giftCount || 0),
       guest.giftNote || '',
       guest.updatedAt ? new Date(guest.updatedAt).toLocaleDateString() : '-',
       guest.isInvited === false ? 'Non-Invited' : 'Invited'
@@ -152,6 +192,39 @@ export const Gifts: React.FC = () => {
     setSelectedGuest(guest);
     setIsAssignmentModalOpen(true);
     setIsSearchModalOpen(false);
+  };
+
+  const handleAddGuestSave = async (data: NonInvitedGuestData) => {
+    try {
+      // Use the new unified guests API for non-invited guests
+      const response = await apiRequest(apiUrl(`/api/guests/non-invited`), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: data.name,
+          phone: data.phone,
+          info: data.info,
+          kado: data.kadoCount,
+          angpao: data.angpao,
+          giftNote: data.giftNote,
+          category: data.category
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add non-invited guest');
+      }
+
+      const result = await response.json();
+      showToast(`Berhasil menambahkan ${data.name}`, 'success');
+      setIsAddGuestOpen(false);
+    } catch (error) {
+      console.error('Error adding non-invited guest:', error);
+      showToast(`gagal menambahkan. ${error.message}`, 'error');
+    }
   };
 
   // Handle QR code scanning
@@ -216,16 +289,22 @@ export const Gifts: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button onClick={() => setIsSearchModalOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-4 py-3 transition min-h-[48px] hover:opacity-90 active:scale-95" >
-                  <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <Search className="w-4 h-4" />
+                  <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <img src={Welcome} className="w-3 h-3 md:w-4 md:h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </span>
-                  <span className="font-medium text-sm">Search Guest</span>
+                  <span className="font-medium text-sm">Cari Tamu</span>
+                </button>
+                <button onClick={() => setIsAddGuestOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-4 py-3 transition min-h-[48px] hover:opacity-90 active:scale-95" >
+                  <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <img src={Souvenir} className="w-3 h-3 md:w-4 md:h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                  </span>
+                  <span className="font-medium text-sm">Tambah Tamu</span>
                 </button>
                 <button onClick={exportGuestsToCSV} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary border border-border px-4 py-3 bg-primary text-background text-sm font-medium transition min-h-[48px] hover:opacity-90 active:scale-95">
-                  <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                    <FileSpreadsheet className="w-4 h-4" />
+                  <span className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                    <img src={Excel} className="w-3 h-3 md:w-4 md:h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </span>
-                  <span className="font-medium text-sm">Export</span>
+                  <span className="font-medium text-sm">Export Tamu</span>
                 </button>
               </div>
               <div className="flex items-center gap-2">
@@ -234,13 +313,32 @@ export const Gifts: React.FC = () => {
                     aria-label="Filter options" >
                     <Filter className="w-5 h-5" />
                   </button>
-                  <TableFilterPopover open={filterOpen} onClose={() => setFilterOpen(false)} options={[{ key: 'no', label: 'No' }, { key: 'name', label: 'Nama' }, { key: 'phone', label: 'WhatsApp' }, { key: 'status', label: 'Status' }, { key: 'terjadwal', label: 'Terjadwal' }, {
-                    key: 'reminder',
-                    label: 'Set Reminder'
-                  }, { key: 'share', label: 'Bagikan' },]} visible={visibleCols} onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))} onToggleAll={(checked) => {
-                    const allKeys = ['no', 'name',
-                      'phone', 'status', 'terjadwal', 'reminder', 'share']; const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {}); setVisibleCols(newState);
-                  }} />
+                  <TableFilterPopover open={filterOpen} onClose={() => setFilterOpen(false)} options={
+                    [
+                      { key: 'no', label: 'No', checked: visibleCols.no },
+                      { key: 'name', label: 'Nama', checked: visibleCols.name },
+                      { key: 'kode', label: 'Kode', checked: visibleCols.kode },
+                      { key: 'kategori', label: 'Kategori', checked: visibleCols.kategori },
+                      { key: 'info', label: 'Informasi', checked: visibleCols.info },
+                      { key: 'kado', label: 'Kado', checked: visibleCols.kado },
+                      {
+                        key: 'angpao', label: 'Angpao', checked: visibleCols.angpao
+                      },
+                      {
+                        key: 'count', label: 'Jumlah Kado', checked: visibleCols.count
+                      },
+                      {
+                        key: 'note', label: 'Note', checked: visibleCols.note
+                      },
+                      { key: 'tanggal', label: 'Tanggal', checked: visibleCols.tanggal },
+                      { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
+                      { key: 'edit', label: 'Edit', checked: visibleCols.edit },
+                    ]
+                  }
+                    onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))} onToggleAll={(checked) => {
+                      const allKeys = ['no', 'name',
+                        'kode', 'info', 'kategori', 'kado', 'angpao', 'count', 'note', 'tanggal', 'waktu', 'edit']; const newState = allKeys.reduce((acc, key) => ({ ...acc, [key]: checked }), {}); setVisibleCols(newState);
+                    }} />
                 </div>
               </div>
             </div>
@@ -280,54 +378,104 @@ export const Gifts: React.FC = () => {
               <table className="w-full">
                 <thead className="bg-accent">
                   <tr>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">No</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Guest Name</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Guest Code</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Guest Category</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Guest Info</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kado</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Angpao</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Gift Count</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Gift Note</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Gift Received Date</th>
-                    <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Actions</th>
+                    {visibleCols.no && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">No</th>}
+                    {visibleCols.name && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Nama</th>}
+                    {visibleCols.kode && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kode</th>}
+                    {visibleCols.kategori && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kategori</th>}
+                    {visibleCols.info && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Informasi</th>}
+                    {visibleCols.kado && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kado</th>}
+                    {visibleCols.angpao && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Angpao</th>}
+                    {visibleCols.count && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Jumlah Kado</th>}
+                    {visibleCols.note && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Note</th>}
+                    {visibleCols.tanggal && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Tanggal</th>}
+                    {visibleCols.waktu && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Waktu</th>}
+                    {visibleCols.edit && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Edit</th>}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-border">
                   {/* Guest gift givers */}
                   {pageRows.map((guest, index) => (
                     <tr key={guest._id} className="hover:bg-accent">
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{(page - 1) * pageSize + index + 1}</td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                      {visibleCols.no && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{(page - 1) * pageSize + index + 1}</td>}
+                      {visibleCols.name && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-text">{guest.name}</div>
-                          <div className="text-sm text-text/60">{guest.phone}</div>
                         </div>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.invitationCode}</td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                      </td>}
+                      {visibleCols.kode && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.invitationCode}</td>}
+                      {visibleCols.kategori && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-primary">
                           {guest.category}
                         </span>
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.info || '-'}</td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.kadoCount || '-'}</td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.angpaoCount || '-'}</td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.giftCount || 0}</td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text max-w-xs truncate">
+                      </td>}
+                      {visibleCols.info && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.info || '-'}</td>}
+                      {visibleCols.kado && <td className="px-4 py-4 text-sm text-center whitespace-nowrap min-w-[140px]">
+                        {guest.kadoCount > 0 ? (
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <div className="flex items-center justify-center gap-2 px-3 rounded-xl bg-secondary border border-secondary shadow-sm">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-secondary">
+                                <img src={GiftAct} className="w-4 h-4" />
+                              </div>
+                              <span className="text-sm text-text font-medium">Kado</span>
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>}
+
+                      {visibleCols.angpao && <td className="px-4 py-4 text-sm text-center whitespace-nowrap min-w-[140px]">
+                        {guest.angpaoCount > 0 ? (
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <div className="flex items-center justify-center gap-2 px-3 rounded-xl bg-secondary border border-secondary shadow-sm">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-secondary">
+                                <img src={SouvenirAct} className="w-4 h-4" />
+                              </div>
+                              <span className="text-sm text-text font-medium">Angpao</span>
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </td>}
+
+                      {visibleCols.count && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.kadoCount || 0}</td>}
+                      {visibleCols.note && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text max-w-xs truncate">
                         {guest.giftNote || '-'}
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">
-                        {guest.updatedAt ? new Date(guest.updatedAt).toLocaleDateString() : '-'}
-                      </td>
-                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex gap-2">
-                          <button onClick={() => handleAssignGift(guest)} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-background bg-primary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2
-                                              focus:ring-primary transition-colors active:scale-95" >
-                            <Gift className="h-4 w-4 mr-2" /> Edit
+                      </td>}
+                      {visibleCols.tanggal && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">
+                        {guest.giftRecordedAt ? new Date(guest.giftRecordedAt).toLocaleDateString() : '-'}
+                      </td>}
+                      {visibleCols.waktu && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">
+                        {guest.giftRecordedAt ? new Date(guest.giftRecordedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                      </td>}
+                      {visibleCols.edit && <td className="py-4 text-sm text-center whitespace-nowrap">
+                        <div className="flex items-center justify-start gap-3">
+                          <button
+                            onClick={() => handleAssignGift(guest)}
+                            className="inline-flex items-center justify-center p-2 rounded-md bg-yellow-500 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                            title="Edit"
+                          >
+                            <img
+                              src={edit}
+                              className="h-4 w-4"
+                              style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}
+                            />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteGift(guest)}
+                            className="inline-flex items-center justify-center p-2 rounded-md bg-red-500 hover:bg-danger/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger transition-colors"
+                            title="Delete"
+                          >
+                            <img
+                              src={Delete}
+                              className="h-4 w-4"
+                              style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}
+                            />
                           </button>
                         </div>
-                      </td>
+                      </td>}
                     </tr>
                   ))}
                 </tbody>
@@ -446,10 +594,12 @@ export const Gifts: React.FC = () => {
 
           {/* Modals */} {selectedGuest && (
             <GiftAssignmentModal isOpen={isAssignmentModalOpen} onClose={() => { setIsAssignmentModalOpen(false); setSelectedGuest(null); }} guest={selectedGuest} onAssign={handleAssignmentComplete} />)}
-
+          {isAddGuestOpen && (
+            <NonInvitedGiftAssignmentModal isOpen={isAddGuestOpen} onClose={() => setIsAddGuestOpen(false)} onSubmit={handleAddGuestSave} />)}
           {/* Search Modal - Direct to CARI TAMU TERDAFTAR - now includes all guests */}
           <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="gift"
           />
+          <ConfirmModal open={confirmOpen} title="Hapus Gift" message="Apakah kamu yakin ingin menghapus data gift untuk tamu ini?" onConfirm={confirmDeleteGift} onCancel={() => setConfirmOpen(false)} loading={loading} />
           {/* QR Scanner Modal - now includes all guests */}
           <CheckInModal
             open={isQRScannerOpen}

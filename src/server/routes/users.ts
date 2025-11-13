@@ -81,16 +81,6 @@ const createUserSchema = z.object({
   weddingTitle: z.string().min(2, 'Wedding title is required'),
   weddingDateTime: z.string().min(1, 'Wedding date/time is required'), // ISO string
   weddingLocation: z.string().min(2, 'Wedding location is required'),
-  weddingPhotoUrl: z.string().url('Wedding photo URL must be a valid URL').or(z.literal('')).optional(),
-  weddingPhotoUrl_dashboard: z.string().url('Dashboard photo URL must be a valid URL').or(z.literal('')).optional(),
-  weddingPhotoUrl_welcome: z
-    .string()
-    .url('Welcome photo URL must be a valid URL')
-    .or(z.literal(''))
-    .optional()
-    .refine((val) => !val || !val.includes('undefined/'), {
-      message: 'Welcome photo URL contains invalid "undefined" prefix',
-    }),
 
   // Permissions (hanya untuk role user)
   permissions: z
@@ -345,18 +335,6 @@ usersApp.post('/', requireAdmin, async (c) => {
         )
       }
     }
-
-    // await createAuditLog(currentUser.id, currentUser.username, 'user_created', 'users', {
-    //   newUserUsername: username,
-    //   role,
-    //   account: {
-    //     ...accountDoc,
-    //     photoUrl: defaultPhoto,
-    //     photoUrl_dashboard: dashboardUrl,
-    //     photoUrl_welcome: welcomeUrl,
-    //   },
-    //   permissions,
-    // })
 
     return c.json({
       success: true,
