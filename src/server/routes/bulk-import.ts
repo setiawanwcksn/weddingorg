@@ -18,7 +18,7 @@ const guestImportSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   phone: z.string().min(1, 'Phone number is required'),
   email: z.string().email('Invalid email format').optional().or(z.literal('')),
-  category: z.enum(['VIP', 'Regular']),
+  category: z.string().optional().default('Regular'),
   session: z.number().min(1).max(2),
   limit: z.number().min(1).max(10),
   notes: z.string().optional(),

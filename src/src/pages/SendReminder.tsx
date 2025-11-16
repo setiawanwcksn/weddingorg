@@ -421,7 +421,7 @@ const SendReminder: React.FC = () => {
                   <div className="relative">
                     <button
                       onClick={() => setFilterOpen(true)}
-                      className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors"
+                      className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary transition-colors"
                       title="Filter columns"
                     >
                       <Filter className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />

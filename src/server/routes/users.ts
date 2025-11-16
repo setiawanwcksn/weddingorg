@@ -18,7 +18,6 @@ const usersApp = new Hono<AppEnv>()
 
 const USERS_COLLECTION = '94884219_users'
 const ACCOUNTS_COLLECTION = '94884219_accounts'
-const AUDIT_LOGS_COLLECTION = '94884219_audit_logs'
 const USER_PERMISSIONS_COLLECTION = '94884219_user_permissions'
 
 // ------------------------ utils ------------------------
@@ -42,29 +41,6 @@ function safeObjectId(id: string): ObjectId | null {
   }
 }
 
-async function createAuditLog(
-  userId: string,
-  userEmailOrName: string | undefined,
-  action: string,
-  resource: string,
-  details?: any,
-) {
-  try {
-    await db.collection(AUDIT_LOGS_COLLECTION).insertOne({
-      userId,
-      userEmail: userEmailOrName,
-      action,
-      resource,
-      details,
-      ipAddress: null,
-      userAgent: null,
-      createdAt: new Date(),
-    })
-  } catch (err) {
-    console.error('[audit] Failed to create audit log:', err)
-  }
-}
-
 // ------------------------ schemas ------------------------
 
 const createUserSchema = z.object({
@@ -78,9 +54,12 @@ const createUserSchema = z.object({
 
   // Wedding account (required saat create user oleh admin)
   linkUndangan: z.string().optional(),
-  weddingTitle: z.string().min(2, 'Wedding title is required'),
-  weddingDateTime: z.string().min(1, 'Wedding date/time is required'), // ISO string
-  weddingLocation: z.string().min(2, 'Wedding location is required'),
+  title: z.string().optional(),
+  dateTime: z.string().optional(),
+  weddingLocation: z.string().optional(),
+  welcomeText: z.string().optional(),
+  guestCategories: z.array(z.string()).optional(),
+  youtubeUrl: z.string().optional(),
 
   // Permissions (hanya untuk role user)
   permissions: z
@@ -93,6 +72,16 @@ const createUserSchema = z.object({
     .optional(),
 })
 
+interface IntroTextDoc {
+  _id?: any
+  userId: string
+  formalText: string
+  casualText: string
+  isActive: boolean
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 const updateUserSchema = z.object({
   role: z.enum(['admin', 'user']).optional(),
   phone: z.string().optional(),
@@ -100,22 +89,12 @@ const updateUserSchema = z.object({
 
   // Wedding updates
   linkUndangan: z.string().optional(),
-  weddingTitle: z.string().min(2, 'Wedding title must be at least 2 characters').optional()
-    .or(z.literal('')),
-  weddingDateTime: z.string().optional().or(z.literal('')),
-  weddingLocation: z.string().min(2, 'Wedding location must be at least 2 characters').optional()
-    .or(z.literal('')),
-  weddingPhotoUrl: z.string().url('Wedding photo URL must be a valid URL').or(z.literal('')).optional(),
-  weddingPhotoUrl_dashboard: z.string().url('Dashboard photo URL must be a valid URL').or(z.literal('')).optional(),
-  weddingPhotoUrl_welcome: z
-    .string()
-    .url('Welcome photo URL must be a valid URL')
-    .or(z.literal(''))
-    .optional()
-    .refine((val) => !val || !val.includes('undefined/'), {
-      message: 'Welcome photo URL contains invalid "undefined" prefix',
-    }),
-
+  title: z.string().optional(),
+  dateTime: z.string().optional(),
+  weddingLocation: z.string().optional(),
+  welcomeText: z.string().optional(),
+  guestCategories: z.array(z.string()).optional(),
+  youtubeUrl: z.string().optional(),
   permissions: z
     .array(
       z.object({
@@ -276,18 +255,8 @@ usersApp.post('/', requireAdmin, async (c) => {
       password,
       role,
       phone,
-      linkUndangan,
-      weddingTitle,
-      weddingDateTime,
-      weddingLocation,
       permissions,
     } = body
-
-    // validate weddingDateTime
-    const weddingDate = new Date(weddingDateTime)
-    if (Number.isNaN(weddingDate.getTime())) {
-      return c.json({ success: false, error: 'Invalid wedding date/time format' }, 400)
-    }
 
     // username unique
     const existing = await db.collection(USERS_COLLECTION).findOne({ username })
@@ -297,11 +266,13 @@ usersApp.post('/', requireAdmin, async (c) => {
 
     // create account
     const accountDoc = {
-      name: weddingTitle,
-      title: weddingTitle,
-      linkUndangan: linkUndangan || '',
-      dateTime: weddingDate,
-      location: weddingLocation,
+      title: '',
+      linkUndangan: '',
+      dateTime: null,
+      location: '',
+      welcomeText: 'Selamat Datang ',
+      youtubeUrl: '',
+      guestCategories: ["reguler", "vip"],
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -336,6 +307,41 @@ usersApp.post('/', requireAdmin, async (c) => {
       }
     }
 
+    const defaultIntro: IntroTextDoc = {
+      userId: userRes.insertedId.toString(),
+      formalText: `Yth. [nama]
+
+Tanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami :
+
+*[mempelai]*
+
+Berikut link undangan kami, untuk info lengkap dari acara bisa kunjungi :
+
+[link-undangan]
+
+Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan untuk hadir dan memberikan doa restu.
+
+Mohon maaf perihal undangan hanya di bagikan melalui pesan ini.
+
+*Note :*
+_Jika link tidak bisa dibuka, silahkan copy link kemudian paste di Chrome atau Browser lainnya._
+_Untuk tampilan terbaik, silahkan akses melalui Browser Chrome / Safari dan non-aktifkan Dark Mode / Mode Gelap._
+
+Terima kasih banyak atas perhatiannya.`,
+      casualText: `Halo [nama]!
+
+Kami sangat berharap kamu bisa hadir di hari spesial kami. Kehadiranmu akan membuat hari kami lebih sempurna.
+*[mempelai]*
+[link-undangan]
+
+Datang yaa dan rayakan bersama kami!`,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    const result = await db.collection("94884219_intro_texts").insertOne(defaultIntro)
+
     return c.json({
       success: true,
       message: 'User created successfully',
@@ -349,7 +355,7 @@ usersApp.post('/', requireAdmin, async (c) => {
   } catch (err: any) {
     // kalau zod error
     if (err?.issues) {
-      return c.json({ success: false, error: 'Validation failed', issues: err.issues }, 400)
+      return c.json({ success: false, error: `Validation failed: ${err.issues}`, issues: err.issues }, 400)
     }
     console.error('[users] Create user failed:', err?.message ?? err)
     return c.json({ success: false, error: err?.message ?? 'Failed to create user' }, 500)
@@ -427,14 +433,15 @@ usersApp.get('/:id/account', requireAdmin, async (c) => {
       success: true,
       data: {
         id: account._id.toString(),
-        name: account.name,
         title: account.title,
         linkUndangan: account.linkUndangan,
         dateTime: account.dateTime,
         location: account.location,
-        photoUrl: account.photoUrl,
-        photoUrl_dashboard: account.photoUrl_dashboard,
-        photoUrl_welcome: account.photoUrl_welcome,
+        welcomeText: account.welcomeText,
+        youtubeUrl: account.youtubeUrl,
+        guestCategories: account.guestCategories,
+        createdAt: account.createdAt,
+        updatedAt: account.updatedAt,
       },
     })
   } catch (err: any) {
@@ -483,92 +490,6 @@ usersApp.patch(
         delete (updates as any).permissions
       }
 
-      // wedding account updates
-      if (
-        updates.weddingTitle !== undefined ||
-        updates.linkUndangan !== undefined ||
-        updates.weddingDateTime !== undefined ||
-        updates.weddingLocation !== undefined ||
-        updates.weddingPhotoUrl !== undefined ||
-        updates.weddingPhotoUrl_dashboard !== undefined ||
-        updates.weddingPhotoUrl_welcome !== undefined
-      ) {
-        const accOid = safeObjectId(userDoc.accountId)
-        if (!accOid) return c.json({ success: false, error: 'Account not found' }, 404)
-
-        const accountUpdates: any = {}
-
-        if (updates.weddingTitle !== undefined) {
-          accountUpdates.name = updates.weddingTitle || ''
-          accountUpdates.title = updates.weddingTitle || ''
-        }
-        if (updates.linkUndangan !== undefined) {
-          accountUpdates.linkUndangan = updates.linkUndangan || ''
-        }
-
-        if (updates.weddingDateTime !== undefined) {
-          if (updates.weddingDateTime) {
-            const d = new Date(updates.weddingDateTime)
-            if (Number.isNaN(d.getTime())) {
-              return c.json({ success: false, error: 'Invalid wedding date/time format' }, 400)
-            }
-            accountUpdates.dateTime = d
-          } else {
-            accountUpdates.dateTime = null
-          }
-        }
-
-        if (updates.weddingLocation !== undefined) {
-          accountUpdates.location = updates.weddingLocation || ''
-        }
-
-        if (updates.weddingPhotoUrl !== undefined) {
-          accountUpdates.photoUrl =
-            updates.weddingPhotoUrl ||
-            'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-        }
-
-        if (updates.weddingPhotoUrl_dashboard !== undefined) {
-          let url =
-            updates.weddingPhotoUrl_dashboard ||
-            accountUpdates.photoUrl ||
-            'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-          if (url.includes('undefined/')) url = url.replace('undefined/', '')
-          if (url.startsWith('/api/upload/')) {
-            url =
-              'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-          }
-          accountUpdates.photoUrl_dashboard = url
-        }
-
-        if (updates.weddingPhotoUrl_welcome !== undefined) {
-          let url =
-            updates.weddingPhotoUrl_welcome ||
-            accountUpdates.photoUrl ||
-            'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-          if (url.includes('undefined/')) url = url.replace('undefined/', '')
-          if (url.startsWith('/api/upload/')) {
-            url =
-              'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop'
-          }
-          accountUpdates.photoUrl_welcome = url
-        }
-
-        await db.collection(ACCOUNTS_COLLECTION).updateOne(
-          { _id: accOid } as any,
-          { $set: { ...accountUpdates, updatedAt: new Date() } },
-        )
-
-        // bersihkan field dari updates user
-        delete (updates as any).linkUndangan
-        delete (updates as any).weddingTitle
-        delete (updates as any).weddingDateTime
-        delete (updates as any).weddingLocation
-        delete (updates as any).weddingPhotoUrl
-        delete (updates as any).weddingPhotoUrl_dashboard
-        delete (updates as any).weddingPhotoUrl_welcome
-      }
-
       if (Object.keys(updates).length) {
         await db.collection(USERS_COLLECTION).updateOne(
           { _id: oid } as any,
@@ -586,5 +507,100 @@ usersApp.patch(
     }
   },
 )
+
+usersApp.put('/accounts/:accountId', async (c: Context<AppEnv>) => {
+  try {
+    const accountId = c.req.param('accountId');
+
+    // Validate auth token
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'No token provided' }, 401);
+    }
+
+    const token = authHeader.substring(7);
+    const userId = token.split('_')[2];
+
+    const user = await db.collection(USERS_COLLECTION).findOne({
+      _id: new ObjectId(userId),
+    });
+
+    if (!user || user.accountId !== accountId) {
+      return c.json({ success: false, error: 'Access denied' }, 403);
+    }
+    console.log(`[auth] accounts ${user.username} is updating account ${accountId}`);
+    // Parse body JSON
+    const body = await c.req.json().catch(() => null);
+
+    if (!body) {
+      return c.json({ success: false, error: 'Invalid JSON body' }, 400);
+    }
+
+    const updateData: any = {};
+
+    // Optional fields — update only if sent
+    if (typeof body.linkUndangan === 'string') updateData.linkUndangan = body.linkUndangan;
+    if (typeof body.title === 'string') updateData.title = body.title;
+    if (typeof body.location === 'string') updateData.location = body.location;
+    // Optional fields — update only if sent
+    if (typeof body.linkUndangan === 'string') updateData.linkUndangan = body.linkUndangan;
+    if (typeof body.title === 'string') updateData.title = body.title;
+    if (typeof body.location === 'string') updateData.location = body.location;
+    if (typeof body.welcomeText === 'string') updateData.welcomeText = body.welcomeText;
+    if (Array.isArray(body.guestCategories)) {
+      updateData.guestCategories = body.guestCategories;
+    }
+    if (typeof body.youtubeUrl === 'string') updateData.youtubeUrl = body.youtubeUrl;
+
+
+    // dateTime handler (optional)
+    if (body.dateTime) {
+      const dt = new Date(body.dateTime);
+
+      if (!Number.isNaN(dt.getTime())) {
+        updateData.dateTime = dt;
+      } else {
+        return c.json({ success: false, error: 'Invalid dateTime format' }, 400);
+      }
+    }
+
+    updateData.updatedAt = new Date();
+
+    const result = await db.collection(ACCOUNTS_COLLECTION).findOneAndUpdate(
+      { _id: new ObjectId(accountId) },
+      { $set: updateData },
+      { returnDocument: 'after' }
+    );
+
+    const updated = (result && (result as any).value) || result
+    if (!updated) {
+      return c.json({ success: false, error: 'Account not found' }, 404);
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        account: {
+          id: updated._id.toString(),
+          name: updated.name,
+          linkUndangan: updated.linkUndangan,
+          title: updated.title ?? updated.name,
+          dateTime: updated.dateTime,
+          location: updated.location,
+          welcomeText: updated.welcomeText,
+          youtubeUrl: updated.youtubeUrl,
+          guestCategories: updated.guestCategories,
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt,
+        },
+      },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to update account';
+    console.error('[auth] Update account failed:', msg);
+    return c.json({ success: false, error: msg }, 500);
+  }
+});
+
 
 export default usersApp

@@ -10,6 +10,7 @@ import useSWR from 'swr';
 import { useRealtimeGuests } from '../hooks/useRealtimeGuests';
 import { apiUrl } from '../lib/api';
 import { usePhoto } from "../contexts/PhotoProvider";
+import { useAccount } from '../hooks/useAccount';
 
 const fetcher = (url: string) => {
   return fetch(url, {
@@ -19,6 +20,34 @@ const fetcher = (url: string) => {
   }).then(res => res.json());
 };
 
+function getYoutubeEmbedUrl(raw?: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    let videoId: string | null = null;
+
+    if (url.hostname.includes('youtu.be')) {
+      // https://youtu.be/VIDEOID
+      videoId = url.pathname.slice(1);
+    } else if (url.hostname.includes('youtube.com')) {
+      // https://www.youtube.com/watch?v=VIDEOID
+      videoId = url.searchParams.get('v');
+
+      // https://www.youtube.com/embed/VIDEOID
+      if (!videoId && url.pathname.startsWith('/embed/')) {
+        videoId = url.pathname.split('/')[2] || null;
+      }
+    }
+
+    if (!videoId) return null;
+
+    return `https://www.youtube.com/embed/${videoId}`;
+  } catch {
+    return null;
+  }
+}
+
+
 function WelcomeDisplay(): JSX.Element {
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -26,13 +55,7 @@ function WelcomeDisplay(): JSX.Element {
   const [currentGuest, setCurrentGuest] = useState<{ name: string; checkInDate: string } | null>(null);
   const [mutateKey, setMutateKey] = useState(0);
   const { photoUrl, dashboardUrl, welcomeUrl } = usePhoto();
-
-  // Auto-refresh every 2 seconds to check for new check-ins
-  const { data: accountData, error: accountError, mutate: mutateAccount } = useSWR(
-    [apiUrl(`/api/welcome-display/accounts/current`), mutateKey],
-    ([url]) => fetcher(url),
-    { refreshInterval: 2000, revalidateOnFocus: true, revalidateOnReconnect: true }
-  );
+  const { account } = useAccount();
 
   const { data: recentCheckinsData, error: checkinsError, mutate: mutateCheckins } = useSWR(
     [apiUrl(`/api/welcome-display/guests/recent-checkins?timeframe=30`), mutateKey],
@@ -102,8 +125,12 @@ function WelcomeDisplay(): JSX.Element {
     window.history.back();
   };
 
-  const account = accountData;
   const recentCheckins = recentCheckinsData?.guests || [];
+
+  const youtubeEmbedUrl = React.useMemo(
+    () => getYoutubeEmbedUrl(account?.youtubeUrl),
+    [account?.youtubeUrl]
+  );
 
   // Add real-time guest updates
   useRealtimeGuests(() => {
@@ -111,23 +138,9 @@ function WelcomeDisplay(): JSX.Element {
     // Force refresh by updating a key that triggers re-render
     setMutateKey(prev => prev + 1);
 
-    // Also manually trigger SWR revalidation
-    mutateAccount();
     mutateCheckins();
   });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[WelcomeDisplay] Component mounted, checking API endpoints...');
-    console.log('[WelcomeDisplay] Account data:', accountData);
-    console.log('[WelcomeDisplay] Recent checkins data:', recentCheckinsData);
-    console.log('[WelcomeDisplay] Account error:', accountError);
-    console.log('[WelcomeDisplay] Checkins error:', checkinsError);
-  }, [accountData, recentCheckinsData, accountError, checkinsError]);
-
-  if (accountError || checkinsError) {
-    console.error('Error loading welcome display data:', accountError || checkinsError);
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center relative overflow-hidden">
@@ -144,19 +157,31 @@ function WelcomeDisplay(): JSX.Element {
           // Default Welcome Message
           <div className="animate-fade-in">
             <div className="mb-8">
-              <img
-                src={welcomeUrl}
-                alt="Wedding"
-                className="w-96 h-64 object-cover rounded-2xl shadow-2xl mx-auto mb-8 border-4 border-white/50"
-              />
+              {youtubeEmbedUrl ? (
+                <div className="relative w-96 h-64 mx-auto mb-8 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/50">
+                  <iframe
+                    src={`${youtubeEmbedUrl}?autoplay=1&mute=1&loop=1&controls=0&modestbranding=1&rel=0`}
+                    title="Wedding video"
+                    className="w-full h-full"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <img
+                  src={welcomeUrl}
+                  alt="Wedding"
+                  className="w-96 h-64 object-cover rounded-2xl shadow-2xl mx-auto mb-8 border-4 border-white/50"
+                />
+              )}
             </div>
 
             <h1 className="text-6xl md:text-8xl font-bold text-text mb-4">
-              Welcome
+              {account?.welcomeText || 'Welcome'}
             </h1>
 
             <h2 className="text-4xl md:text-6xl font-light text-primary mb-6">
-              in {account?.title || 'Our Wedding'}
+              {account?.title || 'Our Wedding'}
             </h2>
 
             <div className="text-xl md:text-2xl text-text/70 space-y-2">
@@ -173,15 +198,27 @@ function WelcomeDisplay(): JSX.Element {
           // Guest-Specific Welcome Message
           <div className="animate-fade-in">
             <div className="mb-8">
-              <img
-                src={welcomeUrl}
-                alt="Welcome Guest"
-                className="w-96 h-64 object-cover rounded-2xl shadow-2xl mx-auto mb-8 border-4 border-white/50"
-              />
+              {youtubeEmbedUrl ? (
+                <div className="relative w-96 h-64 mx-auto mb-8 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/50">
+                  <iframe
+                    src={`${youtubeEmbedUrl}?autoplay=1&mute=1&loop=1&controls=0&modestbranding=1&rel=0`}
+                    title="Wedding video"
+                    className="w-full h-full"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <img
+                  src={welcomeUrl}
+                  alt="Welcome Guest"
+                  className="w-96 h-64 object-cover rounded-2xl shadow-2xl mx-auto mb-8 border-4 border-white/50"
+                />
+              )}
             </div>
 
             <h1 className="text-6xl md:text-8xl font-bold text-text mb-4">
-              Welcome
+              {account?.welcomeText || 'Welcome'}
             </h1>
 
             <h2 className="text-4xl md:text-6xl font-light text-primary mb-6">

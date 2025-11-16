@@ -35,6 +35,8 @@ export function Sidebar({ mobileMenuOpen = false, onMobileMenuClose }: SidebarPr
   const allNavItems = [
     { to: '/dashboard', label: 'Dashboard', icon: Home, permission: 'guests' },
     { to: '/guests', label: 'Kelola Tamu', icon: Users, permission: 'guests' },
+    { to: '/events', label: 'Events', icon: Lock, permission: 'guests' },
+    { to: '/settings', label: 'Settings', icon: Settings, permission: 'guests' },
     { to: '/users', label: 'Users & Roles', icon: Shield, permission: 'users', adminOnly: true },
   ];
 
@@ -54,11 +56,10 @@ export function Sidebar({ mobileMenuOpen = false, onMobileMenuClose }: SidebarPr
 
   return (
     <aside
-      className={`${
-        mobileMenuOpen
-          ? 'fixed inset-y-0 left-0 z-50 w-64'
-          : 'hidden md:flex w-56'
-      } flex-col border-r border-gray-200 bg-white p-4 shadow-sm shrink-0 h-screen`}
+      className={`${mobileMenuOpen
+        ? 'fixed inset-y-0 left-0 z-50 w-64'
+        : 'hidden md:flex w-56'
+        } flex-col border-r border-gray-200 bg-white p-4 shadow-sm shrink-0 h-screen`}
     >
       {/* Header */}
       <div className="flex items-center justify-between md:justify-start gap-2 px-2 py-1.5">
@@ -66,7 +67,7 @@ export function Sidebar({ mobileMenuOpen = false, onMobileMenuClose }: SidebarPr
           <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center shadow-sm">
             <LayoutGrid className="w-4 h-4 text-white" />
           </div>
-          <span className="font-semibold text-blue-600">Lavender</span>
+          <span className="font-semibold text-blue-600">Attari</span>
         </div>
         <button
           onClick={onMobileMenuClose}

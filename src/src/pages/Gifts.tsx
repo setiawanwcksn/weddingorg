@@ -309,7 +309,7 @@ export const Gifts: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <button onClick={() => setFilterOpen(true)} className="w-12 h-12 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary hover:bg-primary/90 transition-colors min-h-[48px] touch-manipulation"
+                  <button onClick={() => setFilterOpen(true)} className="w-12 h-12 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary transition-colors min-h-[48px] touch-manipulation"
                     aria-label="Filter options" >
                     <Filter className="w-5 h-5" />
                   </button>

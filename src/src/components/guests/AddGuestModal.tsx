@@ -9,6 +9,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter';
 import { apiUrl } from '../../lib/api';
+import { useAccount } from '../../hooks/useAccount';
 
 export interface AddGuestFormData {
   name: string;
@@ -20,7 +21,7 @@ export interface AddGuestFormData {
   kado: number;
   angpao: number;
   tableNo: string;
-  category: 'Regular' | 'VIP';
+  category: string;
   guestCount?: number;
 }
 
@@ -41,15 +42,24 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
     session: '',
     limit: 1,
     tableNo: '',
-    category: 'Regular',
+    category: '',
     guestCount: 1,
   });
-
   const [nameError, setNameError] = React.useState<string>('');
   const [phoneError, setPhoneError] = React.useState<string>('');
   const [checkingName, setCheckingName] = React.useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const infoMax = 120;
+
+  const { account } = useAccount();
+
+  const categories = React.useMemo(
+    () =>
+      Array.isArray(account?.guestCategories) && account.guestCategories.length > 0
+        ? account.guestCategories
+        : ['Regular', 'VIP'],
+    [account]
+  );
 
   React.useEffect(() => {
     if (!open) return;
@@ -64,7 +74,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
       souvenir: 0,
       limit: 1,
       tableNo: '',
-      category: 'Regular',
+      category: categories[0],
       guestCount: 1,
     });
   }, [open]);
@@ -269,7 +279,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
             <div>
               <label className="block font-medium mb-2">Kategori *</label>
               <div className="flex gap-4">
-                {['Regular', 'VIP'].map((opt) => (
+                {categories.map((opt) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"

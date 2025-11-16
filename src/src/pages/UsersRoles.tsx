@@ -42,13 +42,6 @@ const UsersRoles: React.FC = () => {
     phone: '',
     password: '',
     role: 'user' as 'admin' | 'user',
-    weddingTitle: '',
-    linkUndangan: '',
-    weddingDateTime: '',
-    weddingLocation: '',
-    weddingPhotoUrl: '',
-    weddingPhotoUrl_dashboard: '',
-    weddingPhotoUrl_welcome: '',
   });
   const [permissionsData, setPermissionsData] = useState<UserPermission[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -88,59 +81,7 @@ const UsersRoles: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const handlePhotoUpload = async (
-    file: File,
-    userId: string,
-    fieldName: 'weddingPhotoUrl' | 'weddingPhotoUrl_dashboard' | 'weddingPhotoUrl_welcome'
-  ): Promise<boolean> => {
-    const setUploading =
-      fieldName === 'weddingPhotoUrl' ? setUploadingPhoto :
-        fieldName === 'weddingPhotoUrl_dashboard' ? setUploadingDashboardPhoto :
-          setUploadingWelcomePhoto;
-
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append('photo', file);
-      fd.append('type', 'user');
-      fd.append('userId', userId);       // prefix filename di server
-      fd.append('fieldType', fieldName); // “weddingPhotoUrl” | “..._dashboard” | “..._welcome”
-
-      const headers = getAuthHeaders(); // ← pastikan ini TIDAK menyetel 'Content-Type'
-      delete (headers as any)['Content-Type'];     // jaga-jaga
-      delete (headers as any)['content-type'];
-      const res = await fetch(getApiUrl('/api/upload'), {
-        method: 'POST',
-        headers: headers, // pastikan fungsi ini TIDAK memaksakan 'Content-Type' saat FormData
-        body: fd,
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        throw new Error(txt || 'Upload failed');
-      }
-
-      const json = await res.json();
-      if (!json?.success) throw new Error(json?.error || 'Upload failed');
-
-      // Tidak perlu menyimpan URL ke user; optional: update formData untuk preview lokal
-      // setFormData(prev => ({ ...prev, [fieldName]: json.data?.url ?? '' }));
-
-      return true;
-    } catch (err: any) {
-      console.error(`[upload ${fieldName}]`, err);
-      showToast(err?.message ?? 'Gagal untuk upload photo', 'error');
-      return false;
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setSelectedPhoto(file);
-  };
+  
   const handleDashboardPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setSelectedDashboardPhoto(file);
@@ -156,10 +97,6 @@ const UsersRoles: React.FC = () => {
     // Validasi seperti sebelumnya
     if (!formData.username.trim()) return showToast('Username is required', 'error');
     if (!formData.password.trim()) return showToast('Password is required', 'error');
-    if (!formData.linkUndangan.trim()) return showToast('Link undangan is required', 'error');
-    if (!formData.weddingTitle.trim()) return showToast('Wedding title is required', 'error');
-    if (!formData.weddingDateTime) return showToast('Wedding date and time is required', 'error');
-    if (!formData.weddingLocation.trim()) return showToast('Wedding location is required', 'error');
 
     try {
       // 1) CREATE USER (tanpa foto)
@@ -168,10 +105,6 @@ const UsersRoles: React.FC = () => {
         password: formData.password.trim(),
         role: formData.role,
         phone: formData.phone.trim(),
-        linkUndangan: formData.linkUndangan.trim(),
-        weddingTitle: formData.weddingTitle.trim(),
-        weddingDateTime: new Date(formData.weddingDateTime).toISOString(),
-        weddingLocation: formData.weddingLocation.trim(),
         permissions: formData.role === 'user' ? permissionsData : [],
       };
 
@@ -217,13 +150,6 @@ const UsersRoles: React.FC = () => {
         phone: '',
         password: '',
         role: 'user',
-        linkUndangan: '',
-        weddingTitle: '',
-        weddingDateTime: '',
-        weddingLocation: '',
-        weddingPhotoUrl: '',
-        weddingPhotoUrl_dashboard: '',
-        weddingPhotoUrl_welcome: '',
       });
       setSelectedPhoto(null);
       setSelectedDashboardPhoto(null);
@@ -275,13 +201,6 @@ const UsersRoles: React.FC = () => {
         phone: user.phone || '',
         password: '', // Leave empty for edit
         role: user.role,
-        linkUndangan: accountData.linkUndangan,
-        weddingTitle: accountData.weddingTitle,
-        weddingDateTime: accountData.weddingDateTime,
-        weddingLocation: accountData.weddingLocation,
-        weddingPhotoUrl: accountData.weddingPhotoUrl,
-        weddingPhotoUrl_dashboard: accountData.weddingPhotoUrl_dashboard,
-        weddingPhotoUrl_welcome: accountData.weddingPhotoUrl_welcome,
       });
       setPermissionsData(user.permissions || []);
       setShowEditModal(true);
@@ -293,13 +212,6 @@ const UsersRoles: React.FC = () => {
         phone: user.phone || '',
         password: '',
         role: user.role,
-        linkUndangan: '',
-        weddingTitle: '',
-        weddingDateTime: '',
-        weddingLocation: '',
-        weddingPhotoUrl: '',
-        weddingPhotoUrl_dashboard: '',
-        weddingPhotoUrl_welcome: '',
       });
       setPermissionsData(user.permissions || []);
       setShowEditModal(true);
@@ -317,10 +229,6 @@ const UsersRoles: React.FC = () => {
 
     if (!selectedUser) return showToast('No user selected', 'error');
     if (!formData.username.trim()) return showToast('Username is required', 'error');
-    if (!formData.linkUndangan.trim()) return showToast('Link Undangan is required', 'error');
-    if (!formData.weddingTitle.trim()) return showToast('Wedding title is required', 'error');
-    if (!formData.weddingDateTime) return showToast('Wedding date and time is required', 'error');
-    if (!formData.weddingLocation.trim()) return showToast('Wedding location is required', 'error');
 
     try {
       // 1️⃣ Update user basic info
@@ -328,10 +236,6 @@ const UsersRoles: React.FC = () => {
         username: formData.username.trim(),
         phone: formData.phone.trim(),
         role: formData.role,
-        linkUndangan: formData.linkUndangan.trim(),
-        weddingTitle: formData.weddingTitle.trim(),
-        weddingDateTime: new Date(formData.weddingDateTime).toISOString(),
-        weddingLocation: formData.weddingLocation.trim(),
         permissions: formData.role === 'user' ? permissionsData : [],
       };
 
@@ -848,167 +752,6 @@ const UsersRoles: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Wedding Details Section */}
-                  <div className="pt-2">
-                    <h3 className="text-sm font-semibold text-primary mb-2">Wedding Details</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                      {/* Wedding Title */}
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Wedding Title
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.weddingTitle}
-                          onChange={(e) =>
-                            setFormData({ ...formData, weddingTitle: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Link Undangan
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.linkUndangan}
-                          onChange={(e) =>
-                            setFormData({ ...formData, linkUndangan: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                        />
-                        <span className="text-sm text-gray-600 truncate max-w-32">
-                          contoh: https://attarivitation.com/aaaa-xxxx
-                        </span>
-                      </div>
-
-                      {/* Wedding Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Wedding Date & Time
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={formData.weddingDateTime}
-                          onChange={(e) =>
-                            setFormData({ ...formData, weddingDateTime: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                        />
-                      </div>
-
-                      {/* Wedding Location */}
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Wedding Location
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.weddingLocation}
-                          onChange={(e) =>
-                            setFormData({ ...formData, weddingLocation: e.target.value })
-                          }
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                        />
-                      </div>
-
-                      {/* Wedding Photo Upload */}
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Wedding Photo
-                        </label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoChange}
-                            className="hidden"
-                            id="edit-photo-upload"
-                            disabled={uploadingPhoto}
-                          />
-                          <label
-                            htmlFor="edit-photo-upload"
-                            className={`flex items-center justify-center px-3 py-2 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors ${uploadingPhoto ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingPhoto ? "Uploading..." : "Upload Photo"}
-                          </label>
-                          {selectedPhoto && (
-                            <span className="text-sm text-gray-600 truncate max-w-32">
-                              {selectedPhoto.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Dashboard Photo Upload */}
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Dashboard Photo
-                        </label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleDashboardPhotoChange}
-                            className="hidden"
-                            id="edit-dashboard-photo-upload"
-                            disabled={uploadingDashboardPhoto}
-                          />
-                          <label
-                            htmlFor="edit-dashboard-photo-upload"
-                            className={`flex items-center justify-center px-3 py-2 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors ${uploadingDashboardPhoto ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingDashboardPhoto
-                              ? "Uploading..."
-                              : "Upload Dashboard Photo"}
-                          </label>
-                          {selectedDashboardPhoto && (
-                            <span className="text-sm text-gray-600 truncate max-w-32">
-                              {selectedDashboardPhoto.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Welcome Photo Upload */}
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">
-                          Welcome Photo
-                        </label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="file"
-                            accept="image/*,video/mp4,video/webm,video/quicktime"
-                            onChange={handleWelcomePhotoChange}
-                            className="hidden"
-                            id="edit-welcome-photo-upload"
-                            disabled={uploadingWelcomePhoto}
-                          />
-                          <label
-                            htmlFor="edit-welcome-photo-upload"
-                            className={`flex items-center justify-center px-3 py-2 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors ${uploadingWelcomePhoto ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingWelcomePhoto
-                              ? "Uploading..."
-                              : "Upload Welcome Photo"}
-                          </label>
-                          {selectedWelcomePhoto && (
-                            <span className="text-sm text-gray-600 truncate max-w-32">
-                              {selectedWelcomePhoto.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Permissions */}
                   {formData.role === "user" && (
                     <div className="pt-2">
@@ -1126,134 +869,6 @@ const UsersRoles: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Wedding account details */}
-                  <div className="pt-2">
-                    <h3 className="text-sm font-semibold text-primary mb-2">Wedding Details</h3>
-                    <div className="grid grid-cols-1 gap-3">
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Wedding Title</label>
-                        <input
-                          type="text"
-                          value={formData.weddingTitle}
-                          onChange={(e) => setFormData({ ...formData, weddingTitle: e.target.value })}
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Link Undangan</label>
-                        <input
-                          type="text"
-                          value={formData.linkUndangan}
-                          onChange={(e) => setFormData({ ...formData, linkUndangan: e.target.value })}
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                          required
-                        />
-                        <span className="text-sm text-gray-600 truncate max-w-32">
-                          contoh: https://attarivitation.com/aaaa-xxxx
-                        </span>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Wedding Date & Time</label>
-                        <input
-                          type="datetime-local"
-                          value={formData.weddingDateTime}
-                          onChange={(e) => setFormData({ ...formData, weddingDateTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Wedding Location</label>
-                        <input
-                          type="text"
-                          value={formData.weddingLocation}
-                          onChange={(e) => setFormData({ ...formData, weddingLocation: e.target.value })}
-                          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm sm:text-base"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Wedding Photo</label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handlePhotoChange}
-                            className="hidden"
-                            id="photo-upload"
-                            disabled={uploadingPhoto}
-                          />
-                          <label
-                            htmlFor="photo-upload"
-                            className={`flex items-center justify-center px-3 py-2 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors ${uploadingPhoto ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingPhoto ? 'Uploading...' : 'Upload Photo'}
-                          </label>
-                          {selectedPhoto && (
-                            <span className="text-sm text-gray-600 truncate max-w-32">
-                              {selectedPhoto.name}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Upload a photo</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Dashboard Photo</label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleDashboardPhotoChange}
-                            className="hidden"
-                            id="dashboard-photo-upload"
-                            disabled={uploadingDashboardPhoto}
-                          />
-                          <label
-                            htmlFor="dashboard-photo-upload"
-                            className={`flex items-center justify-center px-3 py-2 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors ${uploadingDashboardPhoto ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingDashboardPhoto ? 'Uploading...' : 'Upload Dashboard Photo'}
-                          </label>
-                          {selectedDashboardPhoto && (
-                            <span className="text-sm text-gray-600 truncate max-w-32">
-                              {selectedDashboardPhoto.name}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Upload dashboard photo (_dashboard prefix)</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text mb-2">Welcome Photo</label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="file"
-                            accept="image/*,video/mp4,video/webm,video/quicktime"
-                            onChange={handleWelcomePhotoChange}
-                            className="hidden"
-                            id="edit-welcome-photo-upload"
-                            disabled={uploadingWelcomePhoto}
-                          />
-                          <label
-                            htmlFor="edit-welcome-photo-upload"
-                            className={`flex items-center justify-center px-3 py-2 border border-border rounded-lg cursor-pointer hover:bg-secondary transition-colors ${uploadingWelcomePhoto ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            {uploadingWelcomePhoto ? 'Uploading...' : 'Upload Welcome Photo'}
-                          </label>
-                          {selectedWelcomePhoto && (
-                            <span className="text-sm text-gray-600 truncate max-w-32">
-                              {selectedWelcomePhoto.name}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Upload welcome photo (_welcome prefix)</p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Permissions section for User role */}
                   {formData.role === 'user' && (
                     <div className="pt-2">
@@ -1285,7 +900,7 @@ const UsersRoles: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setShowAddModal(false);
-                        setFormData({ username: '', phone: '', password: '', role: 'user', weddingTitle: '', weddingDateTime: '', weddingLocation: '', weddingPhotoUrl: '', weddingPhotoUrl_dashboard: '', weddingPhotoUrl_welcome: '' });
+                        setFormData({ username: '', phone: '', password: '', role: 'user'});
                         setSelectedPhoto(null);
                         setSelectedDashboardPhoto(null);
                         setSelectedWelcomePhoto(null);
@@ -1313,7 +928,7 @@ const UsersRoles: React.FC = () => {
               <div className="bg-background rounded-xl p-6 w-full max-w-sm mx-4">
                 <h2 className="text-lg font-semibold text-text mb-4">Delete User</h2>
                 <p className="text-sm text-text mb-6">
-                  Are you sure you want to delete user <strong>{selectedUser.username}</strong>? This action cannot be undone and will also delete all associated guests.
+                  Kamu yakin ingin menghapus data user <strong>{selectedUser.username}</strong>? Ini tidak dapat dikembalikan dan akan menghapus tamu yg terkait.
                 </p>
                 <div className="flex space-x-3">
                   <button

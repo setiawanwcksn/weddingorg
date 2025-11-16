@@ -6,8 +6,9 @@ import { ToastProvider } from './contexts/ToastContext';
 import { GuestsProvider } from './contexts/GuestsContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Events from './pages/EventPage';
+import Settings from './pages/Settings';
 import ManageGuests from './pages/ManageGuests';
-import GuestDetails from './pages/GuestDetails';
 import SendReminder from './pages/SendReminder';
 import WelcomeDisplay from './pages/WelcomeDisplay';
 import { AppLayout } from './components/layout/AppLayout';
@@ -99,6 +100,12 @@ function App() {
                       <ReceptionCheckIn />
                     </PermissionGuard>
                   } />
+                  <Route path="/events" element={<PermissionGuard requiredPermission="guests">
+                    <Events />
+                  </PermissionGuard>} />
+                  <Route path="/settings" element={<PermissionGuard requiredPermission="guests">
+                    <Settings />
+                  </PermissionGuard>} />
                   <Route path="/souvenirs" element={<Souvenirs />} />
                   <Route path="/gifts" element={<Gifts />} />
                   <Route path="/doorprize" element={<Doorprize />} />
@@ -111,11 +118,6 @@ function App() {
                   <Route path="/guests/send-reminder" element={
                     <PermissionGuard requiredPermission="guests">
                       <SendReminder />
-                    </PermissionGuard>
-                  } />
-                  <Route path="/guests/:id" element={
-                    <PermissionGuard requiredPermission="guests">
-                      <GuestDetails />
                     </PermissionGuard>
                   } />
                   <Route path="/message-templates" element={<MessageTemplates />} />

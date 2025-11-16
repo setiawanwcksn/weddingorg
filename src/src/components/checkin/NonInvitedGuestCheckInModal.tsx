@@ -7,13 +7,14 @@
 import React, { useState } from 'react'
 import { X, User, Phone, Users, MessageSquare, Hash } from 'lucide-react'
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter'
+import { useAccount } from '../../hooks/useAccount';
 
 export interface NonInvitedGuestData {
   name: string
   phone: string
   guestCount: number
   info: string
-  category?: 'Regular' | 'VIP'
+  category?: string
 }
 
 interface NonInvitedGuestCheckInModalProps {
@@ -36,7 +37,11 @@ export default function NonInvitedGuestCheckInModal({
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [phoneError, setPhoneError] = useState<string>('')
+  const { account } = useAccount();
 
+  const categories = Array.isArray(account?.guestCategories)
+    ? account!.guestCategories
+    : ['Regular', 'VIP'];
 
   const updateAdd = (k: keyof NonInvitedGuestData, v: string) => setFormData((s) => ({ ...s, [k]: v }));
 
@@ -70,7 +75,7 @@ export default function NonInvitedGuestCheckInModal({
         phone: '',
         info: '',
         guestCount: 1,
-        category: 'Regular'
+        category: categories[0]
       })
       setPhoneError('')
       onClose()
@@ -177,31 +182,24 @@ export default function NonInvitedGuestCheckInModal({
             {/* Category */}
             <div>
               <label className="block text-sm font-medium mb-3">Kategori Tamu *</label>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-                <label className="flex items-center gap-2 sm:gap-3 text-sm md:text-base cursor-pointer">
-                  <input
-                    type="radio"
-                    name="category"
-                    value="Regular"
-                    checked={formData.category === 'Regular'}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-3 h-3 sm:w-4 sm:h-4 text-primary focus:ring-primary"
-                  />
-                  <span>Regular</span>
-                </label>
-                <label className="flex items-center gap-2 sm:gap-3 text-sm md:text-base cursor-pointer">
-                  <input
-                    type="radio"
-                    name="category"
-                    value="VIP"
-                    checked={formData.category === 'VIP'}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-3 h-3 sm:w-4 sm:h-4 text-primary focus:ring-primary"
-                  />
-                  <span>VIP</span>
-                </label>
+
+              <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
+                {categories.map((cat) => (
+                  <label key={cat} className="flex items-center gap-3 text-base sm:text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="kategori"
+                      value={cat}
+                      checked={formData.category === cat}
+                      onChange={(e) => updateAdd('category', e.target.value)}
+                      className="w-4 h-4 text-primary focus:ring-primary"
+                    />
+                    <span>{cat}</span>
+                  </label>
+                ))}
               </div>
             </div>
+
 
             {/* Footer */}
             <div className="flex items-center justify-end pt-3 sm:pt-4">

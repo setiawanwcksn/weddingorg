@@ -342,7 +342,7 @@ export const Souvenirs: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <button onClick={() => setFilterOpen(true)} className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary hover:bg-primary/90 transition-colors min-h-[44px] touch-manipulation"
+                  <button onClick={() => setFilterOpen(true)} className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary  transition-colors min-h-[44px] touch-manipulation"
                     aria-label="Filter options" >
                     <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
                   </button>

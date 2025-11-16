@@ -94,7 +94,7 @@ const Login: React.FC = () => {
       <div className="w-full max-w-sm sm:max-w-md">
         <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 space-y-6">
           <div className="text-center">
-            <h1 className="text-xl sm:text-2xl font-semibold text-text">Welcome Back</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold text-text">Attari Wedding</h1>
             <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
           </div>
           

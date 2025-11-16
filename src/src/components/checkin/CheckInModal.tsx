@@ -12,6 +12,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { CameraView } from './CameraView';
+import { useAccount } from '../../hooks/useAccount';
 
 export type RegisteredGuest = {
   id: string;
@@ -51,15 +52,21 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
   const [pendingGuestSelection, setPendingGuestSelection] = React.useState<RegisteredGuest | null>(null);
   const [nonInvitedGuestModalOpen, setNonInvitedGuestModalOpen] = React.useState(false);
   const [checkInOpen, setCheckInOpen] = React.useState(false);
+  const { account } = useAccount();
 
   type AddGuestForm = {
     name: string;
     info: string;
     whatsapp: string;
     count: string;
-    category: 'Reguler' | 'VIP';
+    category: string;
   };
-  const [addForm, setAddForm] = React.useState<AddGuestForm>({ name: '', info: '', whatsapp: '', count: '', category: 'Reguler' });
+
+  const categories = Array.isArray(account?.guestCategories)
+    ? account!.guestCategories
+    : ['Regular', 'VIP'];
+
+  const [addForm, setAddForm] = React.useState<AddGuestForm>({ name: '', info: '', whatsapp: '', count: '', category: categories[0] });
   const updateAdd = (k: keyof AddGuestForm, v: string) => setAddForm((s) => ({ ...s, [k]: v }));
 
   React.useEffect(() => {
@@ -77,7 +84,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
       setMode(initialMode || 'scan');
       setQ('');
       setSelected(null);
-      setAddForm({ name: '', info: '', whatsapp: '', count: '', category: 'Reguler' });
+      setAddForm({ name: '', info: '', whatsapp: '', count: '', category: categories[0] });
     }
   }, [open, initialMode]);
 
@@ -303,7 +310,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
                   {/* Camera preview - auto opens when modal opens */}
                   <CameraView
                     key={cam}
-                    facingMode={cam === 'user' ? 'user' : 'environment'}
+                    facingMode={cam === 'back' ? 'user' : 'environment'}
                     className="w-full h-full"
                     onQRCodeScanned={handleQRCodeScanned}
                     onFileUpload={handleQRCodeScanned}
@@ -502,29 +509,21 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
 
               <div>
                 <label className="block text-sm font-medium mb-3">Kategori Tamu *</label>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
-                  <label className="flex items-center gap-3 text-base sm:text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="kategori"
-                      value="Reguler"
-                      checked={addForm.category === 'Reguler'}
-                      onChange={(e) => updateAdd('category', e.target.value)}
-                      className="w-4 h-4 text-primary focus:ring-primary"
-                    />
-                    <span>Reguler</span>
-                  </label>
-                  <label className="flex items-center gap-3 text-base sm:text-sm cursor-pointer">
-                    <input
-                      type="radio"
-                      name="kategori"
-                      value="VIP"
-                      checked={addForm.category === 'VIP'}
-                      onChange={(e) => updateAdd('category', e.target.value)}
-                      className="w-4 h-4 text-primary focus:ring-primary"
-                    />
-                    <span>VIP</span>
-                  </label>
+
+                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
+                  {categories.map((cat) => (
+                    <label key={cat} className="flex items-center gap-3 text-base sm:text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="kategori"
+                        value={cat}
+                        checked={addForm.category === cat}
+                        onChange={(e) => updateAdd('category', e.target.value)}
+                        className="w-4 h-4 text-primary focus:ring-primary"
+                      />
+                      <span>{cat}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

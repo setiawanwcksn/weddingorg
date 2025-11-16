@@ -241,7 +241,7 @@ export function ReceptionCheckIn(): JSX.Element {
 
   const statsLeft = [
     { label: 'Tamu Check-in', value: allGuestStats.checkedIn },
-    { label: 'Tamu di Venue', value: allGuestStats.totalWithPlusOne },
+    { label: 'Tamu di Venue', value: allGuestStats.total },
     { label: 'Tamu Reguler', value: allGuestStats.regular },
     { label: 'Tamu VIP', value: allGuestStats.vip },
   ];
@@ -363,7 +363,7 @@ export function ReceptionCheckIn(): JSX.Element {
                   <div className="relative">
                     <button
                       onClick={() => setFilterOpen(true)}
-                      className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary hover:bg-primary/90 transition-colors min-h-[44px] touch-manipulation"
+                      className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary transition-colors min-h-[44px] touch-manipulation"
                       aria-label="Filter options"
                     >
                       <img src={filter} className="w-4 h-4 sm:w-5 sm:h-5" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />

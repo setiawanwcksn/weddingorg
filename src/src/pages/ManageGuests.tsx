@@ -114,7 +114,6 @@ const ManageGuests: React.FC = () => {
   };
 
   const onBlast = async () => {
-    // buka modal/aksi blast
     console.log('blast…');
   };
 
@@ -257,7 +256,6 @@ const ManageGuests: React.FC = () => {
         invitationCode: uniqueCode,
         category: guestData.category || 'Regular',
         status: 'Pending',
-        plusOne: false,
         code: uniqueCode, // Use the same unique code
         session: guestData.session,
         limit: guestData.limit,
@@ -827,7 +825,7 @@ const ManageGuests: React.FC = () => {
                 <div className="relative">
                   <button
                     onClick={() => setFilterOpen(true)}
-                    className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors"
+                    className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary transition-colors"
                     title="Filter columns"
                   >
                     <img src={filter} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}  />

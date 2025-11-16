@@ -7,6 +7,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Guest } from '../../../shared/types';
+import { useAccount } from '../../hooks/useAccount';
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter';
 
 export interface EditGuestFormData {
@@ -16,7 +17,7 @@ export interface EditGuestFormData {
   session: string;
   limit: number;
   tableNo: string;
-  category: 'Regular' | 'VIP';
+  category: string;
   email?: string;
   guestCount?: number;
 }
@@ -36,7 +37,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
     session: '',
     limit: 1,
     tableNo: '',
-    category: 'Regular',
+    category: '',
     email: '',
     guestCount: 1,
   });
@@ -45,18 +46,27 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const infoMax = 120;
 
+  const { account } = useAccount();
+
+  const categories = React.useMemo(
+    () =>
+      Array.isArray(account?.guestCategories) && account.guestCategories.length > 0
+        ? account.guestCategories
+        : ['Regular', 'VIP'],
+    [account]
+  );
+
   // Populate form when guest data is available
   useEffect(() => {
     if (guest && open) {
       setForm({
         name: guest.name || '',
-        info: guest.notes || '',
+        info: guest.info || '',
         phone: guest.phone || '',
         session: guest.session || '',
         limit: guest.limit || 1,
         tableNo: guest.tableNo || '',
-        category: (guest.category as 'Regular' | 'VIP') || 'Regular',
-        email: guest.email || '',
+        category: categories[0],
         guestCount: guest.guestCount || 1,
       });
     }
@@ -212,7 +222,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
             <div>
               <label className="block font-medium mb-2">Kategori Tamu *</label>
               <div className="flex gap-4">
-                {['Regular', 'VIP'].map((opt) => (
+                {categories.map((opt) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"

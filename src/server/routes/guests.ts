@@ -212,7 +212,7 @@ guestsApp.post(
       angpao: z.number().min(0).optional(),
       giftNote: z.string().optional(),
       souvenir: z.number().min(0).optional(),
-      category: z.enum(['Regular', 'VIP']).optional().default('Regular'),
+      category: z.string().optional().default('Regular'),
     }),
   ),
   async (c: Context<AppEnv>) => {
@@ -232,7 +232,7 @@ guestsApp.post(
         session?: string;
         giftNote?: string;
         limit?: number;
-        category?: 'Regular' | 'VIP';
+        category?: string;
       };
 
       const collection = db.collection('94884219_guests');

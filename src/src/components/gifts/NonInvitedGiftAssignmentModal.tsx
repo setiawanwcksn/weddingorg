@@ -7,6 +7,7 @@
 import React, { useState } from 'react'
 import { X, User, Phone, Users, MessageSquare, Hash } from 'lucide-react'
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter'
+import { useAccount } from '../../hooks/useAccount';
 
 export interface NonInvitedGuestData {
   name: string
@@ -16,7 +17,7 @@ export interface NonInvitedGuestData {
   angpao: number
   giftNote: string
   info: string
-  category?: 'Regular' | 'VIP'
+  category?: string
 }
 
 interface NonInvitedGiftAssignmentModalProps {
@@ -38,10 +39,15 @@ export default function NonInvitedGiftAssignmentModal({
     kado: 0,
     kadoCount: 0,
     giftNote: '',
-    category: 'Regular'
+    category: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [phoneError, setPhoneError] = useState<string>('')
+  const { account } = useAccount();
+
+  const categories = Array.isArray(account?.guestCategories)
+    ? account!.guestCategories
+    : ['Regular', 'VIP'];
 
 
   const updateAdd = (k: keyof NonInvitedGuestData, v: string) => setFormData((s) => ({ ...s, [k]: v }));
@@ -84,7 +90,7 @@ export default function NonInvitedGiftAssignmentModal({
         kadoCount: 0,
         kado: 0,
         giftNote: '',
-        category: 'Regular'
+        category: categories[0]
       })
       setPhoneError('')
       onClose()
@@ -239,16 +245,14 @@ export default function NonInvitedGiftAssignmentModal({
             <div>
               <label className="block font-medium mb-1">Kategori Tamu *</label>
               <div className="flex items-center gap-4">
-                {['Regular', 'VIP'].map((cat) => (
+                {categories.map((cat) => (
                   <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="radio"
-                      name="category"
+                      name="kategori"
                       value={cat}
                       checked={formData.category === cat}
-                      onChange={(e) =>
-                        handleInputChange('category', e.target.value)
-                      }
+                      onChange={(e) => updateAdd('category', e.target.value)}
                       className="w-4 h-4 text-primary focus:ring-primary"
                     />
                     <span>{cat}</span>

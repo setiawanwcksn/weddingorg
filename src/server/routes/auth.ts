@@ -16,7 +16,6 @@ const authApp = new Hono<AppEnv>()
 // Collections with app id prefix
 const USERS_COLLECTION = '94884219_users'
 const ACCOUNTS_COLLECTION = '94884219_accounts'
-const AUDIT_LOGS_COLLECTION = '94884219_audit_logs'
 
 /**
  * User registration schema
@@ -48,33 +47,6 @@ const loginSchema = z.object({
 // Helper types (untuk cast hasil c.req.valid('json'))
 type RegisterBody = z.infer<typeof registerSchema>
 type LoginBody = z.infer<typeof loginSchema>
-
-/**
- * Helper function to create audit logs
- */
-async function createAuditLog(
-  userId: string,
-  userEmail: string,
-  action: string,
-  resource: string,
-  details?: any,
-) {
-  try {
-    await db.collection(AUDIT_LOGS_COLLECTION).insertOne({
-      userId,
-      userEmail,
-      action,
-      resource,
-      details,
-      ipAddress: null, // Would be available in production
-      userAgent: null, // Would be available in production
-      createdAt: new Date(),
-    })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error('[audit] Failed to create audit log:', msg)
-  }
-}
 
 /**
  * POST /api/register
@@ -173,16 +145,6 @@ authApp.post('/register', zValidator('json', registerSchema), async (c: Context<
       throw new Error(`Database error creating user: ${msg}`)
     }
 
-    // Create audit log (non-blocking)
-    try {
-      if (userId && username) {
-        await createAuditLog(userId, username, 'user_registered', 'auth', { username })
-      }
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error)
-      console.error(`[auth] Error creating audit log:`, msg)
-    }
-
     console.log(`[auth] User registered successfully: ${username} (account: ${accountId})`)
 
     return c.json({
@@ -228,7 +190,6 @@ authApp.post('/login', zValidator('json', loginSchema), async (c: Context<AppEnv
 
     const token = `mock_token_${user._id}_${Date.now()}`
     await db.collection(USERS_COLLECTION).updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } })
-    await createAuditLog(user._id.toString(), username, 'user_login', 'auth')
 
     // Fetch permissions (optional)
     let permissions: any[] = []
@@ -363,10 +324,7 @@ authApp.post('/logout', async (c: Context<AppEnv>) => {
       const token = authHeader.substring(7)
       const userId = token.split('_')[2]
 
-      const user = await db.collection(USERS_COLLECTION).findOne({ _id: new ObjectId(userId) })
-      if (user) {
-        await createAuditLog(userId, user.username, 'user_logout', 'auth')
-      }
+      const user = await db.collection(USERS_COLLECTION).findOne({ _id: new ObjectId(userId) })      
     }
 
     return c.json({ success: true, message: 'Logout successful' })
@@ -412,7 +370,9 @@ authApp.get('/accounts/:accountId', async (c: Context<AppEnv>) => {
           title: account.title ?? account.name,
           dateTime: account.dateTime,
           location: account.location,
-          photoUrl: account.photoUrl,
+          welcomeText: account.welcomeText,
+          youtubeUrl: account.youtubeUrl,
+          guestCategories: account.guestCategories,
           createdAt: account.createdAt,
           updatedAt: account.updatedAt,
         },
