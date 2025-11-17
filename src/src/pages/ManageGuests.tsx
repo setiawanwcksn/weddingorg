@@ -33,6 +33,7 @@ import { NoticeModal } from '../components/common/NoticeModal';
 import { TableFilterPopover } from '../components/guests/TableFilterPopover';
 import { SettingsDropdown, ConfirmModal } from '../components/common/SettingsPopover';
 import { apiUrl } from '../lib/api';
+import { useAccount } from '../hooks/useAccount';
 import kelolaTamuAct from '../assets/KelolaTamuAct.png';
 import sendReminder from '../assets/SendReminder.png';
 import TambahTamu from '../assets/TambahTamu.png';
@@ -76,6 +77,8 @@ const ManageGuests: React.FC = () => {
     status: true,
     ditambahkan: true,
   });
+
+  const { account } = useAccount();
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
@@ -146,49 +149,6 @@ const ManageGuests: React.FC = () => {
     // SWR will automatically revalidate when the key changes due to searchTerm
   };
 
-  // Generate unique invitation code
-  const generateUniqueInvitationCode = async (baseCode: string): Promise<string> => {
-    let code = baseCode;
-    let counter = 1;
-
-    // Check if code exists and generate unique one
-    while (true) {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(apiUrl(`/api/guests/search?q=${encodeURIComponent(code)}`), {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        const data = await response.json();
-
-        if (data.success && data.data.length > 0) {
-          // Code exists, try next variation
-          code = `${baseCode}-${counter}`;
-          counter++;
-
-          // Safety check to prevent infinite loop
-          if (counter > 100) {
-            code = `${baseCode}-${Date.now()}`;
-            break;
-          }
-        } else {
-          // Code doesn't exist, we can use it
-          break;
-        }
-      } catch (error) {
-        console.error('Error checking invitation code:', error);
-        // If check fails, fall back to timestamp
-        code = `${baseCode}-${Date.now()}`;
-        break;
-      }
-    }
-
-    return code;
-  };
-
   // Handle guest update
   const handleUpdateGuest = async (guestData: any) => {
     if (!selectedGuest) return;
@@ -246,8 +206,7 @@ const ManageGuests: React.FC = () => {
       console.log('[ManageGuests] Creating guest with data:', guestData);
 
       // Generate unique invitation code
-      const baseCode = guestData.tableNo || `INV-${Date.now()}`;
-      const uniqueCode = await generateUniqueInvitationCode(baseCode);
+      const uniqueCode = Date.now().toString(36).toUpperCase().slice(-7);;
 
       const mappedData = {
         name: guestData.name,
@@ -377,7 +336,7 @@ const ManageGuests: React.FC = () => {
       const responseData = await response.json();
       console.log(`[handleStatusChange] Server response:`, responseData);
 
-      if (!response.ok) {        
+      if (!response.ok) {
         throw new Error(responseData.error || 'Failed to update guest status');
       }
 
@@ -499,29 +458,13 @@ const ManageGuests: React.FC = () => {
 
       let introText = result.data.text;
 
-      // Get account information for mempelai
-      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      let accountName = 'Mempelai'; // Default fallback
-      let linkUndangan = ''
-      if (accountResponse.ok) {
-        const accountResult = await accountResponse.json();
-        if (accountResult.success && accountResult.data?.account) {
-          accountName = accountResult.data.account.name || 'Mempelai';
-          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
-        }
-      }      
-
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
-        .replace(/\[mempelai\]/g, accountName)
+        .replace(/\[mempelai\]/g, account.title)
         .replace(/\[link-undangan\]/g, invitationLink);
 
       // Check if Web Share API is available
@@ -560,61 +503,15 @@ const ManageGuests: React.FC = () => {
       console.log(`[handleCopyWhatsAppMessage] Starting copy for guest: ${guest.name} (${guest._id})`);
       console.log(`[handleCopyWhatsAppMessage] Guest introTextCategory: ${guest.introTextCategory}`);
 
-      if (!guest.introTextCategory) {
-        setToast({ message: 'Please select an intro text category first', type: 'error' });
-        return;
-      }
-
-      // Get the intro text for the selected category
-      const response = await apiRequest(apiUrl(`/api/intro-text/category/${guest.introTextCategory}`), {
-        headers: {
-          'user-id': user?.id || '',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch intro text');
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch intro text');
-      }
-
-      let introText = result.data.text;
-
-      // Get account information for mempelai
-      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      let accountName = 'Mempelai'; // Default fallback
-      let linkUndangan = ''
-      if (accountResponse.ok) {
-        const accountResult = await accountResponse.json();
-        if (accountResult.success && accountResult.data?.account) {
-          accountName = accountResult.data.account.name || 'Mempelai';
-          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
-        }
-      }  
-
-      // Replace placeholders with actual guest data
-      // Map guest category to invitation category: VIP = 1, Regular = 2
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
 
-      introText = introText
-        .replace(/\[nama\]/g, guest.name)
-        .replace(/\[mempelai\]/g, accountName)
-        .replace(/\[link-undangan\]/g, invitationLink);
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
 
       // Copy to clipboard
-      await navigator.clipboard.writeText(introText);
+      await navigator.clipboard.writeText(invitationLink);
 
-      setToast({ message: 'WhatsApp message copied to clipboard', type: 'success' });
+      setToast({ message: 'Invitation Link copied to clipboard', type: 'success' });
     } catch (error: any) {
       console.error(`[handleCopyWhatsAppMessage] Error:`, error);
       setToast({ message: error.message || 'Failed to copy WhatsApp message', type: 'error' });
@@ -659,29 +556,15 @@ const ManageGuests: React.FC = () => {
       let introText = result.data.text;
       console.log(`[handleWhatsAppSend] Original intro text:`, introText);
 
-      // Get account information for mempelai
-      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      let accountName = 'Mempelai'; // Default fallback
-      if (accountResponse.ok) {
-        const accountResult = await accountResponse.json();
-        if (accountResult.success && accountResult.data?.account) {
-          accountName = accountResult.data.account.name || 'Mempelai';
-        }
-      }
-
       // Replace placeholders with actual guest data
       // Map guest category to invitation category: VIP = 1, Regular = 2
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `https://attarivitation.com/hamid-khalisha/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
-        .replace(/\[mempelai\]/g, accountName)
+        .replace(/\[mempelai\]/g, account.title)
         .replace(/\[link-undangan\]/g, invitationLink);
 
       console.log(`[handleWhatsAppSend] Processed intro text:`, introText);
@@ -828,7 +711,7 @@ const ManageGuests: React.FC = () => {
                     className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary transition-colors"
                     title="Filter columns"
                   >
-                    <img src={filter} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }}  />
+                    <img src={filter} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                   </button>
                   <TableFilterPopover
                     open={filterOpen}
@@ -1045,7 +928,7 @@ const ManageGuests: React.FC = () => {
                               title={guest.status === 'Confirmed' ? 'Terkirim' : guest.status === 'scheduled' ? 'Terjadwal' : 'Belum'}
                             />
                             {guest.status === 'scheduled' && (
-                            <span className="text-xs text-gray-600 font-medium">Terjadwal</span>
+                              <span className="text-xs text-gray-600 font-medium">Terjadwal</span>
                             )}
                           </div>
                         </td>}

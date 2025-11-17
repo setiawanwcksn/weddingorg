@@ -18,7 +18,6 @@ const usersApp = new Hono<AppEnv>()
 
 const USERS_COLLECTION = '94884219_users'
 const ACCOUNTS_COLLECTION = '94884219_accounts'
-const USER_PERMISSIONS_COLLECTION = '94884219_user_permissions'
 
 // ------------------------ utils ------------------------
 
@@ -166,11 +165,11 @@ usersApp.get('/', requireAdmin, async (c) => {
 
     const formatted = await Promise.all(
       users.map(async (u: any) => {
-        const perms = await db
-          .collection(USER_PERMISSIONS_COLLECTION)
-          .find({ userId: u._id.toString() })
-          .toArray()
 
+        let activePermissions: { page: string; canAccess: boolean }[] = []
+        if (u.role === 'user' && Array.isArray(u.permissions) && u.permissions.length) {
+          activePermissions = u.permissions.map((p: any) => ({ page: p.page, canAccess: !!p.canAccess }))
+        }
         return {
           id: u._id.toString(),
           username: u.username,
@@ -181,7 +180,7 @@ usersApp.get('/', requireAdmin, async (c) => {
           lastLoginAt: u.lastLoginAt,
           createdAt: u.createdAt,
           updatedAt: u.updatedAt,
-          permissions: perms.map((p: any) => ({ page: p.page, canAccess: !!p.canAccess })),
+          permissions: activePermissions
         }
       }),
     )
@@ -190,52 +189,6 @@ usersApp.get('/', requireAdmin, async (c) => {
   } catch (err: any) {
     console.error('[users] Fetch users failed:', err?.message ?? err)
     return c.json({ success: false, error: err?.message ?? 'Failed to fetch users' }, 500)
-  }
-})
-
-/**
- * GET /api/users/:id/permissions
- */
-usersApp.get('/:id/permissions', async (c) => {
-  try {
-    const targetId = c.req.param('id')
-
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ success: false, error: 'No token provided' }, 401)
-    }
-    const token = authHeader.substring(7)
-    const parts = token.split('_')
-    if (parts.length < 4 || parts[0] !== 'mock' || parts[1] !== 'token') {
-      return c.json({ success: false, error: 'Invalid token format' }, 401)
-    }
-    const requesterId = parts.slice(2, -1).join('_')
-
-    // load requester
-    let requester: any = null
-    const reqOid = safeObjectId(requesterId)
-    if (reqOid) requester = await db.collection(USERS_COLLECTION).findOne({ _id: reqOid } as any)
-    if (!requester) requester = await db.collection(USERS_COLLECTION).findOne({ username: requesterId } as any)
-
-    if (!requester) {
-      return c.json({ success: false, error: 'User not found' }, 404)
-    }
-
-    const isAdmin = requester.role === 'admin'
-    const isSelf = requester._id?.toString?.() === targetId || requester.username === targetId
-    if (!isAdmin && !isSelf) {
-      return c.json({ success: false, error: 'Access denied' }, 403)
-    }
-
-    const perms = await db.collection(USER_PERMISSIONS_COLLECTION).find({ userId: targetId }).toArray()
-
-    return c.json({
-      success: true,
-      data: perms.map((p: any) => ({ page: p.page, canAccess: !!p.canAccess })),
-    })
-  } catch (err: any) {
-    console.error('[users] Fetch user permissions failed:', err?.message ?? err)
-    return c.json({ success: false, error: err?.message ?? 'Failed to fetch user permissions' }, 500)
   }
 })
 
@@ -278,6 +231,12 @@ usersApp.post('/', requireAdmin, async (c) => {
     }
     const accountRes = await db.collection(ACCOUNTS_COLLECTION).insertOne(accountDoc)
     const accountId = accountRes.insertedId.toString()
+    // siapkan permissions aktif (hanya yang canAccess = true)
+    let activePermissions: { page: string; canAccess: boolean }[] = []
+
+    if (role === 'user' && Array.isArray(permissions) && permissions.length) {
+      activePermissions = permissions.filter((p) => p.canAccess === true)
+    }
 
     // create user
     const userRes = await db.collection(USERS_COLLECTION).insertOne({
@@ -287,25 +246,10 @@ usersApp.post('/', requireAdmin, async (c) => {
       accountId,
       role,
       status: 'active',
+      permissions: activePermissions,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
-
-    // set permissions (only truthy canAccess)
-    if (role === 'user' && Array.isArray(permissions) && permissions.length) {
-      const active = permissions.filter((p) => p.canAccess === true)
-      if (active.length) {
-        await db.collection(USER_PERMISSIONS_COLLECTION).insertMany(
-          active.map((p) => ({
-            userId: userRes.insertedId.toString(),
-            page: p.page,
-            canAccess: p.canAccess,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })),
-        )
-      }
-    }
 
     const defaultIntro: IntroTextDoc = {
       userId: userRes.insertedId.toString(),
@@ -390,9 +334,6 @@ usersApp.delete('/:id', requireAdmin, async (c) => {
       await db.collection(ACCOUNTS_COLLECTION).deleteOne({ _id: accOid } as any)
     }
 
-    // Delete permissions
-    await db.collection(USER_PERMISSIONS_COLLECTION).deleteMany({ userId: paramId } as any)
-
     // Delete guests & files belonging to that user
     const guestsCollection = '94884219_guests'
     const uploadedFilesCollection = '94884219_uploaded_files'
@@ -471,23 +412,6 @@ usersApp.patch(
 
       if (userDoc._id.toString() === currentUser.id && updates.role && updates.role !== 'admin') {
         return c.json({ success: false, error: 'Cannot change your own admin role' }, 400)
-      }
-
-      // permissions
-      if (updates.permissions) {
-        await db.collection(USER_PERMISSIONS_COLLECTION).deleteMany({ userId: paramId } as any)
-        if (updates.permissions.length) {
-          await db.collection(USER_PERMISSIONS_COLLECTION).insertMany(
-            updates.permissions.map((p) => ({
-              userId: paramId,
-              page: p.page,
-              canAccess: p.canAccess,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            })),
-          )
-        }
-        delete (updates as any).permissions
       }
 
       if (Object.keys(updates).length) {

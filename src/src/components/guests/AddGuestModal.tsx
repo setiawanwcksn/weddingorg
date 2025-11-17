@@ -266,8 +266,6 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
               <label className="block font-medium mb-1">Meja *</label>
               <input
                 required
-                type="number"
-                min="1"
                 value={form.tableNo}
                 onChange={(e) => update('tableNo', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"

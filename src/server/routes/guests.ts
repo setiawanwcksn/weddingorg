@@ -161,23 +161,7 @@ guestsApp.post('/', zValidator('json', guestSchema), async (c: Context<AppEnv>) 
         },
         400,
       )
-    }
-    // unique (invitationCode, user) check
-    const existingGuestByCode = await collection.findOne({
-      userId: user.id,
-      invitationCode: guestData.invitationCode,
-    })
-    if (existingGuestByCode) {
-      return c.json(
-        {
-          success: false,
-          error: `Invitation code "${guestData.invitationCode}" already exists. Please use a different code.`,
-        },
-        400,
-      )
-    }
-
-    if (!guestData.code) guestData.code = guestData.invitationCode
+    }    
 
     const result = await collection.insertOne({
       ...guestData,
@@ -237,7 +221,7 @@ guestsApp.post(
 
       const collection = db.collection('94884219_guests');
 
-      const invitationCode = `NI-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const invitationCode = Date.now().toString(36).toUpperCase().slice(-7);;
       const displayCode = `NI${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
       const now = new Date();
 
@@ -246,7 +230,7 @@ guestsApp.post(
         name: data.name,
         phone: data.phone ?? '',
         invitationCode,
-        code: displayCode,
+        code: invitationCode,
         category: data.category ?? 'Regular',
         isInvited: false,
 

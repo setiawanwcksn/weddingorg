@@ -81,7 +81,7 @@ const UsersRoles: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
   const handleDashboardPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setSelectedDashboardPhoto(file);
@@ -127,22 +127,6 @@ const UsersRoles: React.FC = () => {
       const created = await createRes.json();
       if (!created.success || !created.data?.id) throw new Error('Invalid create response');
 
-      const userId: string = created.data.id;
-
-      // 2) UPLOAD FOTO (jika dipilih) — PARAREL, TIDAK update user lagi
-      const [okWedding, okDashboard, okWelcome] = await Promise.all([
-        selectedPhoto ? handlePhotoUpload(selectedPhoto, userId, 'weddingPhotoUrl') : Promise.resolve(true),
-        selectedDashboardPhoto ? handlePhotoUpload(selectedDashboardPhoto, userId, 'weddingPhotoUrl_dashboard') : Promise.resolve(true),
-        selectedWelcomePhoto ? handlePhotoUpload(selectedWelcomePhoto, userId, 'weddingPhotoUrl_welcome') : Promise.resolve(true),
-      ]);
-
-      // 3) Beri info kalau ada upload yang gagal (user tetap sudah tercipta)
-      if (!okWedding || !okDashboard || !okWelcome) {
-        showToast('User berhasil dibuat, beberapa foto gagal diupload', 'error');
-      } else {
-        showToast('User berhasil dibut', 'success');
-      }
-
       // 4) Reset & refresh
       setShowAddModal(false);
       setFormData({
@@ -170,31 +154,6 @@ const UsersRoles: React.FC = () => {
       const response = await fetch(getApiUrl(`/api/users/${user.id}/account`), {
         headers: getAuthHeaders(),
       });
-
-      let accountData = {
-        linkUndangan: '',
-        weddingTitle: '',
-        weddingDateTime: '',
-        weddingLocation: '',
-        weddingPhotoUrl: '',
-        weddingPhotoUrl_dashboard: '',
-        weddingPhotoUrl_welcome: '',
-      };
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          accountData = {
-            linkUndangan: result.data.linkUndangan || '',
-            weddingTitle: result.data.title || '',
-            weddingDateTime: result.data.dateTime ? new Date(result.data.dateTime).toISOString().slice(0, 16) : '',
-            weddingLocation: result.data.location || '',
-            weddingPhotoUrl: result.data.photoUrl || '',
-            weddingPhotoUrl_dashboard: result.data.photoUrl_dashboard || '',
-            weddingPhotoUrl_welcome: result.data.photoUrl_welcome || '',
-          };
-        }
-      }
 
       setFormData({
         username: user.username,
@@ -900,7 +859,7 @@ const UsersRoles: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setShowAddModal(false);
-                        setFormData({ username: '', phone: '', password: '', role: 'user'});
+                        setFormData({ username: '', phone: '', password: '', role: 'user' });
                         setSelectedPhoto(null);
                         setSelectedDashboardPhoto(null);
                         setSelectedWelcomePhoto(null);

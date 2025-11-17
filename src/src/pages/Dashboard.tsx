@@ -108,7 +108,7 @@ const Dashboard: React.FC = () => {
   const location = account?.location ?? '';
 
   const displayStats = [
-    { label: 'Total Tamu', value: sharedStats.totalWithPlusOne + sharedStats.tamuTambahan, help: 'Jumlah total tamu termasuk tamu tambahan.' },
+    { label: 'Total Tamu', value: sharedStats.total, help: 'Jumlah total tamu termasuk tamu tambahan.' },
     { label: 'Tamu Undangan', value: sharedStats.invitedGuests, help: 'Jumlah tamu yang diundang.' },
     { label: 'Tamu VIP', value: sharedStats.vip, help: 'Jumlah tamu dengan kategori VIP.' },
     { label: 'Tamu Tambahan', value: sharedStats.tamuTambahan, help: 'Jumlah tamu tambahan diluar undangan resmi.' },

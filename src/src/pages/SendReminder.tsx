@@ -31,6 +31,7 @@ import { useToast } from '../contexts/ToastContext';
 import { Guest } from '../../shared/types';
 import { apiUrl } from '../lib/api';
 import { IntroTextModal } from '../components/guests/IntroTextModal';
+import { useAccount } from '../hooks/useAccount';
 import kelolaTamu from '../assets/KelolaTamu.png';
 import sendReminderAct from '../assets/SendReminderAct.png';
 import TambahTamu from '../assets/TambahTamu.png';
@@ -78,6 +79,7 @@ const SendReminder: React.FC = () => {
   const [openIntro, setOpenIntro] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('');
 
+  const { account } = useAccount();
   const [selectedGuest, setSelectedGuest] = useState<string>('');
   const [showGuestDropdown, setShowGuestDropdown] = useState(false);
   const [reminderSettingsOpen, setReminderSettingsOpen] = useState(false);
@@ -123,31 +125,18 @@ const SendReminder: React.FC = () => {
 
       let introText = result.data.text;
 
-      // Get account information for mempelai
-      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      let accountName = 'Mempelai'; // Default fallback
-      let linkUndangan = ''
-      if (accountResponse.ok) {
-        const accountResult = await accountResponse.json();
-        if (accountResult.success && accountResult.data?.account) {
-          accountName = accountResult.data.account.name || 'Mempelai';
-          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
-        }
-      }
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
 
       // Replace placeholders with actual guest data
       // Map guest category to invitation category: VIP = 1, Regular = 2
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
+
+
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
-        .replace(/\[mempelai\]/g, accountName)
+        .replace(/\[mempelai\]/g, account.title)
         .replace(/\[link-undangan\]/g, invitationLink);
 
       // Copy to clipboard
@@ -187,29 +176,14 @@ const SendReminder: React.FC = () => {
 
       let introText = result.data.text;
 
-      // Get account information for mempelai
-      const accountResponse = await apiRequest(apiUrl(`/api/auth/accounts/${user?.accountId}`), {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        }
-      });
-
-      let accountName = 'Mempelai'; // Default fallback
-      let linkUndangan = ''
-      if (accountResponse.ok) {
-        const accountResult = await accountResponse.json();
-        if (accountResult.success && accountResult.data?.account) {
-          accountName = accountResult.data.account.name || 'Mempelai';
-          linkUndangan = accountResult.data.account.linkUndangan.trim().replace(/\/+$/, '') || ''
-        }
-      }
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
 
       const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}`;
+      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
-        .replace(/\[mempelai\]/g, accountName)
+        .replace(/\[mempelai\]/g, account.title)
         .replace(/\[link-undangan\]/g, invitationLink);
 
       // Check if Web Share API is available

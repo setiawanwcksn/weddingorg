@@ -43,7 +43,8 @@ export async function renderMessage(template: string, reminder: any): Promise<st
         `?to=${encodeURIComponent(guestName)}` +
         `&sesi=${encodeURIComponent(session)}` +
         `&cat=${encodeURIComponent(category)}` +
-        `&lim=${encodeURIComponent(String(limit))}`
+        `&lim=${encodeURIComponent(String(limit))}` +
+        `&meja=${encodeURIComponent(guest?.tableNo || '1')}`
 
     // Replace case-insensitive
     return template

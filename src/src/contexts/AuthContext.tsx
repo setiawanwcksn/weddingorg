@@ -96,45 +96,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Remove tab isolation - use unified auth across tabs
   // This ensures consistent authentication state across all browser tabs
 
-  // Fetch user permissions when user is authenticated
-  useEffect(() => {
-    const fetchUserPermissions = async () => {
-      if (user && user.role === 'user' && token) {
-        try {
-          console.log(`[AuthContext] Fetching permissions for user: ${user.id}`);
-          const response = await fetch(apiUrl(`/users/${user.id}/permissions`), {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          
-          console.log(`[AuthContext] Permissions response status: ${response.status}`);
-          
-          if (response.ok) {
-            const result = await response.json();
-            console.log(`[AuthContext] Permissions response:`, result);
-            if (result.success && result.data) {
-              setUser(prevUser => prevUser ? {
-                ...prevUser,
-                permissions: result.data
-              } : null);
-              console.log(`[AuthContext] Updated user with permissions:`, result.data);
-            }
-          } else {
-            const errorText = await response.text();
-            console.error(`[AuthContext] Failed to fetch permissions: ${response.status} - ${errorText}`);
-          }
-        } catch (error) {
-          console.error('[AuthContext] Failed to fetch user permissions:', error);
-        }
-      }
-    };
-
-    if (user && user.role === 'user' && token) {
-      fetchUserPermissions();
-    }
-  }, [user?.id, user?.role, token]);
-
   // Login with username and password
   const login = async (username: string, password: string): Promise<void> => {
     try {

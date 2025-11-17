@@ -32,57 +32,6 @@ function errMsg(error: unknown): string {
 }
 
 // ------------------------ routes ------------------------
-
-/**
- * GET /api/doorprize/debug
- * Debug endpoint to check guest data structure and check-in status
- */
-doorprizeApp.get('/debug', async (c: Context<AppEnv>) => {
-  try {
-    const user = requireUser(c)
-    if (!user) return c.json({ success: false, error: 'Authentication required' }, 401)
-
-    // Get all guests for this account
-    const allGuests = await db
-      .collection(GUESTS_COLLECTION)
-      .find({ accountId: user.accountId })
-      .project({
-        name: 1,
-        code: 1,
-        checkInDate: 1,
-        category: 1,
-        tableNo: 1,
-        guestCount: 1,
-        status: 1,
-        createdAt: 1,
-      })
-      .toArray()
-
-    const analysis = {
-      totalGuests: allGuests.length,
-      checkedInGuests: allGuests.filter((g: any) => g.checkInDate != null).length,
-      notCheckedInGuests: allGuests.filter((g: any) => g.checkInDate == null).length,
-      sampleGuests: (allGuests as any[]).slice(0, 5).map((g: any) => ({
-        name: g.name,
-        code: g.code,
-        checkInDate: g.checkInDate,
-        hasCheckInDate: g.checkInDate != null,
-        checkInDateType: typeof g.checkInDate,
-        category: g.category,
-        tableNo: g.tableNo,
-        guestCount: g.guestCount,
-      })),
-    }
-
-    console.log(`[doorprize-debug] Analysis for account ${user.accountId}:`, analysis)
-
-    return c.json({ success: true, analysis })
-  } catch (error: unknown) {
-    console.error('[api] /doorprize/debug', errMsg(error))
-    return c.json({ success: false, error: errMsg(error) ?? 'Unknown error' }, 500)
-  }
-})
-
 /**
  * GET /api/doorprize/checked-in
  * Returns all guests who have checked in for the current account, optionally filtered by search term.

@@ -191,18 +191,9 @@ authApp.post('/login', zValidator('json', loginSchema), async (c: Context<AppEnv
     const token = `mock_token_${user._id}_${Date.now()}`
     await db.collection(USERS_COLLECTION).updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } })
 
-    // Fetch permissions (optional)
-    let permissions: any[] = []
-    if (user.role === 'user') {
-      try {
-        permissions = await db
-          .collection('94884219_user_permissions')
-          .find({ userId: user._id.toString() })
-          .toArray()
-      } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : String(error)
-        console.error(`[auth] Failed to fetch permissions:`, msg)
-      }
+    let activePermissions: { page: string; canAccess: boolean }[] = []
+    if (user.role === 'user' && Array.isArray(user.permissions) && user.permissions.length) {
+      activePermissions = user.permissions.map((p: any) => ({ page: p.page, canAccess: p.canAccess }))
     }
 
     return c.json({
@@ -214,7 +205,7 @@ authApp.post('/login', zValidator('json', loginSchema), async (c: Context<AppEnv
           name: user.name,
           accountId: user.accountId,
           role: user.role,
-          permissions: permissions.map((p: any) => ({ page: p.page, canAccess: p.canAccess })),
+          permissions: activePermissions
         },
         token,
       },
@@ -324,7 +315,7 @@ authApp.post('/logout', async (c: Context<AppEnv>) => {
       const token = authHeader.substring(7)
       const userId = token.split('_')[2]
 
-      const user = await db.collection(USERS_COLLECTION).findOne({ _id: new ObjectId(userId) })      
+      const user = await db.collection(USERS_COLLECTION).findOne({ _id: new ObjectId(userId) })
     }
 
     return c.json({ success: true, message: 'Logout successful' })
