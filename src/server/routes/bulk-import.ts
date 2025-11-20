@@ -193,7 +193,7 @@ bulkImportApp.post(
 
             // Invitation code base
             const baseCode = guest.tableNo || `INV-${Date.now()}-${rowIndex}`
-            const uniqueCode = await generateUniqueInvitationCode(baseCode, accountId)
+            const uniqueCode = Date.now().toString(36).toUpperCase().slice(-7);
 
             // Prepare guest data
             const guestData = {

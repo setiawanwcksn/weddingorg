@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Guest } from '../../../shared/types';
 import { usePhoto } from "../../contexts/PhotoProvider";
+import { useToast } from '../../contexts/ToastContext';
 import SouvenirAct from '../../assets/SouvenirAct.png';
 import Souvenir from '../../assets/Souvenir.png';
 import GiftAct from '../../assets//GiftAct.png';
@@ -27,10 +28,11 @@ const SouvenirAssignmentModal: React.FC<SouvenirAssignmentModalProps> = ({
   onAssign
 }) => {
   const [count, setCount] = useState(guest.souvenirCount || 1);
-  const [kado, setKado] = React.useState<number>(0);
-  const [angpao, setAngpao] = React.useState<number>(0);
+  const [kado, setKado] = useState(guest.kadoCount);
+  const [angpao, setAngpao] = useState(guest.angpaoCount);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -55,6 +57,7 @@ const SouvenirAssignmentModal: React.FC<SouvenirAssignmentModalProps> = ({
 
     try {
       await onAssign(guest._id, count, kado, angpao);
+      showToast(`Berhasil menyimpan data Souvenir`, 'success');
       onClose();
       // Reset form
       setCount(1);

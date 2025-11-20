@@ -138,12 +138,35 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* isi card dibiarkan mengisi sisa tinggi */}
-            <ul className="divide-y divide-gray-100 px-4 py-4 flex-1 overflow-auto">
+            <ul className="divide-y divide-gray-100 px-4 py-4 flex-1 overflow-visible">
               {displayStats.map((row, idx) => (
-                <li key={idx} className="flex items-center justify-between px-5 py-4 bg-white">
+                <li key={idx} className="relative flex items-center justify-between px-5 py-4 bg-white">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-sm bg-primary/20 flex-shrink-0" />
-                    <span className="text-sm">{row.label}</span>
+                    {/* label + info icon */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm ">{row.label}</span>
+                      <button
+                        type="button"
+                        className="ml-0.5 inline-flex items-center justify-center w-3.5 h-3.5 text-primary/70 hover:bg-white hover:text-primary transition"
+                        style={{ marginBottom: `9px` }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenIdx(openIdx === idx ? null : idx);
+                        }}
+                        onBlur={() => setOpenIdx((cur) => (cur === idx ? null : cur))}
+                      >
+                        <img src={information} className="w-[9px] h-[9px]" />
+                      </button>
+                    </div>
+
+                    {/* popover */}
+                    {openIdx === idx && (
+                      <div className="absolute left-20 top-10 z-10 w-64 rounded-lg border border-gray-200 bg-white shadow-lg p-3 text-xs text-gray-700">
+                        <div className="font-medium mb-1">{row.label}</div>
+                        <p>{row.help ?? 'Tidak ada keterangan.'}</p>
+                      </div>
+                    )}
                   </div>
                   <span className="text-sm font-medium text-gray-900">{row.value}</span>
                 </li>

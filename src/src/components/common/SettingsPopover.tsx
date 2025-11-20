@@ -15,62 +15,6 @@ export type ConfirmModalProps = {
   onConfirm: () => void | Promise<void>;
 };
 
-export function ConfirmModal({
-  open,
-  title,
-  description,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
-  variant = "primary",
-  loading,
-  onCancel,
-  onConfirm,
-}: ConfirmModalProps) {
-  React.useEffect(() => {
-    if (!open) return;
-    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
-    document.addEventListener("keydown", onEsc);
-    return () => document.removeEventListener("keydown", onEsc);
-  }, [open, onCancel]);
-
-  if (!open) return null;
-
-  const dangerBtn = "bg-red-600 hover:bg-red-700";
-  const primaryBtn = "bg-[#7A6EF6] hover:bg-[#6b5df2]";
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
-      <div className="relative z-[101] w-full max-w-md rounded-xl bg-white shadow-xl ring-1 ring-black/5">
-        <div className="px-6 pt-6">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          {description ? <div className="mt-2 text-sm text-gray-600">{description}</div> : null}
-        </div>
-        <div className="px-6 py-5 flex gap-3 justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={!!loading}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {cancelText}
-          </button>
-          <button
-            type="button"
-            onClick={() => onConfirm()}
-            disabled={!!loading}
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-white ${
-              variant === "danger" ? dangerBtn : primaryBtn
-            } ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
-          >
-            {loading ? "Processing..." : confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* =========================
  * SettingsDropdown (pure UI)
  * ========================= */

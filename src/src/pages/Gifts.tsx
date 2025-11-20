@@ -114,7 +114,7 @@ export const Gifts: React.FC = () => {
       const matchesSearch = searchTerm === '' ||
         guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         guest.phone.includes(searchTerm) ||
-        guest.invitationCode.toLowerCase().includes(searchTerm.toLowerCase());
+        guest.code.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory = selectedCategory === 'All' || guest.category === selectedCategory;
 
@@ -161,7 +161,7 @@ export const Gifts: React.FC = () => {
       String(index + 1),
       guest.name || '',
       guest.phone || '',
-      guest.invitationCode || '',
+      guest.code || '',
       guest.category || '',
       guest.giftType || '',
       String(guest.kadoCount || 0),
@@ -383,8 +383,8 @@ export const Gifts: React.FC = () => {
                     {visibleCols.kode && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kode</th>}
                     {visibleCols.kategori && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kategori</th>}
                     {visibleCols.info && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Informasi</th>}
-                    {visibleCols.kado && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kado</th>}
-                    {visibleCols.angpao && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Angpao</th>}
+                    {visibleCols.kado && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider text-center">Kado</th>}
+                    {visibleCols.angpao && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider text-center">Angpao</th>}
                     {visibleCols.count && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Jumlah Kado</th>}
                     {visibleCols.note && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Note</th>}
                     {visibleCols.tanggal && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Tanggal</th>}
@@ -402,7 +402,7 @@ export const Gifts: React.FC = () => {
                           <div className="text-sm font-medium text-text">{guest.name}</div>
                         </div>
                       </td>}
-                      {visibleCols.kode && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.invitationCode}</td>}
+                      {visibleCols.kode && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text">{guest.code}</td>}
                       {visibleCols.kategori && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-primary">
                           {guest.category}
@@ -502,8 +502,8 @@ export const Gifts: React.FC = () => {
                     {/* Contact Info */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs text-text/70">
-                        <span className="font-medium">Code:</span>
-                        <span className="font-mono">{guest.invitationCode}</span>
+                        <span className="font-medium">Kode:</span>
+                        <span className="font-mono">{guest.code}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-text/70">
                         <span className="font-medium">Phone:</span>
@@ -597,14 +597,14 @@ export const Gifts: React.FC = () => {
           {isAddGuestOpen && (
             <NonInvitedGiftAssignmentModal isOpen={isAddGuestOpen} onClose={() => setIsAddGuestOpen(false)} onSubmit={handleAddGuestSave} />)}
           {/* Search Modal - Direct to CARI TAMU TERDAFTAR - now includes all guests */}
-          <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="gift"
+          <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.code, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="gift"
           />
           <ConfirmModal open={confirmOpen} title="Hapus Gift" message="Apakah kamu yakin ingin menghapus data gift untuk tamu ini?" onConfirm={confirmDeleteGift} onCancel={() => setConfirmOpen(false)} loading={loading} />
           {/* QR Scanner Modal - now includes all guests */}
           <CheckInModal
             open={isQRScannerOpen}
             onClose={() => setIsQRScannerOpen(false)}
-            guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode }))}
+            guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.code }))}
             onQRCodeScanned={handleQRCodeScanned}
             mode="scan"
             context="gift"

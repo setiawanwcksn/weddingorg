@@ -161,7 +161,7 @@ guestsApp.post('/', zValidator('json', guestSchema), async (c: Context<AppEnv>) 
         },
         400,
       )
-    }    
+    }
 
     const result = await collection.insertOne({
       ...guestData,
@@ -221,7 +221,7 @@ guestsApp.post(
 
       const collection = db.collection('94884219_guests');
 
-      const invitationCode = Date.now().toString(36).toUpperCase().slice(-7);;
+      const invitationCode = Date.now().toString(36).toUpperCase().slice(-7);
       const displayCode = `NI${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
       const now = new Date();
 
@@ -229,7 +229,7 @@ guestsApp.post(
         userId: user.id,
         name: data.name,
         phone: data.phone ?? '',
-        invitationCode,
+        invitationCode: invitationCode,
         code: invitationCode,
         category: data.category ?? 'Regular',
         isInvited: false,
@@ -339,6 +339,18 @@ guestsApp.post('/:id/clear-checkin', async (c: Context<AppEnv>) => {
     const id = c.req.param('id')
     const collection = db.collection('94884219_guests')
     const before = await collection.findOne(byIdFilter(user, id))
+
+    if (!before) return c.json({ success: false, error: 'Guest not found' }, 404)
+
+    if ((before as any).isInvited === false && (before as any).souvenirCount <= 0 && (before as any).kadoCount <= 0 && (before as any).angpaoCount <= 0) {
+      const deleteResult = await collection.deleteOne(byIdFilter(user, id))
+      if (deleteResult.deletedCount === 0) {
+        return c.json({ success: false, error: 'Failed to delete guest' }, 500)
+      }
+      const targetOwnerId = (before as any)?.userId ?? user.id
+      broadcastGuestUpdate('guest_checkin_cleared', id, String(targetOwnerId))
+      return c.json({ success: true, message: 'Guest deleted because not invited' })
+    }
 
     const result = await collection.findOneAndUpdate(
       byIdFilter(user, id),

@@ -14,11 +14,13 @@ import NonInvitedGuestCheckInModal from '../components/checkin/NonInvitedGuestCh
 import { NonInvitedGuestData } from '../components/checkin/NonInvitedGuestCheckInModal';
 import { apiUrl } from '../lib/api';
 import { usePhoto } from "../contexts/PhotoProvider";
+import { NoticeModal } from '../components/common/NoticeModal';
 import ExportTamu from '../assets/xls-file.png';
 import Welcome from '../assets/Welcome.png';
 import StatsIMG from '../assets/stats.png';
 import filter from '../assets/filter.png';
 import edit from '../assets/Edit.png';
+import { ConfirmModal } from "../components/common/DeleteModal";
 import Delete from '../assets/Delete.png';
 
 interface DashboardAccountInfo {
@@ -44,6 +46,9 @@ export function ReceptionCheckIn(): JSX.Element {
   const [showQRTest, setShowQRTest] = React.useState(false);
   const [nonInvitedGuestModalOpen, setNonInvitedGuestModalOpen] = React.useState(false);
   const { photoUrl, dashboardUrl, welcomeUrl } = usePhoto();
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
   const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>({
     no: true,
     name: true,
@@ -160,8 +165,7 @@ export function ReceptionCheckIn(): JSX.Element {
       return (
         guest.name?.toLowerCase().includes(searchLower) ||
         guest.code?.toLowerCase().includes(searchLower) ||
-        guest.phone?.toLowerCase().includes(searchLower) ||
-        guest.invitationCode?.toLowerCase().includes(searchLower)
+        guest.phone?.toLowerCase().includes(searchLower)
       );
     });
   }, [allGuests, searchTerm]);
@@ -172,7 +176,7 @@ export function ReceptionCheckIn(): JSX.Element {
       id: guest._id,
       no: String(index + 1).padStart(2, '0'),
       name: guest.name,
-      code: guest.code || guest.invitationCode || `GUEST-${String(index + 1).padStart(6, '0')}`,
+      code: guest.code || '-',
       category: guest.category || 'Regular',
       info: guest.info || '-',
       sesi: guest.session || '-',
@@ -228,6 +232,8 @@ export function ReceptionCheckIn(): JSX.Element {
       const guestCount = g.guestCount || 1;
       return sum + guestCount;
     }, 0);
+    const totalGuestCount = allGuestList?.filter((g: any) => !!g.checkInDate)?.reduce((sum, g) => sum + (g.guestCount || 0), 0) || 0;
+
 
     return {
       total: allGuestList.length,
@@ -235,13 +241,14 @@ export function ReceptionCheckIn(): JSX.Element {
       regular: regularCount,
       vip: vipCount,
       nonInvited: nonInvitedCount,
-      totalWithPlusOne
+      totalWithPlusOne,
+      totalGuestCount
     };
   }, [allGuests]);
 
   const statsLeft = [
     { label: 'Tamu Check-in', value: allGuestStats.checkedIn },
-    { label: 'Tamu di Venue', value: allGuestStats.total },
+    { label: 'Tamu di Venue', value: allGuestStats.totalGuestCount },
     { label: 'Tamu Reguler', value: allGuestStats.regular },
     { label: 'Tamu VIP', value: allGuestStats.vip },
   ];
@@ -265,6 +272,34 @@ export function ReceptionCheckIn(): JSX.Element {
       <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${bgClass}`}>{children}</span>
     );
   };
+
+  const confirmDeleteCheckin = async () => {
+    if (!selectedGuest) return;
+
+    try {
+
+      // Use unified guests API for all guest types
+      const response = await apiRequest(apiUrl(`/api/guests/${selectedGuest.id}/clear-checkin`), {
+        method: 'POST'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to clear guest check-in');
+      }
+      showToast(`Berhasil menghapus check-in data Tamu ${selectedGuest.name}`, 'success');
+
+      // Refresh the guests data to reflect the change
+      setConfirmOpen(false);
+      console.log('Refreshing guests data after clearing check-in...');
+      await mutateGuests();
+      console.log('Guests data refreshed');
+    } catch (error) {
+      console.error('Error clearing guest check-in:', error);
+      showToast(`Gagal menghapus check-in data. ${error.message}`, 'error');
+    }
+  }
 
   // Loading state - only show loading when explicitly loading, not when guests array is empty
   if (guestsLoading) {
@@ -455,12 +490,21 @@ export function ReceptionCheckIn(): JSX.Element {
                         {visibleCols.code && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>}
                         {visibleCols.category && (
                           <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap hidden md:table-cell">
-                            <Badge tone={r.category === 'VIP' ? 'secondary' : r.isNonInvited ? 'warning' : 'accent'}>{r.category}</Badge>
+                            <Badge tone="secondary">{r.category}</Badge>
                           </td>
                         )}
                         {visibleCols.info && (
                           <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap hidden lg:table-cell">
-                            <Badge tone="warning">{r.info}</Badge>
+                            {r.info ? (
+                              <button
+                                type="button"
+                                onClick={() => { setSelectedInfo(r.info as string); setInfoOpen(true); }}
+                                title={r.info}
+                                className="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-xs shadow-sm"
+                              >
+                                {r.info.length > 6 ? r.info.slice(0, 6) + '…' : r.info}
+                              </button>
+                            ) : '-'}
                           </td>
                         )}
                         {visibleCols.sesi && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap hidden xl:table-cell">{r.sesi}</td>}
@@ -489,29 +533,12 @@ export function ReceptionCheckIn(): JSX.Element {
                               <button
                                 className="w-6 h-6 sm:w-7 sm:h-7 inline-flex items-center justify-center rounded-md border border-border min-h-[36px] touch-manipulation bg-red-500 text-white"
                                 aria-label="clear check-in"
-                                onClick={async () => {
-                                  try {
-
-                                    // Use unified guests API for all guest types
-                                    const response = await apiRequest(apiUrl(`/api/guests/${r.id}/clear-checkin`), {
-                                      method: 'POST'
-                                    });
-
-                                    const data = await response.json();
-
-                                    if (!response.ok || !data.success) {
-                                      throw new Error(data.error || 'Failed to clear guest check-in');
-                                    }
-                                    showToast(`Berhasil menghapus check-in data Tamu ${r.name}`, 'success');
-
-                                    // Refresh the guests data to reflect the change
-                                    console.log('Refreshing guests data after clearing check-in...');
-                                    await mutateGuests();
-                                    console.log('Guests data refreshed');
-                                  } catch (error) {
-                                    console.error('Error clearing guest check-in:', error);
-                                    showToast(`Gagal menghapus check-in data. ${error.message}`, 'error');
-                                  }
+                                onClick={() => {
+                                  setSelectedGuest({
+                                    id: r.id,
+                                    name: r.name,
+                                  });
+                                  setConfirmOpen(true);
                                 }}
                               ><img src={Delete} className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 text-white" /></button>
                             </div>
@@ -574,7 +601,7 @@ export function ReceptionCheckIn(): JSX.Element {
             guests={allGuests?.map((g: any) => ({
               id: g._id,
               name: g.name,
-              code: g.code || g.invitationCode,
+              code: g.code,
               category: g.category || 'Regular',
               isInvited: g.isInvited !== false, // Set isInvited based on guest data
               checkInDate: g.checkInDate // Pass check-in status
@@ -616,7 +643,7 @@ export function ReceptionCheckIn(): JSX.Element {
                   setSelectedGuest({
                     id: foundGuest._id,
                     name: foundGuest.name,
-                    code: foundGuest.invitationCode
+                    code: foundGuest.code
                   });
                   setPickedAt(new Date());
                   setDetailOpen(true);
@@ -665,7 +692,17 @@ export function ReceptionCheckIn(): JSX.Element {
             }}
           />
 
+          <NoticeModal
+            open={infoOpen}
+            onClose={() => { setInfoOpen(false); setSelectedInfo(null); }}
+            title="Information"
+            confirmLabel="Close"
+          >
+            <div className="text-sm whitespace-pre-line">{selectedInfo}</div>
+          </NoticeModal>
 
+
+          <ConfirmModal open={confirmOpen} title="Hapus Check-in Data Tamu" message="Apakah kamu yakin ingin menghapus data check-in untuk tamu ini?" onConfirm={confirmDeleteCheckin} onCancel={() => setConfirmOpen(false)} />
         </div>
       </div>
       {/* Bottom navigation - inline at the page bottom */}

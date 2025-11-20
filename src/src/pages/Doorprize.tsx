@@ -5,8 +5,10 @@ import { Toast } from '../components/common/Toast';
 import { useAuth } from '../contexts/AuthContext';
 import { swrGuestConfig } from '../utils/swrConfig';
 import { useNavigate } from 'react-router-dom';
+import { TableFilterPopover } from '../components/guests/TableFilterPopover';
 import { BottomBar } from '../components/navigation/BottomBar';
 import { apiUrl } from '../lib/api';
+import filter from '../assets/filter.png';
 
 export type CheckedInGuest = {
   id: string;
@@ -72,6 +74,21 @@ export function Doorprize(): JSX.Element {
   const [toast, setToast] = React.useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'success' });
   const [manualData, setManualData] = React.useState<any>(null);
   const [manualError, setManualError] = React.useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>({
+    no: true,
+    name: true,
+    kode: true,
+    kategori: true,
+    informasi: true,
+    sesi: true,
+    limit: true,
+    meja: true,
+    tamu: true,
+    tanggal: true,
+    waktu: true,
+  });
 
   // Fetch checked-in guests with standardized SWR configuration
   // Include user ID in cache key to ensure isolation between accounts
@@ -185,9 +202,38 @@ export function Doorprize(): JSX.Element {
                 <ActionButton icon={<UserPlus className="w-4 h-4" />}>Tambah Peserta</ActionButton>
                 <ActionButton icon={<Play className="w-4 h-4" />} onClick={() => navigate('/doorprize/picker')}>Start To Play</ActionButton>
               </div>
-              <button className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-secondary text-text border border-border hover:bg-accent transition-colors min-h-[44px] touch-manipulation" aria-label="filter">
-                <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setFilterOpen(true)}
+                  className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary transition-colors"
+                  title="Filter columns"
+                >
+                  <img src={filter} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                </button>
+                <TableFilterPopover
+                  open={filterOpen}
+                  onClose={() => setFilterOpen(false)}
+                  options={[
+                    { key: 'no', label: 'No', checked: visibleCols.no },
+                    { key: 'name', label: 'Nama', checked: visibleCols.name },
+                    { key: 'kode', label: 'kode', checked: visibleCols.kode },
+                    { key: 'kategori', label: 'kategori', checked: visibleCols.kategori },
+                    { key: 'informasi', label: 'informasi', checked: visibleCols.informasi },
+                    { key: 'sesi', label: 'Sesi', checked: visibleCols.sesi },
+                    { key: 'limit', label: 'Limit Tamu', checked: visibleCols.limit },
+                    { key: 'meja', label: 'No. Meja', checked: visibleCols.meja },
+                    { key: 'tamu', label: 'Jumlah Tamu', checked: visibleCols.tamu },
+                    { key: 'tanggal', label: 'Tanggal', checked: visibleCols.tanggal },
+                    { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
+                  ]}
+                  onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                  onToggleAll={(checked) => {
+                    const keys = ['no', 'name', 'kode', 'kategori', 'informasi', 'sesi', 'limit', 'meja', 'tamu', 'tanggal', 'waktu'];
+                    setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
+                  }}
+                />
+
+              </div>
             </div>
           </div>
 
@@ -238,20 +284,20 @@ export function Doorprize(): JSX.Element {
               </div>
             )} {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-[768px] text-sm">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-accent text-text/70">
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Nama</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kode</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kategori</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Informasi</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Sesi</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Limit</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No. Meja</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Jumlah Tamu</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>
-                    <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Waktu</th>
+                    {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No</th>}
+                    {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Nama</th>}
+                    {visibleCols.kode && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kode</th>}
+                    {visibleCols.kategori && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kategori</th>}
+                    {visibleCols.inf && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Informasi</th>}
+                    {visibleCols.sesi && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Sesi</th>}
+                    {visibleCols.limit && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Limit</th>}
+                    {visibleCols.meja && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No. Meja</th>}
+                    {visibleCols.tamu && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Jumlah Tamu</th>}
+                    {visibleCols.tanggal && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>}
+                    {visibleCols.waktu && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Waktu</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -269,21 +315,21 @@ export function Doorprize(): JSX.Element {
                     </tr>
                   ) : (pageRows.map((r, idx) => (
                     <tr key={idx}>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.no}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                      {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.no}</td>}
+                      {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>}
+                      {visibleCols.kode && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>}
+                      {visibleCols.kategori && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                         <InfoPill>{r.category}</InfoPill>
-                      </td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                      </td>}
+                      {visibleCols.info && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                         <InfoPill>{r.info}</InfoPill>
-                      </td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.session}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.limit}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.tableNo}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.guestCount}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.date}</td>
-                      <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.time}</td>
+                      </td>}
+                      {visibleCols.sesi && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.session}</td>}
+                      {visibleCols.limit && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.limit}</td>}
+                      {visibleCols.meja && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.tableNo}</td>}
+                      {visibleCols.tamu && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.guestCount}</td>}
+                      {visibleCols.tanggal && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.date}</td>}
+                      {visibleCols.waktu && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.time}</td>}
                       {/* <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                         <RowActions />
                       </td> */}

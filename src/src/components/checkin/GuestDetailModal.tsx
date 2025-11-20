@@ -12,6 +12,7 @@ import { useGuests } from '../../contexts/GuestsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiUrl } from '../../lib/api';
 import { usePhoto } from "../../contexts/PhotoProvider";
+import QRCode from 'react-qr-code'
 import SouvenirAct from '../../assets/SouvenirAct.png';
 import Souvenir from '../../assets/Souvenir.png';
 import GiftAct from '../../assets//GiftAct.png';
@@ -84,6 +85,8 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
         setGuestDetails(data.data);
         // Sync local state with updated guest data
         setSouvenir(data.data.souvenirCount || 0);
+        setAngpao(data.data.angpaoCount)
+        setKado(data.data.kadoCount)
         setGift(data.data.giftType || null);
       }
     } catch (err) {
@@ -148,7 +151,7 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
 
       // Call the parent's onCheckIn callback
       onCheckIn(guest);
-      showToast(`Tamu ${guest.name} berhasil checked-in`, 'success');
+      // showToast(`Tamu ${guest.name} berhasil checked-in`, 'success');
       onClose();
 
       // Refresh the global guests data to reflect the check-in
@@ -171,7 +174,7 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
   if (!open || !guest) return null;
 
   return (
-    <div className="fixed inset-0 z-[60]">
+    <div className="fixed inset-0 z-[60] print:hidden">
       {/* Overlay */}
       <button aria-label="Close overlay" onClick={onClose} className="absolute inset-0 bg-text/30" />
 
@@ -327,7 +330,7 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
                             : 'bg-secondary text-text border-border hover:border-primary/50'
                             }`}
                         >
-                          <img src={ angpao > 0 ? Souvenir: SouvenirAct} className="w-5 h-5"  style={ angpao > 0 ? { filter: 'brightness(0) saturate(100%) invert(1)' } : {}}/>
+                          <img src={angpao > 0 ? Souvenir : SouvenirAct} className="w-5 h-5" style={angpao > 0 ? { filter: 'brightness(0) saturate(100%) invert(1)' } : {}} />
                           <span>Angpao</span>
                         </button>
 
@@ -339,7 +342,7 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
                             : 'bg-secondary text-text border-border hover:border-primary/50'
                             }`}
                         >
-                          <img src={kado > 0? Gift: GiftAct} className="w-5 h-5" style={ kado > 0 ? { filter: 'brightness(0) saturate(100%) invert(1)' } : {}}/>
+                          <img src={kado > 0 ? Gift : GiftAct} className="w-5 h-5" style={kado > 0 ? { filter: 'brightness(0) saturate(100%) invert(1)' } : {}} />
                           <span>Kado</span>
                         </button>
                       </>
@@ -394,9 +397,9 @@ export function GuestDetailModal({ open, guest, pickedAt, onClose, onCheckIn }: 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-text mb-2">Guest Already Checked In</h3>
+              <h3 className="text-lg font-semibold text-text mb-2">Tamu Sudah Checked In</h3>
               <p className="text-sm text-text/70 mb-6">
-                Guest has already checked in. Do you want to continue anyway?
+                Tamu Sudah Check In, Apakah Anda Ingin Melanjutkan Check-In Lagi?
               </p>
               <div className="flex gap-3">
                 <button

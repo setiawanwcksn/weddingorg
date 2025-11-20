@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import { X, User, Phone, Users, MessageSquare, Hash } from 'lucide-react'
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter'
 import { useAccount } from '../../hooks/useAccount';
+import { useToast } from '../../contexts/ToastContext';
 
 export interface NonInvitedGuestData {
   name: string
@@ -38,6 +39,7 @@ export default function NonInvitedSouvenirAssignmentModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [phoneError, setPhoneError] = useState<string>('')
   const { account } = useAccount();
+  const { showToast } = useToast();
 
   const categories = React.useMemo(
     () =>
@@ -83,6 +85,7 @@ export default function NonInvitedSouvenirAssignmentModal({
         category: ''
       })
       setPhoneError('')
+      showToast(`Berhasil menyimpan data Souvenir`, 'success');
       onClose()
     } catch (error) {
       console.error('Error submitting non-invited guest:', error)

@@ -9,6 +9,7 @@ import { X, DollarSign, User, Calendar, Plus, Minus } from 'lucide-react';
 import { Guest, GiftType } from '../../../shared/types';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiUrl } from '../../lib/api';
+import { useToast } from '../../contexts/ToastContext';
 import SouvenirAct from '../../assets/SouvenirAct.png';
 import Souvenir from '../../assets/Souvenir.png';
 import GiftAct from '../../assets//GiftAct.png';
@@ -34,6 +35,7 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [count, setCount] = useState(guest.souvenirCount);
+  const { showToast } = useToast();
 
   // Load existing gift data from guest object
   useEffect(() => {
@@ -76,13 +78,15 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
 
         const result = await response.json();
         console.log('[GiftAssignmentModal] Gift assignment successful:', result);
-
+        showToast(`Berhasil menyimpan data Gift`, 'success');
         // Call onAssign to refresh the parent component data
         if (onAssign) {
           await onAssign(guest._id, 'Angpao', 0); // Use Angpao as default for clearing
         }
 
         onClose();
+      } else {
+        showToast(`Gagal menyimpan data Gift. Angpao atau Gift harus dipilih`, 'error');
       }
     } catch (error) {
       console.error('[GiftAssignmentModal] Gift assignment failed:', error);
@@ -219,7 +223,18 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
                   </div>
                 </div>
               </li>
-
+              <li className="px-4 py-2.5 sm:py-3">
+                <div>
+                  <label className="block font-medium mb-1">Gift Note</label>
+                  <textarea
+                    rows={3}
+                    value={giftNote}
+                    onChange={(e) => setGiftNote(e.target.value)}
+                    className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none"
+                    placeholder="Contoh: kotak warna kuning"
+                  />
+                </div>
+              </li>
             </ul>
           </div>
         </div>

@@ -31,7 +31,8 @@ import { Guest } from '../../shared/types';
 import { Toast } from '../components/common/Toast';
 import { NoticeModal } from '../components/common/NoticeModal';
 import { TableFilterPopover } from '../components/guests/TableFilterPopover';
-import { SettingsDropdown, ConfirmModal } from '../components/common/SettingsPopover';
+import { SettingsDropdown } from '../components/common/SettingsPopover';
+import { ConfirmModal } from "../components/common/DeleteModal";
 import { apiUrl } from '../lib/api';
 import { useAccount } from '../hooks/useAccount';
 import kelolaTamuAct from '../assets/KelolaTamuAct.png';
@@ -82,7 +83,9 @@ const ManageGuests: React.FC = () => {
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [confirmOneOpen, setConfirmOneOpen] = React.useState(false);
   const [settingsLoading, setSettingsLoading] = React.useState<"delete" | null>(null);
+  const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
   const btnRef = React.useRef<HTMLButtonElement | null>(null);
   const source = "Tamu";
 
@@ -255,12 +258,16 @@ const ManageGuests: React.FC = () => {
     }
   };
 
-  // Handle guest deletion
   const handleDeleteGuest = async (guestId: string) => {
-    if (!confirm('Are you sure you want to delete this guest?')) return;
+    setSelectedGuestId(guestId);
+    setConfirmOneOpen(true);
+  };
+  // Handle guest deletion
+  const confirmDeleteGuest = async () => {
+    if (!selectedGuestId) return;
 
     try {
-      const response = await apiRequest(apiUrl(`/api/guests/${guestId}`), {
+      const response = await apiRequest(apiUrl(`/api/guests/${selectedGuestId}`), {
         method: 'DELETE'
       });
 
@@ -757,20 +764,7 @@ const ManageGuests: React.FC = () => {
                     onBlast={onBlast}
                   />
 
-                  <ConfirmModal
-                    open={confirmOpen}
-                    title="Hapus Semua Data?"
-                    description={
-                      <>Tindakan ini akan menghapus <b>semua</b> data <code>{source}</code>.
-                        <br />Jika akun Anda admin, ini akan menghapus <b>seluruh koleksi</b>.</>
-                    }
-                    variant="danger"
-                    confirmText="Ya, Hapus"
-                    cancelText="Batal"
-                    loading={settingsLoading === "delete"}
-                    onCancel={() => setConfirmOpen(false)}
-                    onConfirm={onDeleteAll}
-                  />
+                  <ConfirmModal open={confirmOpen} title="Hapus Semua Data?" message="Apakah kamu yakin ingin menghapus semua data tamu?" onConfirm={onDeleteAll} onCancel={() => setConfirmOpen(false)} loading={loading} />
                 </div>
               </div>
             </div>
@@ -1003,6 +997,8 @@ const ManageGuests: React.FC = () => {
           >
             <div className="text-sm whitespace-pre-line">{selectedInfo}</div>
           </NoticeModal>
+
+          <ConfirmModal open={confirmOneOpen} title="Hapus Data Tamu" message="Apakah kamu yakin ingin menghapus data untuk tamu ini?" onConfirm={confirmDeleteGuest} onCancel={() => setConfirmOneOpen(false)} loading={loading} />
 
         </div>
       </div>

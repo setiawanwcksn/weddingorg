@@ -124,6 +124,7 @@ export const Souvenirs: React.FC = () => {
       const responseData = await response.json();
 
       if (responseData.success) {
+        showToast(`Berhasil menghapus data souvenir`, 'success');
         await refresh();
       } else {
         throw new Error(responseData.error || "Failed to delete souvenir data");
@@ -239,7 +240,7 @@ export const Souvenirs: React.FC = () => {
       const matchesSearch = searchTerm === '' ||
         guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         guest.phone.includes(searchTerm) ||
-        guest.invitationCode.toLowerCase().includes(searchTerm.toLowerCase());
+        guest.code.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory = selectedCategory === 'All' || guest.category === selectedCategory;
 
@@ -595,7 +596,7 @@ export const Souvenirs: React.FC = () => {
             <SouvenirAssignmentModal isOpen={isAssignmentModalOpen} onClose={() => { setIsAssignmentModalOpen(false); setSelectedGuest(null); }} guest={selectedGuest} onAssign={handleAssignmentComplete} />)} {isAddGuestOpen && (
               <NonInvitedSouvenirAssignmentModal isOpen={isAddGuestOpen} onClose={() => setIsAddGuestOpen(false)} onSubmit={handleAddGuestSave} />)}
           {/* Search Modal - Similar to Check-in modal */}
-          <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="souvenir"
+          <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.code, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="souvenir"
           />
           <ConfirmModal open={confirmOpen} title="Hapus Souvenir" message="Apakah kamu yakin ingin menghapus data souvenir untuk tamu ini?" onConfirm={confirmDeleteSouvenir} onCancel={() => setConfirmOpen(false)} loading={loading} />
           <NoticeModal open={infoOpen} onClose={() => { setInfoOpen(false); setSelectedInfo(null); }} title="Information" confirmLabel="Close" >
@@ -605,7 +606,7 @@ export const Souvenirs: React.FC = () => {
           <CheckInModal
             open={isQRScannerOpen}
             onClose={() => setIsQRScannerOpen(false)}
-            guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.invitationCode }))}
+            guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.code }))}
             onQRCodeScanned={handleQRCodeScanned}
             mode="scan"
             context="souvenir"

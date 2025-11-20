@@ -10,6 +10,7 @@ import { X } from 'lucide-react';
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter';
 import { apiUrl } from '../../lib/api';
 import { useAccount } from '../../hooks/useAccount';
+import { useAuth } from '../../contexts/AuthContext';
 
 export interface AddGuestFormData {
   name: string;
@@ -50,6 +51,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
   const [checkingName, setCheckingName] = React.useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
   const infoMax = 120;
+  const { apiRequest, user } = useAuth();
 
   const { account } = useAccount();
 
@@ -98,7 +100,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
     setCheckingName(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(apiUrl(`/api/guests/check-name/${encodeURIComponent(name)}`), {
+      const response = await apiRequest(apiUrl(`/api/guests/check-name/${encodeURIComponent(name)}`), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -108,7 +110,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
       const data = await response.json();
 
       if (data.success && data.data.exists) {
-        setNameError('Guest name already exists. Please use a different name.');
+        setNameError('Nama tamu sudah ada di daftar tamu. Gunakan nama lain');
         return false;
       } else {
         setNameError('');
