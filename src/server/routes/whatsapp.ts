@@ -16,9 +16,6 @@ import { renderMessage } from '../utils/renderMessage.js'
 
 type UpgradeWS = ReturnType<typeof createNodeWebSocket>['upgradeWebSocket']
 
-// ───────────────────────────────
-// Helpers: user context
-// ───────────────────────────────
 type CtxUser = { id: string; accountId?: string; role?: string; username?: string }
 
 function requireUser(c: Context): CtxUser | null {
@@ -33,9 +30,6 @@ function errMsg(e: unknown) {
   return e instanceof Error ? e.message : String(e)
 }
 
-// ───────────────────────────────
-// Global
-// ───────────────────────────────
 const AUTH_ROOT = process.env.WA_AUTH_DIR ?? '/app/auth'
 const logger = pino({ level: process.env.NODE_ENV === 'production' ? 'warn' : 'info' })
 
@@ -53,8 +47,7 @@ type Session = {
 }
 const sessions = new Map<string, Session>()
 
-// WebSocket clients per user
-const wsClients = new Map<string, Set<any>>() // userId -> Set<ws>
+const wsClients = new Map<string, Set<any>>()
 
 function getSession(userId: string): Session {
   let sess = sessions.get(userId)
@@ -116,7 +109,6 @@ async function ensureWA(userId: string) {
   if (sess.ensuring) return
   sess.ensuring = true
   try {
-    // hanya early-return jika benar-benar siap
     if (sess.sock && sess.sendText && sess.ready) return
 
     fs.mkdirSync(sess.authDir, { recursive: true })
@@ -269,9 +261,6 @@ async function markPending(id: any, note?: string) {
 }
 
 /** Resolve pengirim (session pemilik):
- * 1) Gunakan job.userId bila tersedia (paling akurat).
- * 2) Jika tidak ada, gunakan job.accountId -> pilih user tertua di account tsb (deterministik).
- * 3) Terakhir, fallback dari job.guestId -> ambil guest.userId (kompat lama).
  */
 async function resolveUserIdForJob(job: any): Promise<string | null> {
   try {
@@ -300,13 +289,11 @@ async function startScheduler() {
   if (schedulerStarted) return
   schedulerStarted = true
   if (schedulerTimer) clearInterval(schedulerTimer)
-  console.log('[scheduler] started (94884219_reminders) worker:', workerId)
 
   schedulerTimer = setInterval(async () => {
     if (isTicking) return
     isTicking = true
     try {
-      // requeue stuck (>5 menit)
       const cutoff = new Date(Date.now() - 5 * 60 * 1000)
       const requeued = await db.collection('94884219_reminders').updateMany(
         { status: 'processing', updatedAt: { $lte: cutoff } },
@@ -316,7 +303,6 @@ async function startScheduler() {
         console.log('[scheduler] requeued stuck jobs:', requeued.modifiedCount)
       }
 
-      // due count
       const now = new Date()
       const dueCount = await db.collection('94884219_reminders').countDocuments(dueFilter(now))
       if (dueCount > 0) console.log('[scheduler] due pending:', dueCount)
@@ -343,7 +329,6 @@ async function startScheduler() {
           const text = await renderMessage(job.message, job)
           await sess.sendText(job.phone, text)
           await markSent(job._id)
-          console.log('[scheduler] sent', job.phone, job.type, 'by', userId)
           await new Promise(r => setTimeout(r, 500 + Math.random() * 800))
         } catch (e: any) {
           console.error('[scheduler] failed', job?.phone, e?.message)
@@ -362,10 +347,7 @@ async function startScheduler() {
 // Export untuk auto-start di server.ts
 // ───────────────────────────────
 export async function startWhatsApp() {
-  console.log('[boot] initializing WhatsApp (multi-user)...')
   try {
-    // Tidak memaksa buka sesi apa pun di boot.
-    // Sesi dibuat saat user memanggil /connect atau membuka WS.
     await startScheduler()
     console.log('[boot] scheduler started ✅')
   } catch (err) {

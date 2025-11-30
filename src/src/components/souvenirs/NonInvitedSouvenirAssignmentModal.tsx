@@ -48,7 +48,7 @@ export default function NonInvitedSouvenirAssignmentModal({
     () =>
       Array.isArray(account?.guestCategories) && account.guestCategories.length > 0
         ? account.guestCategories
-        : ['Regular', 'VIP'],
+        : [],
     [account]
   );
 
@@ -58,7 +58,7 @@ export default function NonInvitedSouvenirAssignmentModal({
     info: '',
     invitationCode: '',
     souvenir: 1,
-    category: categories[0]
+    category: ''
   })
 
   const updateAdd = (k: keyof NonInvitedGuestData, v: string) =>
@@ -78,7 +78,7 @@ export default function NonInvitedSouvenirAssignmentModal({
       info: '',
       invitationCode: '',
       souvenir: 1,
-      category: categories[0] ?? ''
+      category: ''
     });
     setPhoneError('');
   };
@@ -278,7 +278,7 @@ export default function NonInvitedSouvenirAssignmentModal({
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium mb-3">Kategori Tamu *</label>
+              <label className="block text-sm font-medium mb-3">Kategori Tamu</label>
 
               <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
                 {categories.map((cat) => (

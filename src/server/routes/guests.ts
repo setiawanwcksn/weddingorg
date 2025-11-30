@@ -49,7 +49,8 @@ function errMsg(error: unknown): string {
 const guestSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   phone: z.string().min(1, 'Phone is required'),
-  category: z.string().min(1, 'Category is required'),
+  category: z.string().optional(),
+  categoryID: z.number().optional(),
   status: z.enum(['Pending', 'Confirmed', 'Declined', 'Checked-In']).optional().default('Pending'),
   isInvited: z.boolean().optional().default(true),
   plusOne: z.boolean().optional().default(false),
@@ -197,6 +198,7 @@ guestsApp.post(
       giftNote: z.string().optional(),
       souvenir: z.number().min(0).optional(),
       category: z.string().optional(),
+      categoryID: z.number().optional(),
     }),
   ),
   async (c: Context<AppEnv>) => {
@@ -218,6 +220,7 @@ guestsApp.post(
         giftNote?: string;
         limit?: string;
         category?: string;
+        categoryID: number;
       };
 
       const collection = db.collection('94884219_guests');
@@ -230,6 +233,7 @@ guestsApp.post(
         phone: data.phone ?? '',
         code: data.invitationCode,
         category: data.category ?? '',
+        categoryID: data.categoryID ?? 0,
         isInvited: false,
 
         tableNo: data.tableNo ?? '',
@@ -783,7 +787,10 @@ guestsApp.get('/stats', async (c: Context<AppEnv>) => {
     const confirmedWithPlusOne =
       confirmedGuests + guests.filter((g: any) => g.status === 'Confirmed' && g.plusOne).length
 
-    const vipGuests = guests.filter((g: any) => g.category === 'VIP').length
+    const vipGuests = guests.filter((g: any) =>
+      (g.category || '').toLowerCase().trim().includes('vip')
+    ).length
+
     const regularGuests = totalGuests - vipGuests
 
     const stats = {
@@ -816,9 +823,7 @@ guestsApp.delete('/bulk/all', async (c: Context<AppEnv>) => {
     const guestsCol = db.collection('94884219_guests')
     const remindersCol = db.collection('94884219_reminders')
 
-    // Tentukan filter sesuai role
     const guestFilter: any = isAdmin(user) ? {} : { userId: user.id }
-    // Untuk reminders, kita manfaatkan userId/accountId yang memang sudah ada
     const reminderFilter: any = isAdmin(user)
       ? {}
       : {
@@ -826,9 +831,6 @@ guestsApp.delete('/bulk/all', async (c: Context<AppEnv>) => {
           { userId: user.id },
         ],
       }
-
-    console.log('[guests:delete-all] guestFilter:')
-    console.log('[guests:delete-all] reminderFilter:')
 
     // Eksekusi penghapusan
     const guestRes = await guestsCol.deleteMany(guestFilter)

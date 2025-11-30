@@ -64,7 +64,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
 
   const categories = Array.isArray(account?.guestCategories)
     ? account!.guestCategories
-    : ['Regular', 'VIP'];
+    : [];
 
   const [addForm, setAddForm] = React.useState<AddGuestForm>({ name: '', info: '', whatsapp: '', count: '', category: categories[0] });
   const updateAdd = (k: keyof AddGuestForm, v: string) => setAddForm((s) => ({ ...s, [k]: v }));

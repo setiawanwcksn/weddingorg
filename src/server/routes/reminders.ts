@@ -21,10 +21,10 @@ const reminderSchema = z.object({
   message: z.string(),
   scheduledAt: z.string(),
   type: z.enum(['wedding_invitation', 'reminder', 'thank_you']),
-  status: z.string().optional(), // Allow optional status field
-  introTextCategory: z.string().optional(), // Allow optional intro text category
+  status: z.string().optional(),
+  introTextCategory: z.string().optional(),
   attempts: z.number().min(0).optional(),
-}).strict(); // Strict mode to reject extra fields
+}).strict();
 
 type ReminderBody = z.infer<typeof reminderSchema>;
 const updateReminderSchema = reminderSchema.partial();
@@ -107,13 +107,11 @@ reminders.post(
     }
 
     try {
-      // zValidator menjamin valid, tapi tipe bisa “never” tanpa cast
       const body = (c.req as any).valid('json') as ReminderBody;
       console.log('[reminders] Request body:', body);
 
       const collection = db.collection('94884219_reminders');
 
-      // Strip field yang tidak boleh di-override dari client
       const { status: _ignoredStatus, introTextCategory, ...cleanBody } = body;
 
       const reminderData = {
@@ -132,11 +130,8 @@ reminders.post(
 
       const reminder = await collection.findOne({ _id: result.insertedId });
       if (!reminder) {
-        // Sangat jarang, fallback
         return c.json({ success: true, data: { id: result.insertedId.toString(), ...reminderData } });
       }
-
-      // Update guest: reminderScheduledAt + status "scheduled"
       try {
         const guestsCollection = db.collection('94884219_guests');
         await guestsCollection.updateOne(
@@ -151,8 +146,7 @@ reminders.post(
         );
         console.log('[reminders] Updated guest reminderScheduledAt field and status to scheduled');
       } catch (guestUpdateError: any) {
-        console.error('[reminders] Error updating guest reminderScheduledAt:', guestUpdateError?.message);
-        // Tidak perlu gagal total
+        console.error('[reminders] Error updating guest reminderScheduledAt:', guestUpdateError?.message);        
       }
 
       return c.json({
@@ -173,7 +167,6 @@ reminders.post(
       });
     } catch (error: any) {
       console.error('[reminders] Error creating reminder:', error?.message);
-      console.error('[reminders] Error stack:', error?.stack);
       return c.json({ error: error?.message || 'Failed to create reminder' }, 500);
     }
   },
@@ -230,7 +223,6 @@ reminders.put(
               },
             },
           );
-          console.log('[reminders] Updated guest reminderScheduledAt field and status to scheduled');
         } catch (guestUpdateError: any) {
           console.error('[reminders] Error updating guest reminderScheduledAt:', guestUpdateError?.message);
         }
@@ -268,7 +260,6 @@ reminders.delete('/:id', async (c: Context<AppEnv>) => {
   try {
     const collection = db.collection('94884219_reminders');
 
-    // Ambil reminder sebelum dihapus (untuk update guest)
     const reminderToDelete = await collection.findOne({
       guestId: id,
     });
@@ -277,7 +268,6 @@ reminders.delete('/:id', async (c: Context<AppEnv>) => {
       return c.json({ error: 'Reminder not found' }, 404);
     }
 
-    // Hapus reminder
     const result = await collection.deleteOne({
       guestId,
     });
@@ -286,7 +276,6 @@ reminders.delete('/:id', async (c: Context<AppEnv>) => {
       return c.json({ error: 'Reminder not found' }, 404);
     }
 
-    // Clear field di guest
     try {
       const guestsCollection = db.collection('94884219_guests');
       await guestsCollection.updateOne(
@@ -305,34 +294,6 @@ reminders.delete('/:id', async (c: Context<AppEnv>) => {
   } catch (error: any) {
     console.error('Error deleting reminder:', error?.message);
     return c.json({ error: error?.message ?? 'Failed to delete reminder' }, 500);
-  }
-});
-
-// Get reminder statistics
-reminders.get('/stats', async (c: Context<AppEnv>) => {
-  const accountId = c.get('accountId') as string | undefined;
-
-  if (!accountId) {
-    return c.json({ error: 'Account ID not found' }, 400);
-  }
-
-  try {
-    const collection = db.collection('94884219_reminders');
-
-    const [total, pending, sent, failed] = await Promise.all([
-      collection.countDocuments({ accountId }),
-      collection.countDocuments({ accountId, status: 'pending' }),
-      collection.countDocuments({ accountId, status: 'sent' }),
-      collection.countDocuments({ accountId, status: 'failed' }),
-    ]);
-
-    return c.json({
-      success: true,
-      data: { total, pending, sent, failed },
-    });
-  } catch (error: any) {
-    console.error('Error fetching reminder stats:', error?.message);
-    return c.json({ error: error?.message ?? 'Failed to fetch stats' }, 500);
   }
 });
 

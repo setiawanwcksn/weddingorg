@@ -19,7 +19,6 @@ const ACCOUNTS_COLLECTION = '94884219_accounts'
 
 /**
  * User registration schema
- * - weddingDateTime dicoerce ke Date agar aman saat dipakai langsung
  */
 const registerSchema = z.object({
   username: z
@@ -28,8 +27,6 @@ const registerSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   phone: z.string().optional(),
-
-  // Optional wedding details for account creation (admin flow primarily)
   weddingTitle: z.string().optional(),
   weddingDateTime: z.coerce.date().optional(),
   weddingLocation: z.string().optional(),

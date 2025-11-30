@@ -23,6 +23,7 @@ export interface NonInvitedGuestData {
   info: string
   invitationCode: string
   category?: string
+  categoryID?: number
 }
 
 interface NonInvitedGuestCheckInModalProps {
@@ -50,7 +51,7 @@ export default function NonInvitedGuestCheckInModal({
 
   const categories = Array.isArray(account?.guestCategories)
     ? account!.guestCategories
-    : ['Regular', 'VIP'];
+    : [];
 
   const [formData, setFormData] = useState<NonInvitedGuestData>({
     name: '',
@@ -58,7 +59,8 @@ export default function NonInvitedGuestCheckInModal({
     info: '',
     invitationCode: '',
     guestCount: 1,
-    category: categories[0]
+    category: '',
+    categoryID: 0
   })
 
   const updateAdd = (k: keyof NonInvitedGuestData, v: string) =>
@@ -78,7 +80,8 @@ export default function NonInvitedGuestCheckInModal({
       info: '',
       invitationCode: '',
       guestCount: 1,
-      category: categories[0] ?? 'Regular'
+      category: '',
+      categoryID: 0
     });
     setPhoneError('');
   };
@@ -131,7 +134,7 @@ export default function NonInvitedGuestCheckInModal({
     }
 
     const invitationCode = `GUEST-${code}`;
-    
+
     const candidate: NonInvitedGuestData = {
       ...formData,
       phone: formattedPhone,
@@ -282,17 +285,20 @@ export default function NonInvitedGuestCheckInModal({
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium mb-3">Kategori Tamu *</label>
+              <label className="block text-sm font-medium mb-3">Kategori Tamu</label>
 
               <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
-                {categories.map((cat) => (
+                {categories.map((cat, index) => (
                   <label key={cat} className="flex items-center gap-3 text-base sm:text-sm cursor-pointer">
                     <input
                       type="radio"
                       name="kategori"
                       value={cat}
                       checked={formData.category === cat}
-                      onChange={(e) => updateAdd('category', e.target.value)}
+                      onChange={() => {
+                        updateAdd('category', cat);
+                        updateAdd('categoryID', index+1);
+                      }}
                       className="w-4 h-4 text-primary focus:ring-primary"
                     />
                     <span>{cat}</span>

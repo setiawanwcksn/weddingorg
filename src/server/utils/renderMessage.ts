@@ -31,24 +31,21 @@ export async function renderMessage(template: string, reminder: any): Promise<st
 
     const guestName = guest?.name ?? reminder.guestName ?? '[Nama Tamu]'
     const mempelaiRaw = account?.title?.trim?.() || account?.name?.trim?.() || '[Nama Mempelai]'
-    const linkUndangan = account?.linkUndangan.trim().replace(/\/+$/, '') || ''
     const mempelai = mempelaiRaw
+    let linkUndangan = account?.linkUndangan.trim().replace(/\/+$/, '') || '';
 
-    const category = guest?.category === 'VIP' ? '1' : '2';
-    const session = guest?.session ?? ''
-    const limit = guest?.limit ?? 1
+    const params = new URLSearchParams();
 
-    const link =
-        `${linkUndangan}/` +
-        `?to=${encodeURIComponent(guestName)}` +
-        `&sesi=${encodeURIComponent(session)}` +
-        `&cat=${encodeURIComponent(category)}` +
-        `&lim=${encodeURIComponent(String(limit))}` +
-        `&meja=${encodeURIComponent(guest?.tableNo || '1')}`
+    if (guest?.name) params.set('to', guest.name);
+    if (guest?.session) params.set('sesi', guest.session);
+    if (guest?.categoryID > 0) params.set('cat', guest?.categoryID.toString());
+    if (guest?.limit) params.set('lim', guest.limit.toString());
+    if (guest?.tableNo) params.set('meja', guest.tableNo);
 
-    // Replace case-insensitive
+    const invitationLink = `${linkUndangan}/?${params.toString()}`;
+
     return template
         .replace(/\[nama\]/gi, guestName)
         .replace(/\[mempelai\]/gi, mempelai)
-        .replace(/\[link-undangan\]/gi, link)
+        .replace(/\[link-undangan\]/gi, invitationLink)
 }

@@ -163,6 +163,7 @@ const ManageGuests: React.FC = () => {
         name: guestData.name,
         phone: guestData.phone,
         category: guestData.category || '',
+        categoryID: guestData.categoryID,
         info: guestData.info || '',
         session: guestData.session,
         limit: guestData.limit,
@@ -222,6 +223,7 @@ const ManageGuests: React.FC = () => {
         phone: guestData.phone,
         email: guestData.email || '',
         category: guestData.category,
+        categoryID: guestData.categoryID,
         status: 'Pending',
         code: invitationCode,
         session: guestData.session,
@@ -476,7 +478,7 @@ const ManageGuests: React.FC = () => {
 
       if (guest.name) params.set('to', guest.name);
       if (guest.session) params.set('sesi', guest.session);
-      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.categoryID > 0) params.set('cat', guest.categoryID.toString());
       if (guest.limit) params.set('lim', guest.limit.toString());
       if (guest.tableNo) params.set('meja', guest.tableNo);
 
@@ -526,7 +528,7 @@ const ManageGuests: React.FC = () => {
 
       if (guest.name) params.set('to', guest.name);
       if (guest.session) params.set('sesi', guest.session);
-      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.categoryID > 0) params.set('cat', guest.categoryID.toString());
       if (guest.limit) params.set('lim', guest.limit.toString());
       if (guest.tableNo) params.set('meja', guest.tableNo);
 
@@ -585,7 +587,7 @@ const ManageGuests: React.FC = () => {
 
       if (guest.name) params.set('to', guest.name);
       if (guest.session) params.set('sesi', guest.session);
-      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.categoryID > 0) params.set('cat', guest.categoryID.toString());
       if (guest.limit) params.set('lim', guest.limit.toString());
       if (guest.tableNo) params.set('meja', guest.tableNo);
 
@@ -854,7 +856,7 @@ const ManageGuests: React.FC = () => {
                         {visibleCols.name && <td className="px-4 py-4 text-sm whitespace-nowrap sticky left-0 bg-white z-10">{guest.name}</td>}
                         {visibleCols.phone && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.phone || '-'}</td>}
                         {visibleCols.kode && <td className="px-4 py-4 text-sm whitespace-nowrap text-primary">{guest.code || '-'}</td>}
-                        {visibleCols.kategori && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || 'Reguler'}</td>}
+                        {visibleCols.kategori && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || '-'}</td>}
 
                         {/* Informasi */}
                         {visibleCols.informasi && <td className="px-4 py-4 text-sm whitespace-nowrap max-w-[160px] truncate">

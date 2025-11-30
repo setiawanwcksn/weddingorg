@@ -14,7 +14,7 @@ export type CheckedInGuest = {
   id: string;
   name: string;
   code?: string;
-  category?: 'Regular' | 'VIP';
+  category?: string;
   info?: string;
   session?: string;
   limit?: number;
@@ -158,7 +158,7 @@ export function Doorprize(): JSX.Element {
       no: String(idx + 1).padStart(2, '0'),
       name: g.name,
       code: g.code ?? '-',
-      category: g.category ?? 'Regular',
+      category: g.category ?? '-',
       info: g.info ?? '-',
       session: g.session ?? '-',
       limit: g.limit ?? 2,

@@ -43,6 +43,7 @@ export interface Guest {
   name: string;
   phone: string;
   category: string;
+  categoryID: number;
   status: 'Pending' | 'Confirmed' | 'Declined' | 'Checked-In';
   plusOne: boolean;
   isInvited?: boolean; // true for invited guests, false for walk-ins

@@ -14,12 +14,8 @@ import { link } from 'fs'
 
 const usersApp = new Hono<AppEnv>()
 
-// ------------------------ consts ------------------------
-
 const USERS_COLLECTION = '94884219_users'
 const ACCOUNTS_COLLECTION = '94884219_accounts'
-
-// ------------------------ utils ------------------------
 
 type CtxUser = { id: string; username?: string; email?: string; role?: 'admin' | 'user'; accountId?: string }
 
@@ -50,8 +46,6 @@ const createUserSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'user']).default('user'),
   phone: z.string().optional(),
-
-  // Wedding account (required saat create user oleh admin)
   linkUndangan: z.string().optional(),
   title: z.string().optional(),
   dateTime: z.string().optional(),
@@ -60,7 +54,6 @@ const createUserSchema = z.object({
   guestCategories: z.array(z.string()).optional(),
   youtubeUrl: z.string().optional(),
 
-  // Permissions (hanya untuk role user)
   permissions: z
     .array(
       z.object({
@@ -85,8 +78,6 @@ const updateUserSchema = z.object({
   role: z.enum(['admin', 'user']).optional(),
   phone: z.string().optional(),
   status: z.enum(['active', 'inactive']).optional(),
-
-  // Wedding updates
   linkUndangan: z.string().optional(),
   title: z.string().optional(),
   dateTime: z.string().optional(),
@@ -104,8 +95,6 @@ const updateUserSchema = z.object({
     .optional(),
 })
 
-// ------------------------ middleware ------------------------
-
 async function requireAdmin(c: Context<AppEnv>, next: () => Promise<void>) {
   try {
     const authHeader = c.req.header('Authorization')
@@ -115,19 +104,16 @@ async function requireAdmin(c: Context<AppEnv>, next: () => Promise<void>) {
 
     const token = authHeader.substring(7)
     const parts = token.split('_')
-    // token format: mock_token_${userId}_${timestamp}
     if (parts.length < 4 || parts[0] !== 'mock' || parts[1] !== 'token') {
       return c.json({ success: false, error: 'Invalid token format' }, 401)
     }
     const userId = parts.slice(2, -1).join('_')
 
     let userDoc: any = null
-    // coba by ObjectId
     const oid = safeObjectId(userId)
     if (oid) {
       userDoc = await db.collection(USERS_COLLECTION).findOne({ _id: oid } as any)
     }
-    // fallback by username (kalau token pakai username)
     if (!userDoc) {
       userDoc = await db.collection(USERS_COLLECTION).findOne({ username: userId } as any)
     }
@@ -150,8 +136,6 @@ async function requireAdmin(c: Context<AppEnv>, next: () => Promise<void>) {
     return c.json({ success: false, error: 'Authentication failed' }, 401)
   }
 }
-
-// ------------------------ routes ------------------------
 
 /**
  * GET /api/users
@@ -198,8 +182,6 @@ usersApp.get('/', requireAdmin, async (c) => {
 usersApp.post('/', requireAdmin, async (c) => {
   try {
     const currentUser = getCtxUser(c)!
-
-    // Validasi body via zod (biar tidak "never")
     const rawBody = await c.req.json()
     const body = createUserSchema.parse(rawBody)
 
@@ -211,13 +193,11 @@ usersApp.post('/', requireAdmin, async (c) => {
       permissions,
     } = body
 
-    // username unique
     const existing = await db.collection(USERS_COLLECTION).findOne({ username })
     if (existing) {
       return c.json({ success: false, error: 'User already exists with this username' }, 400)
     }
 
-    // create account
     const accountDoc = {
       title: '',
       linkUndangan: '',
@@ -225,23 +205,21 @@ usersApp.post('/', requireAdmin, async (c) => {
       location: '',
       welcomeText: 'Selamat Datang ',
       youtubeUrl: '',
-      guestCategories: ["reguler", "vip"],
+      guestCategories: ["Tamu VIP", "Tamu Reguler"],
       createdAt: new Date(),
       updatedAt: new Date(),
     }
     const accountRes = await db.collection(ACCOUNTS_COLLECTION).insertOne(accountDoc)
     const accountId = accountRes.insertedId.toString()
-    // siapkan permissions aktif (hanya yang canAccess = true)
     let activePermissions: { page: string; canAccess: boolean }[] = []
 
     if (role === 'user' && Array.isArray(permissions) && permissions.length) {
       activePermissions = permissions.filter((p) => p.canAccess === true)
     }
 
-    // create user
     const userRes = await db.collection(USERS_COLLECTION).insertOne({
       username,
-      password, // NOTE: hash in production
+      password,
       phone,
       accountId,
       role,
@@ -328,13 +306,11 @@ usersApp.delete('/:id', requireAdmin, async (c) => {
       return c.json({ success: false, error: 'Failed to delete user' }, 500)
     }
 
-    // Delete associated account
     const accOid = safeObjectId(userDoc.accountId)
     if (accOid) {
       await db.collection(ACCOUNTS_COLLECTION).deleteOne({ _id: accOid } as any)
     }
 
-    // Delete guests & files belonging to that user
     const guestsCollection = '94884219_guests'
     const uploadedFilesCollection = '94884219_uploaded_files'
 
@@ -436,7 +412,6 @@ usersApp.put('/accounts/:accountId', async (c: Context<AppEnv>) => {
   try {
     const accountId = c.req.param('accountId');
 
-    // Validate auth token
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return c.json({ success: false, error: 'No token provided' }, 401);
@@ -453,7 +428,6 @@ usersApp.put('/accounts/:accountId', async (c: Context<AppEnv>) => {
       return c.json({ success: false, error: 'Access denied' }, 403);
     }
     console.log(`[auth] accounts ${user.username} is updating account ${accountId}`);
-    // Parse body JSON
     const body = await c.req.json().catch(() => null);
 
     if (!body) {
@@ -462,11 +436,9 @@ usersApp.put('/accounts/:accountId', async (c: Context<AppEnv>) => {
 
     const updateData: any = {};
 
-    // Optional fields — update only if sent
     if (typeof body.linkUndangan === 'string') updateData.linkUndangan = body.linkUndangan;
     if (typeof body.title === 'string') updateData.title = body.title;
     if (typeof body.location === 'string') updateData.location = body.location;
-    // Optional fields — update only if sent
     if (typeof body.linkUndangan === 'string') updateData.linkUndangan = body.linkUndangan;
     if (typeof body.title === 'string') updateData.title = body.title;
     if (typeof body.location === 'string') updateData.location = body.location;
@@ -476,8 +448,6 @@ usersApp.put('/accounts/:accountId', async (c: Context<AppEnv>) => {
     }
     if (typeof body.youtubeUrl === 'string') updateData.youtubeUrl = body.youtubeUrl;
 
-
-    // dateTime handler (optional)
     if (body.dateTime) {
       const dt = new Date(body.dateTime);
 

@@ -134,7 +134,7 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
               <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">
                 <span className="text-[13px] sm:text-sm text-gray-500">Kategori Tamu</span>
                 <span className={`inline-flex items-center text-gray-500 rounded-full px-2.5 py-0.5 text-[11px] sm:text-xs bg-primary text-text`}>
-                  {guest.category || 'Regular'}
+                  {guest.category || '-'}
                 </span>
               </li>
               <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">

@@ -208,7 +208,11 @@ export const GuestsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const tamuTambahanCount = nonInvitedGuests.length;
     const total = invitedGuestsCount + tamuTambahanCount;
 
-    const vip = invitedGuests.filter(g => (g.category || '').toLowerCase() === 'vip').length;
+    // const vip = invitedGuests.filter(g => (g.category || '').toLowerCase() === 'vip').length;
+    const vip = invitedGuests.filter((g: any) =>
+      (g.category || '').toLowerCase().trim().includes('vip')
+    ).length
+
     const nonRegular = invitedGuests.filter(g => (g.category || '').toLowerCase() === 'non-regular').length;
     const regular = Math.max(0, invitedGuestsCount - vip - nonRegular);
     const plusOne = invitedGuests.filter(g => !!g.plusOne).length;

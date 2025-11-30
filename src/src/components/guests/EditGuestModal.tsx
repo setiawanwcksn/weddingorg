@@ -18,6 +18,7 @@ export interface EditGuestFormData {
   limit: string;
   tableNo: string;
   category: string;
+  categoryID: number;
   email?: string;
   guestCount?: number;
 }
@@ -38,6 +39,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
     limit: '',
     tableNo: '',
     category: '',
+    categoryID: 0,
     email: '',
     guestCount: 1,
   });
@@ -66,7 +68,8 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
         session: guest.session || '',
         limit: guest.limit || '',
         tableNo: guest.tableNo || '',
-        category: categories[0],
+        category: guest.category || '',
+        categoryID: guest.categoryID || 0,
         guestCount: guest.guestCount || 1,
       });
     }
@@ -217,14 +220,17 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
             <div>
               <label className="block font-medium mb-2">Kategori Tamu *</label>
               <div className="flex gap-4">
-                {categories.map((opt) => (
+                {categories.map((opt, index) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       name="category"
                       value={opt}
                       checked={form.category === opt}
-                      onChange={(e) => update('category', e.target.value)}
+                      onChange={() => {
+                        update('category', opt);
+                        update('categoryID', index + 1);
+                      }}
                       className="w-4 h-4 text-primary focus:ring-primary"
                     />
                     <span>{opt}</span>

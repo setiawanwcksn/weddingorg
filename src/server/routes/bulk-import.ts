@@ -82,7 +82,6 @@ bulkImportApp.post(
   zValidator('json', bulkImportSchema),
   async (c: Context<AppEnv>) => {
     try {
-      // zValidator sudah validasi; kita cast agar tidak jadi 'never'
       const body = (c.req as any).valid('json') as BulkImportBody
       const { guests, generateInvitations } = body
 
@@ -96,7 +95,6 @@ bulkImportApp.post(
         importedGuests: [] as any[],
       }
 
-      // Process guests in batches for better performance
       const batchSize = 50
       let idxGuest = 1
 
@@ -106,10 +104,9 @@ bulkImportApp.post(
           `[Bulk Import] Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(guests.length / batchSize)}`,
         )
 
-        // Process each guest in the batch
         for (let j = 0; j < batch.length; j++) {
           const guest: GuestImport = batch[j]
-          const rowIndex = i + j + 1 // 1-based index for error messages
+          const rowIndex = i + j + 1
 
           try {
             // Format phone number
@@ -130,7 +127,6 @@ bulkImportApp.post(
 
             const invitationCode = `GUEST-${code}`;
 
-            // Prepare guest data
             const guestData = {
               name: guest.name,
               phone: formattedPhone,
@@ -148,7 +144,6 @@ bulkImportApp.post(
               updatedAt: new Date(),
             }
 
-            // Insert guest into database
             const insertResult = await db.collection('94884219_guests').insertOne(guestData)
 
             if (insertResult.insertedId) {
@@ -170,7 +165,6 @@ bulkImportApp.post(
           }
         }
 
-        // Small delay between batches to prevent overwhelming the database
         if (i + batchSize < guests.length) {
           await new Promise((resolve) => setTimeout(resolve, 100))
         }

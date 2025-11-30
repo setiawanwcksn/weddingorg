@@ -178,7 +178,7 @@ export function ReceptionCheckIn(): JSX.Element {
       no: String(index + 1).padStart(2, '0'),
       name: guest.name,
       code: guest.code || '-',
-      category: guest.category || 'Regular',
+      category: guest.category || '-',
       info: guest.info || '-',
       sesi: guest.session || '-',
       limit: guest.limit || '-',
@@ -225,8 +225,15 @@ export function ReceptionCheckIn(): JSX.Element {
   // Calculate stats based on ALL guests (not just checked-in)
   const allGuestStats = React.useMemo(() => {
     const allGuestList = allGuests || [];
-    const regularCount = allGuestList.filter((g: any) => g.category === 'Regular').length;
-    const vipCount = allGuestList.filter((g: any) => g.category === 'VIP').length;
+    // const regularCount = allGuestList.filter((g: any) => g.category === 'Regular').length;
+    const regularCount = allGuestList.filter((g: any) =>
+      (g.category || '').toLowerCase().trim().includes('reguler')
+    ).length
+    // const vipCount = allGuestList.filter((g: any) => g.category === 'VIP').length;
+    const vipCount = allGuestList.filter((g: any) =>
+      (g.category || '').toLowerCase().trim().includes('vip')
+    ).length
+
     const nonInvitedCount = allGuestList.filter((g: any) => g.isInvited === false).length;
     const checkedInCount = allGuestList.filter((g: any) => !!g.checkInDate).length;
     const totalWithPlusOne = allGuestList.reduce((sum: number, g: any) => {
@@ -603,7 +610,7 @@ export function ReceptionCheckIn(): JSX.Element {
               id: g._id,
               name: g.name,
               code: g.code,
-              category: g.category || 'Regular',
+              category: g.category || '-',
               isInvited: g.isInvited !== false, // Set isInvited based on guest data
               checkInDate: g.checkInDate // Pass check-in status
             })) as RegisteredGuest[]}

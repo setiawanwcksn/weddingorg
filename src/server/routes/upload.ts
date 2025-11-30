@@ -16,9 +16,6 @@ export type UploadApp = typeof uploadApp
 // Collections with app id prefix
 const UPLOADED_FILES_COLLECTION = '94884219_uploaded_files'
 
-// ==============================
-// Auth middleware (mock)
-// ==============================
 async function requireAuth(c: Context<AppEnv>, next: Next) {
   try {
     const authHeader = c.req.header('Authorization')
@@ -69,10 +66,6 @@ async function requireAuth(c: Context<AppEnv>, next: Next) {
   }
 }
 
-// ==============================
-// Routes
-// ==============================
-
 /**
  * GET /api/upload/test
  */
@@ -97,17 +90,12 @@ uploadApp.get('/test', requireAuth, async (c: Context<AppEnv>) => {
 
 /**
  * POST /api/upload
- * Multipart form:
- * - photo: File
- * - userId: string (W A J I B)
- * - fieldType: weddingPhotoUrl | weddingPhotoUrl_dashboard | weddingPhotoUrl_welcome
  */
 uploadApp.post('/', requireAuth, async (c: Context<AppEnv>) => {
   try {
     const authUser = c.get('user')
     if (!authUser) return c.json({ success: false, error: 'Unauthorized' }, 401)
 
-    // --- ambil form-data ---
     let formData: FormData
     try {
       formData = await c.req.formData()
@@ -126,7 +114,6 @@ uploadApp.post('/', requireAuth, async (c: Context<AppEnv>) => {
       return c.json({ success: false, error: 'userId is required' }, 400)
     }
 
-    // hanya owner atau admin
     if (authUser.id !== userIdFromForm && authUser.role !== 'admin') {
       return c.json({ success: false, error: 'Forbidden' }, 403)
     }
@@ -178,7 +165,6 @@ uploadApp.post('/', requireAuth, async (c: Context<AppEnv>) => {
       )
     }
 
-    // --- baca ke base64 ---
     let base64Data: string
     try {
       if (typeof (photo as any).arrayBuffer === 'function') {
@@ -202,7 +188,6 @@ uploadApp.post('/', requireAuth, async (c: Context<AppEnv>) => {
       return c.json({ success: false, error: 'Failed to read file data' }, 500)
     }
 
-    // --- mapping ekstensi dari mime (image + video) ---
     const extFromMime: Record<string, string> = {
       'image/jpeg': 'jpg',
       'image/jpg': 'jpg',
@@ -219,8 +204,6 @@ uploadApp.post('/', requireAuth, async (c: Context<AppEnv>) => {
     // --- filename: {userId}_{fieldType}.{ext}
     const filename = `${userIdFromForm}_${fieldType}.${ext}`
 
-    // --- upsert by exact filename (overwrite jika beda ekstensi akan bikin filename baru)
-    // untuk "overwrite by prefix" (abaikan ekstensi), hapus dok lama ber-prefix sama:
     await db.collection(UPLOADED_FILES_COLLECTION).deleteMany({
       filename: { $regex: `^${userIdFromForm}_${fieldType}\\.` },
     })

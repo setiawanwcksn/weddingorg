@@ -24,6 +24,7 @@ export interface NonInvitedGuestData {
   invitationCode: string
   info: string
   category?: string
+  categoryID: number
 }
 
 interface NonInvitedGiftAssignmentModalProps {
@@ -50,7 +51,7 @@ export default function NonInvitedGiftAssignmentModal({
 
   const categories = Array.isArray(account?.guestCategories)
     ? account!.guestCategories
-    : ['Regular', 'VIP'];
+    : [];
 
   const [formData, setFormData] = useState<NonInvitedGuestData>({
     name: '',
@@ -60,8 +61,9 @@ export default function NonInvitedGiftAssignmentModal({
     kado: 0,
     invitationCode: '',
     kadoCount: 0,
+    categoryID: 0,
     giftNote: '',
-    category: categories[0]
+    category: ''
   })
 
   const updateAdd = (k: keyof NonInvitedGuestData, v: string) =>
@@ -164,7 +166,8 @@ export default function NonInvitedGiftAssignmentModal({
           kado: 0,
           giftNote: '',
           invitationCode: '',
-          category: categories[0]
+          category: '',
+          categoryID: 0
         });
         setPhoneError('');
         setPendingGuest(null);
@@ -200,10 +203,11 @@ export default function NonInvitedGiftAssignmentModal({
         info: '',
         angpao: 0,
         kadoCount: 0,
+        categoryID: 0,
         kado: 0,
         giftNote: '',
         invitationCode: '',
-        category: categories[0]
+        category: ''
       });
       setPhoneError('');
       setPendingGuest(null);
@@ -347,7 +351,7 @@ export default function NonInvitedGiftAssignmentModal({
 
             {/* Kategori */}
             <div>
-              <label className="block font-medium mb-1">Kategori Tamu *</label>
+              <label className="block font-medium mb-1">Kategori Tamu</label>
               <div className="flex items-center gap-4">
                 {categories.map((cat) => (
                   <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">

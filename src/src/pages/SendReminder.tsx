@@ -108,7 +108,7 @@ const SendReminder: React.FC = () => {
 
       if (guest.name) params.set('to', guest.name);
       if (guest.session) params.set('sesi', guest.session);
-      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.categoryID > 0) params.set('cat', guest.categoryID.toString());
       if (guest.limit) params.set('lim', guest.limit.toString());
       if (guest.tableNo) params.set('meja', guest.tableNo);
 
@@ -157,7 +157,7 @@ const SendReminder: React.FC = () => {
 
       if (guest.name) params.set('to', guest.name);
       if (guest.session) params.set('sesi', guest.session);
-      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.categoryID > 0) params.set('cat', guest.categoryID.toString());
       if (guest.limit) params.set('lim', guest.limit.toString());
       if (guest.tableNo) params.set('meja', guest.tableNo);
 

@@ -301,7 +301,7 @@ export function GuestDetailModal({
                 <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">
                   <span className="text-[13px] sm:text-sm">Kategori Tamu</span>
                   <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] sm:text-xs font-semibold text-white bg-primary">
-                    {guestDetails?.category || 'Regular'}
+                    {guestDetails?.category || ''}
                   </span>
                 </li>
                 <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">
@@ -564,7 +564,7 @@ export function GuestDetailModal({
       {/* ===== TICKET HIDDEN (SUMBER UNTUK PRINT WINDOW) ===== */}
       <div id="guest-print-ticket" className="hidden">
         <h1>{guest.name}</h1>
-        <p>Kategori: {guestDetails?.category || 'Regular'}</p>
+        <p>Kategori: {guestDetails?.category || '-'}</p>
         <QRCode value={guest.name} size={110} />
       </div>
 

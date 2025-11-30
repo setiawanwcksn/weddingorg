@@ -105,7 +105,7 @@ const SouvenirAssignmentModal: React.FC<SouvenirAssignmentModalProps> = ({
               <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">
                 <span className="text-[13px] sm:text-sm">Kategori Tamu</span>
                 <span className={`inline-flex items-center text-gray-500 rounded-full px-2.5 py-0.5 text-[11px] sm:text-xs bg-primary text-text`}>
-                  {guest.category || 'Regular'}
+                  {guest.category || '-'}
                 </span>
               </li>
               <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">
