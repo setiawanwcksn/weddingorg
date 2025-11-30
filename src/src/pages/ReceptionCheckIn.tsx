@@ -131,7 +131,8 @@ export function ReceptionCheckIn(): JSX.Element {
           phone: data.phone,
           info: data.info,
           guestCount: data.guestCount,
-          category: data.category // Include category field
+          category: data.category,
+          invitationCode: data.invitationCode
         })
       });
 
@@ -180,7 +181,7 @@ export function ReceptionCheckIn(): JSX.Element {
       category: guest.category || 'Regular',
       info: guest.info || '-',
       sesi: guest.session || '-',
-      limit: guest.limit || 2,
+      limit: guest.limit || '-',
       tableNo: guest.tableNo || '-',
       count: guest.guestCount || 1,
       date: guest.checkInDate ? new Date(guest.checkInDate).toLocaleDateString('id-ID') : '-',

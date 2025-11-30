@@ -15,7 +15,7 @@ export interface EditGuestFormData {
   info: string;
   phone: string;
   session: string;
-  limit: number;
+  limit: string;
   tableNo: string;
   category: string;
   email?: string;
@@ -35,7 +35,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
     info: '',
     phone: '',
     session: '',
-    limit: 1,
+    limit: '',
     tableNo: '',
     category: '',
     email: '',
@@ -52,7 +52,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
     () =>
       Array.isArray(account?.guestCategories) && account.guestCategories.length > 0
         ? account.guestCategories
-        : ['Regular', 'VIP'],
+        : [],
     [account]
   );
 
@@ -64,7 +64,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
         info: guest.info || '',
         phone: guest.phone || '',
         session: guest.session || '',
-        limit: guest.limit || 1,
+        limit: guest.limit || '',
         tableNo: guest.tableNo || '',
         category: categories[0],
         guestCount: guest.guestCount || 1,
@@ -186,9 +186,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
             <div>
               <label className="block font-medium mb-1">Sesi Tamu *</label>
               <input
-                required
                 type="number"
-                min="1"
                 value={form.session}
                 onChange={(e) => update('session', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -198,11 +196,9 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
             <div>
               <label className="block font-medium mb-1">Limit Tamu *</label>
               <input
-                required
                 type="number"
-                min="1"
                 value={form.limit}
-                onChange={(e) => update('limit', parseInt(e.target.value))}
+                onChange={(e) => update('limit', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="1"
               />
@@ -210,7 +206,6 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
             <div>
               <label className="block font-medium mb-1">Nomor Meja *</label>
               <input
-                required
                 value={form.tableNo}
                 onChange={(e) => update('tableNo', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"

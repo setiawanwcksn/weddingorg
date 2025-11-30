@@ -139,10 +139,9 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ open, onClos
           guests: validGuests.map(guest => ({
             name: guest.name,
             phone: guest.phone,
-            email: guest.email || '',
             category: guest.category,
-            session: guest.session,
-            limit: guest.limit,
+            session: guest.session.toString(),
+            limit: guest.limit.toString(),
             notes: guest.notes || '',
             tableNo: guest.tableNo || ''
           })),

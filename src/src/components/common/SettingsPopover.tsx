@@ -77,7 +77,7 @@ export function SettingsDropdown({
           Delete All
         </button>
 
-        <button
+        {/* <button
           type="button"
           className={`${baseBtn} ${violet}`}
           onClick={() => {
@@ -97,7 +97,7 @@ export function SettingsDropdown({
           }}
         >
           WhatsApp Blast
-        </button>
+        </button> */}
       </div>
     </div>
   );

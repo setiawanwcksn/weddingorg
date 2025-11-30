@@ -123,7 +123,7 @@ const ManageGuests: React.FC = () => {
     console.log('blast…');
   };
 
-  const { guests, loading, error, refresh, setGuests } = useGuests();
+  const { guests, allGuests, loading, error, refresh, setGuests } = useGuests();
 
   const filteredGuests = guests.filter(guest =>
     guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -162,8 +162,7 @@ const ManageGuests: React.FC = () => {
       const mappedData = {
         name: guestData.name,
         phone: guestData.phone,
-        email: guestData.email || '',
-        category: guestData.category || 'Regular',
+        category: guestData.category || '',
         info: guestData.info || '',
         session: guestData.session,
         limit: guestData.limit,
@@ -209,16 +208,22 @@ const ManageGuests: React.FC = () => {
       console.log('[ManageGuests] Creating guest with data:', guestData);
 
       // Generate unique invitation code
-      const uniqueCode = Date.now().toString(36).toUpperCase().slice(-7);;
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+      let code = '';
+      for (let i = 0; i < 5; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      const invitationCode = `GUEST-${code}`;
 
       const mappedData = {
         name: guestData.name,
         phone: guestData.phone,
         email: guestData.email || '',
-        invitationCode: uniqueCode,
-        category: guestData.category || 'Regular',
+        category: guestData.category,
         status: 'Pending',
-        code: uniqueCode, // Use the same unique code
+        code: invitationCode,
         session: guestData.session,
         limit: guestData.limit,
         tableNo: guestData.tableNo,
@@ -276,6 +281,7 @@ const ManageGuests: React.FC = () => {
       }
 
       setToast({ message: 'Guest deleted successfully', type: 'success' });
+      setConfirmOneOpen(false);
       refresh();
     } catch (error: any) {
       setToast({ message: error.message, type: 'error' });
@@ -464,10 +470,18 @@ const ManageGuests: React.FC = () => {
       }
 
       let introText = result.data.text;
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || '';
 
-      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
+      const params = new URLSearchParams();
+
+      if (guest.name) params.set('to', guest.name);
+      if (guest.session) params.set('sesi', guest.session);
+      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.limit) params.set('lim', guest.limit.toString());
+      if (guest.tableNo) params.set('meja', guest.tableNo);
+
+      const invitationLink = `${linkUndangan}/?${params.toString()}`;
+
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
@@ -478,9 +492,7 @@ const ManageGuests: React.FC = () => {
       if (navigator.share) {
         // Use native share API
         const shareData = {
-          title: `Wedding Invitation for ${guest.name}`,
           text: introText,
-          url: invitationLink
         };
 
         await navigator.share(shareData);
@@ -507,13 +519,18 @@ const ManageGuests: React.FC = () => {
   // Handle copying WhatsApp message to clipboard
   const handleCopyWhatsAppMessage = async (guest: Guest) => {
     try {
-      console.log(`[handleCopyWhatsAppMessage] Starting copy for guest: ${guest.name} (${guest._id})`);
-      console.log(`[handleCopyWhatsAppMessage] Guest introTextCategory: ${guest.introTextCategory}`);
 
-      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || '';
 
-      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
+      const params = new URLSearchParams();
+
+      if (guest.name) params.set('to', guest.name);
+      if (guest.session) params.set('sesi', guest.session);
+      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.limit) params.set('lim', guest.limit.toString());
+      if (guest.tableNo) params.set('meja', guest.tableNo);
+
+      const invitationLink = `${linkUndangan}/?${params.toString()}`;
 
       // Copy to clipboard
       await navigator.clipboard.writeText(invitationLink);
@@ -561,13 +578,18 @@ const ManageGuests: React.FC = () => {
       }
 
       let introText = result.data.text;
-      console.log(`[handleWhatsAppSend] Original intro text:`, introText);
 
-      // Replace placeholders with actual guest data
-      // Map guest category to invitation category: VIP = 1, Regular = 2
-      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
-      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
+      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || '';
+
+      const params = new URLSearchParams();
+
+      if (guest.name) params.set('to', guest.name);
+      if (guest.session) params.set('sesi', guest.session);
+      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.limit) params.set('lim', guest.limit.toString());
+      if (guest.tableNo) params.set('meja', guest.tableNo);
+
+      const invitationLink = `${linkUndangan}/?${params.toString()}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
@@ -849,7 +871,7 @@ const ManageGuests: React.FC = () => {
                         </td>}
 
                         {visibleCols.sesi && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.session || '-'}</td>}
-                        {visibleCols.limit && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.limit ?? '-'}</td>}
+                        {visibleCols.limit && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.limit || '-'}</td>}
                         {visibleCols.meja && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.tableNo || '-'}</td>}
 
                         {/* Teks Pengantar */}

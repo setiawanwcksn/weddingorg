@@ -4,6 +4,8 @@ interface ConfirmModalProps {
   open: boolean;
   title?: string;
   message?: string;
+  confirmText?: string;
+  cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
   loading?: boolean;
@@ -13,6 +15,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   open,
   title = "Confirm Deletion",
   message = "Are you sure you want to delete this data?",
+  confirmText = "Lanjutkan",
+  cancelText = "Batal",
   onConfirm,
   onCancel,
   loading = false,
@@ -42,14 +46,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             onClick={onCancel}
             className="px-4 py-2 rounded-lg border border-border text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            Cancel
+            {cancelText}
           </button>
           <button
             onClick={onConfirm}
             className="px-5 py-2 rounded-full bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
             disabled={loading}
           >
-            {loading ? "Deleting..." : "Delete"}
+            {loading ? "Proses..." : confirmText}
           </button>
         </div>
       </div>

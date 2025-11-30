@@ -49,7 +49,6 @@ function errMsg(error: unknown): string {
 const guestSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   phone: z.string().min(1, 'Phone is required'),
-  invitationCode: z.string().min(1, 'Invitation code is required'),
   category: z.string().min(1, 'Category is required'),
   status: z.enum(['Pending', 'Confirmed', 'Declined', 'Checked-In']).optional().default('Pending'),
   isInvited: z.boolean().optional().default(true),
@@ -67,7 +66,7 @@ const guestSchema = z.object({
   // Frontend display fields
   code: z.string().optional(),
   session: z.string().optional(),
-  limit: z.number().min(1).optional(),
+  limit: z.string().optional(),
   tableNo: z.string().optional(),
   info: z.string().optional(),
   introTextCategory: z.string().optional(),
@@ -115,7 +114,7 @@ guestsApp.get('/search', async (c: Context<AppEnv>) => {
     const guests = await collection
       .find({
         ...ownerFilter(user),
-        $or: [{ name: searchRegex }, { phone: searchRegex }, { invitationCode: searchRegex }],
+        $or: [{ name: searchRegex }, { phone: searchRegex }, { code: searchRegex }],
       })
       .toArray()
 
@@ -191,12 +190,13 @@ guestsApp.post(
       guestCount: z.number().min(1).optional(),
       info: z.string().optional(),
       session: z.string().optional(),
-      limit: z.number().min(1).optional(),
+      limit: z.string().optional(),
+      invitationCode: z.string(),
       kado: z.number().min(0).optional(),
       angpao: z.number().min(0).optional(),
       giftNote: z.string().optional(),
       souvenir: z.number().min(0).optional(),
-      category: z.string().optional().default('Regular'),
+      category: z.string().optional(),
     }),
   ),
   async (c: Context<AppEnv>) => {
@@ -208,6 +208,7 @@ guestsApp.post(
         name: string;
         phone?: string;
         info?: string;
+        invitationCode?: string;
         tableNo?: string;
         guestCount?: number;
         kado?: number;
@@ -215,31 +216,28 @@ guestsApp.post(
         souvenir?: number;
         session?: string;
         giftNote?: string;
-        limit?: number;
+        limit?: string;
         category?: string;
       };
 
       const collection = db.collection('94884219_guests');
 
-      const invitationCode = Date.now().toString(36).toUpperCase().slice(-7);
-      const displayCode = `NI${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
       const now = new Date();
 
       const newGuest: any = {
         userId: user.id,
         name: data.name,
         phone: data.phone ?? '',
-        invitationCode: invitationCode,
-        code: invitationCode,
-        category: data.category ?? 'Regular',
+        code: data.invitationCode,
+        category: data.category ?? '',
         isInvited: false,
 
         tableNo: data.tableNo ?? '',
         info: data.info ?? '',
         session: data.session ?? '',
 
-        guestCount: data.guestCount ?? 0,
-        limit: data.limit ?? 0,
+        guestCount: data.guestCount ?? '',
+        limit: data.limit ?? '',
 
         // hadiah & souvenir (konsisten dengan endpoint /souvenirs)
         kadoCount: 0,

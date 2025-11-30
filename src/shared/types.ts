@@ -42,7 +42,6 @@ export interface Guest {
   _id?: string;
   name: string;
   phone: string;
-  invitationCode: string;
   category: string;
   status: 'Pending' | 'Confirmed' | 'Declined' | 'Checked-In';
   plusOne: boolean;
@@ -74,7 +73,7 @@ export interface Guest {
   // Frontend display fields
   code?: string; // Unique code for display (kode unik)
   session?: string; // Guest session (sesi)
-  limit?: number; // Guest limit (limit)
+  limit?: string; // Guest limit (limit)
   tableNo?: string; // Table number (no. meja)
   info?: string; // Additional info (keterangan)
   introTextCategory?: string; // Intro text category (Formal/Casual/etc)

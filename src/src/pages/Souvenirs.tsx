@@ -195,7 +195,8 @@ export const Souvenirs: React.FC = () => {
           phone: data.phone,
           info: data.info,
           souvenir: data.souvenir,
-          category: data.category // Include category field
+          category: data.category,
+          invitationCode: data.invitationCode
         })
       });
 

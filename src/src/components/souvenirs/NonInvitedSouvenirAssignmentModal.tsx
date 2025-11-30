@@ -1,20 +1,24 @@
 /**
- * Non-Invited Guest Check-In Modal
- * Allows adding non-invited guests (walk-ins) for check-in using unified guests collection
- * Updated to match the format of regular guest modal
+ * Non-Invited Guest Souvenir Check-In Modal
+ * Allows adding non-invited guests (walk-ins) for souvenir using unified guests collection
  */
 
 import React, { useState } from 'react'
-import { X, User, Phone, Users, MessageSquare, Hash } from 'lucide-react'
+import { X, User, Phone } from 'lucide-react'
 import { formatIndonesianPhone, getPhoneValidationError } from '../../utils/phoneFormatter'
 import { useAccount } from '../../hooks/useAccount';
 import { useToast } from '../../contexts/ToastContext';
+import { apiUrl } from '../../lib/api';
+import { Guest } from '../../../shared/types';
+import { useAuth } from '../../contexts/AuthContext';
+import { useGuests } from '../../contexts/GuestsContext';
 
 export interface NonInvitedGuestData {
   name: string
   phone: string
   souvenir: number
   info: string
+  invitationCode: string
   category?: string
 }
 
@@ -29,17 +33,16 @@ export default function NonInvitedSouvenirAssignmentModal({
   onClose,
   onSubmit
 }: NonInvitedSouvenirAssignmentModalProps) {
-  const [formData, setFormData] = useState<NonInvitedGuestData>({
-    name: '',
-    phone: '',
-    info: '',
-    souvenir: 1,
-    category: ''
-  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [phoneError, setPhoneError] = useState<string>('')
   const { account } = useAccount();
   const { showToast } = useToast();
+  const { apiRequest } = useAuth();
+  const { allGuests, refresh } = useGuests();
+
+  // confirm modal ketika data TIDAK ditemukan
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pendingGuest, setPendingGuest] = useState<NonInvitedGuestData | null>(null);
 
   const categories = React.useMemo(
     () =>
@@ -49,8 +52,57 @@ export default function NonInvitedSouvenirAssignmentModal({
     [account]
   );
 
+  const [formData, setFormData] = useState<NonInvitedGuestData>({
+    name: '',
+    phone: '',
+    info: '',
+    invitationCode: '',
+    souvenir: 1,
+    category: categories[0]
+  })
 
-  const updateAdd = (k: keyof NonInvitedGuestData, v: string) => setFormData((s) => ({ ...s, [k]: v }));
+  const updateAdd = (k: keyof NonInvitedGuestData, v: string) =>
+    setFormData((s) => ({ ...s, [k]: v }));
+
+  const handleInputChange = (field: keyof NonInvitedGuestData, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (field === 'phone') {
+      setPhoneError('')
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      phone: '',
+      info: '',
+      invitationCode: '',
+      souvenir: 1,
+      category: categories[0] ?? ''
+    });
+    setPhoneError('');
+  };
+
+  // Update souvenir untuk guest existing
+  const updateExistingGuestSouvenir = async (guest: Guest, data: NonInvitedGuestData) => {
+    const response = await apiRequest(apiUrl(`/api/guests/${guest._id}`), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        souvenirCount: data.souvenir,
+        souvenirRecordedAt: new Date(),
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update guest souvenir data');
+    }
+
+    await response.json();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,34 +122,71 @@ export default function NonInvitedSouvenirAssignmentModal({
       return
     }
 
-    setIsSubmitting(true)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+    let code = '';
+    for (let i = 0; i < 5; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const invitationCode = `GUEST-${code}`;
+
+    const candidate: NonInvitedGuestData = {
+      ...formData,
+      phone: formattedPhone,
+      invitationCode: invitationCode
+    };
+
+    const matchedGuest = allGuests?.find((guest: Guest) => {
+      const samePhone =
+        guest.phone &&
+        guest.phone.replace(/\s+/g, '') === candidate.phone.replace(/\s+/g, '');
+      const sameName =
+        guest.name &&
+        guest.name.trim().toLowerCase() === candidate.name.trim().toLowerCase();
+      return samePhone || sameName;
+    });
+
+    if (matchedGuest) {
+      setIsSubmitting(true);
+      try {
+        await updateExistingGuestSouvenir(matchedGuest, candidate);
+        showToast(`Berhasil menyimpan data Souvenir untuk ${candidate.name}`, 'success');
+        await refresh?.();
+        resetForm();
+        setPendingGuest(null);
+        setIsConfirmOpen(false);
+        onClose();
+      } catch (err: any) {
+        console.error('Error updating existing guest souvenir:', err);
+        showToast(`Gagal mengupdate souvenir tamu. ${err.message || ''}`, 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    setPendingGuest(candidate);
+    setIsConfirmOpen(true);
+  };
+
+  // Dipanggil ketika user klik "Lanjutkan" di confirm modal (data tidak ditemukan)
+  const handleConfirmNotFound = async () => {
+    if (!pendingGuest) return;
+
+    setIsSubmitting(true);
     try {
-      await onSubmit({
-        ...formData,
-        phone: formattedPhone
-      })
-      // Reset form after successful submission
-      setFormData({
-        name: '',
-        phone: '',
-        info: '',
-        souvenir: 1,
-        category: ''
-      })
-      setPhoneError('')
-      showToast(`Berhasil menyimpan data Souvenir`, 'success');
-      onClose()
+      await onSubmit(pendingGuest); // create non-invited guest with souvenir      
+      await refresh?.();
+      resetForm();
+      setPendingGuest(null);
+      setIsConfirmOpen(false);
+      onClose();
     } catch (error) {
-      console.error('Error submitting non-invited guest:', error)
+      console.error('Error submitting non-invited guest souvenir:', error)
+      showToast('Gagal menyimpan data Souvenir', 'error');
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  const handleInputChange = (field: keyof NonInvitedGuestData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    if (field === 'phone') {
-      setPhoneError('')
     }
   }
 
@@ -137,6 +226,7 @@ export default function NonInvitedSouvenirAssignmentModal({
               </div>
             </div>
 
+            {/* Info */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium">Informasi *</label>
@@ -170,7 +260,7 @@ export default function NonInvitedSouvenirAssignmentModal({
               )}
             </div>
 
-            {/* Guest Count */}
+            {/* Souvenir count */}
             <div>
               <label className="block text-sm font-medium mb-2">Jumlah Souvenir *</label>
               <div className="relative">
@@ -207,7 +297,6 @@ export default function NonInvitedSouvenirAssignmentModal({
               </div>
             </div>
 
-
             {/* Footer */}
             <div className="flex items-center justify-end pt-3 sm:pt-4">
               <div className="flex gap-3">
@@ -230,6 +319,41 @@ export default function NonInvitedSouvenirAssignmentModal({
           </form>
         </div>
       </div>
+
+      {/* Confirm Modal ketika data TIDAK ditemukan di allGuests */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-lg p-4 w-[90vw] max-w-sm space-y-3">
+            <div className="font-semibold text-base">
+              Tamu belum terdaftar
+            </div>
+            <p className="text-sm text-text-secondary">
+              Tamu dengan nama "<span className="font-medium">{pendingGuest?.name}</span>" tidak ditemukan di daftar tamu. Lanjutkan?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsConfirmOpen(false);
+                  setPendingGuest(null);
+                }}
+                className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-secondary/60"
+                disabled={isSubmitting}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmNotFound}
+                className="px-3 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90 disabled:opacity-50"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Menyimpan...' : 'Lanjutkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

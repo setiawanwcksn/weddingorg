@@ -11,7 +11,7 @@ export interface ParsedGuestData {
   name: string;
   phone: string;
   email?: string;
-  category: 'VIP' | 'Regular';
+  category: string;
   session: number;
   limit: number;
   notes?: string;
@@ -113,9 +113,9 @@ export const parseGuestRow = (row: ExcelRow, rowIndex: number): ParsedGuestData 
   const name = String(row.name || row.Name || row.Nama || '').trim();
   const phone = String(row.phone || row.Phone || row.WhatsApp || row['No HP'] || row['No. HP'] || '').trim();
   const email = String(row.email || row.Email || row['E-mail'] || '').trim();
-  const category = String(row.category || row.Category || row.Kategori || 'Regular').trim();
-  const session = Number(row.session || row.Session || row.Sesi || 1);
-  const limit = Number(row.limit || row.Limit || row['Jumlah Tamu'] || 1);
+  const category = String(row.category || row.Category || row.Kategori).trim();
+  const session = Number(row.session || row.Session || row.Sesi);
+  const limit = Number(row.limit || row.Limit || row['Jumlah Tamu']);
   const notes = String(row.notes || row.Notes || row.Keterangan || row.info || row.Info || '').trim();
   const tableNo = String(row.tableNo || row['Table No'] || row['No Meja'] || row.table || row.Table || '').trim();
   
@@ -141,36 +141,13 @@ export const parseGuestRow = (row: ExcelRow, rowIndex: number): ParsedGuestData 
     }
   }
   
-  // Validate category
-  const validCategories = ['VIP', 'Regular', 'Reguler'];
-  const normalizedCategory = category.toLowerCase();
-  let finalCategory: 'VIP' | 'Regular' = 'Regular';
-  
-  if (normalizedCategory === 'vip') {
-    finalCategory = 'VIP';
-  } else if (validCategories.includes(category)) {
-    finalCategory = 'Regular';
-  } else if (category) {
-    errors.push(`Invalid category "${category}". Must be VIP or Regular`);
-  }
-  
-  // Validate session
-  if (isNaN(session) || session < 1 || session > 2) {
-    errors.push('Session must be 1 or 2');
-  }
-  
-  // Validate limit
-  if (isNaN(limit) || limit < 1 || limit > 10) {
-    errors.push('Guest limit must be between 1 and 10');
-  }
-  
   return {
     name,
     phone: phone ? formatIndonesianPhone(phone) : '',
     email: email || undefined,
-    category: finalCategory,
-    session: isNaN(session) ? 1 : session,
-    limit: isNaN(limit) ? 1 : limit,
+    category: category,
+    session: session || undefined,
+    limit: limit || undefined,
     notes: notes || undefined,
     tableNo: tableNo || undefined,
     errors,

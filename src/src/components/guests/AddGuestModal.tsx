@@ -17,7 +17,7 @@ export interface AddGuestFormData {
   info: string;
   phone: string;
   session: string;
-  limit: number;
+  limit: string;
   souvenir: number;
   kado: number;
   angpao: number;
@@ -41,10 +41,10 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
     kado: 0,
     angpao: 0,
     session: '',
-    limit: 1,
+    limit: '',
     tableNo: '',
     category: '',
-    guestCount: 1,
+    guestCount: 0,
   });
   const [nameError, setNameError] = React.useState<string>('');
   const [phoneError, setPhoneError] = React.useState<string>('');
@@ -59,7 +59,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
     () =>
       Array.isArray(account?.guestCategories) && account.guestCategories.length > 0
         ? account.guestCategories
-        : ['Regular', 'VIP'],
+        : [],
     [account]
   );
 
@@ -74,10 +74,10 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
       kado: 0,
       angpao: 0,
       souvenir: 0,
-      limit: 1,
+      limit: '',
       tableNo: '',
-      category: categories[0],
-      guestCount: 1,
+      category: '',
+      guestCount: 0,
     });
   }, [open]);
 
@@ -170,7 +170,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50" style={{ marginTop: '0px' }}>
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
@@ -241,11 +241,9 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
             {/* Sesi / Limit / Meja */}
             <div>
-              <label className="block font-medium mb-1">Sesi *</label>
+              <label className="block font-medium mb-1">Sesi</label>
               <input
-                required
                 type="number"
-                min="1"
                 value={form.session}
                 onChange={(e) => update('session', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -253,21 +251,18 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Limit *</label>
+              <label className="block font-medium mb-1">Limit</label>
               <input
-                required
                 type="number"
-                min="1"
                 value={form.limit}
-                onChange={(e) => update('limit', parseInt(e.target.value))}
+                onChange={(e) => update('limit', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="1"
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Meja *</label>
+              <label className="block font-medium mb-1">Meja</label>
               <input
-                required
                 value={form.tableNo}
                 onChange={(e) => update('tableNo', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -277,7 +272,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
             {/* Kategori */}
             <div>
-              <label className="block font-medium mb-2">Kategori *</label>
+              <label className="block font-medium mb-2">Kategori</label>
               <div className="flex gap-4">
                 {categories.map((opt) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">

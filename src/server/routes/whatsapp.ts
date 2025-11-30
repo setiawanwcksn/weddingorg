@@ -493,7 +493,13 @@ export default function whatsAppRoutes({ upgradeWebSocket }: { upgradeWebSocket:
           try {
             ws.send(JSON.stringify({ type: 'status', value: sess.status }))
             if (sess.latestQR) ws.send(JSON.stringify({ type: 'qr', value: sess.latestQR }))
-            // if (!sess.ready && !sess.ensuring) await ensureWA(userId)
+            if (!sess.ready && !sess.ensuring) {
+              setStatus(sess, 'connecting') // opsional, biar FE lihat progress lebih cepat
+              ensureWA(userId).catch((err) => {
+                logger.error({ err, userId }, `[wa:${userId}] ensureWA from WS failed`)
+                setStatus(sess, 'disconnected:ensure_failed')
+              })
+            }
           } catch { }
         },
         onClose: (_evt: any, ws: any) => {

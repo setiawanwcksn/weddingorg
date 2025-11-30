@@ -101,46 +101,21 @@ const SendReminder: React.FC = () => {
   // Handle copying WhatsApp message to clipboard
   const handleCopyWhatsAppMessage = async (guest: Guest) => {
     try {
-      if (!guest.introTextCategory) {
-        showToast('Pilih Kategori Teks Pengantar', 'error');
-        return;
-      }
-
-      // Get the intro text for the selected category
-      const response = await apiRequest(apiUrl(`/api/intro-text/category/${guest.introTextCategory}`), {
-        headers: {
-          'user-id': user?.id || '',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch intro text');
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch intro text');
-      }
-
-      let introText = result.data.text;
 
       let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
 
-      // Replace placeholders with actual guest data
-      // Map guest category to invitation category: VIP = 1, Regular = 2
-      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
+      const params = new URLSearchParams();
 
+      if (guest.name) params.set('to', guest.name);
+      if (guest.session) params.set('sesi', guest.session);
+      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.limit) params.set('lim', guest.limit.toString());
+      if (guest.tableNo) params.set('meja', guest.tableNo);
 
-
-      introText = introText
-        .replace(/\[nama\]/g, guest.name)
-        .replace(/\[mempelai\]/g, account.title)
-        .replace(/\[link-undangan\]/g, invitationLink);
+      const invitationLink = `${linkUndangan}/?${params.toString()}`;
 
       // Copy to clipboard
-      await navigator.clipboard.writeText(introText);
+      await navigator.clipboard.writeText(invitationLink);
 
       showToast('Berhasil menyalin pesan WhatsApp', 'success');
     } catch (error: any) {
@@ -178,8 +153,15 @@ const SendReminder: React.FC = () => {
 
       let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
 
-      const invitationCategory = guest.category === 'VIP' ? '1' : '2';
-      const invitationLink = `${linkUndangan}/?to=${encodeURIComponent(guest.name)}&sesi=${encodeURIComponent(guest.session || '1')}&cat=${invitationCategory}&lim=${encodeURIComponent(guest.limit?.toString() || '1')}&meja=${encodeURIComponent(guest.tableNo || '1')}`;
+      const params = new URLSearchParams();
+
+      if (guest.name) params.set('to', guest.name);
+      if (guest.session) params.set('sesi', guest.session);
+      if (guest.category) params.set('cat', guest.category === 'VIP' ? '1' : '2');
+      if (guest.limit) params.set('lim', guest.limit.toString());
+      if (guest.tableNo) params.set('meja', guest.tableNo);
+
+      const invitationLink = `${linkUndangan}/?${params.toString()}`;
 
       introText = introText
         .replace(/\[nama\]/g, guest.name)
@@ -190,9 +172,7 @@ const SendReminder: React.FC = () => {
       if (navigator.share) {
         // Use native share API
         const shareData = {
-          title: `Wedding Invitation for ${guest.name}`,
-          text: introText,
-          url: invitationLink
+          text: introText
         };
 
         await navigator.share(shareData);
@@ -545,47 +525,47 @@ const SendReminder: React.FC = () => {
                                   type="checkbox"
                                   disabled={true}
                                   checked={guest.status === 'confirmed' || guest.status === 'scheduled' || !!guest.reminderScheduledAt}
-                                  onChange={async (e) => {
-                                    try {
-                                      const newStatus = e.target.checked ? 'confirmed' : 'pending';
+                                  // onChange={async (e) => {
+                                  //   try {
+                                  //     const newStatus = e.target.checked ? 'confirmed' : 'pending';
 
-                                      // If unchecking (setting to pending), also remove any associated reminders
-                                      if (!e.target.checked) {
-                                        try {
-                                          console.log(`[SendReminder] Removing reminders for guest ${guest._id}`);
-                                          const remindersResponse = await apiRequest(apiUrl(`/api/reminders`), {
-                                            method: 'GET'
-                                          });
+                                  //     // If unchecking (setting to pending), also remove any associated reminders
+                                  //     if (!e.target.checked) {
+                                  //       try {
+                                  //         console.log(`[SendReminder] Removing reminders for guest ${guest._id}`);
+                                  //         const remindersResponse = await apiRequest(apiUrl(`/api/reminders`), {
+                                  //           method: 'GET'
+                                  //         });
 
-                                          if (remindersResponse.ok) {
-                                            const remindersData = await remindersResponse.json();
-                                            const guestReminders = remindersData.data?.items?.filter((reminder: any) => reminder.guestId === guest._id) || [];
+                                  //         if (remindersResponse.ok) {
+                                  //           const remindersData = await remindersResponse.json();
+                                  //           const guestReminders = remindersData.data?.items?.filter((reminder: any) => reminder.guestId === guest._id) || [];
 
-                                            // Delete all reminders for this guest
-                                            for (const reminder of guestReminders) {
-                                              await apiRequest(apiUrl(`/api/reminders/${reminder.id}`), {
-                                                method: 'DELETE'
-                                              });
-                                              console.log(`[SendReminder] Deleted reminder ${reminder.id} for guest ${guest._id}`);
-                                            }
-                                          }
-                                        } catch (reminderError) {
-                                          console.error(`[SendReminder] Error removing reminders:`, reminderError);
-                                          // Continue with status update even if reminder deletion fails
-                                        }
-                                      }
+                                  //           // Delete all reminders for this guest
+                                  //           for (const reminder of guestReminders) {
+                                  //             await apiRequest(apiUrl(`/api/reminders/${reminder.id}`), {
+                                  //               method: 'DELETE'
+                                  //             });
+                                  //             console.log(`[SendReminder] Deleted reminder ${reminder.id} for guest ${guest._id}`);
+                                  //           }
+                                  //         }
+                                  //       } catch (reminderError) {
+                                  //         console.error(`[SendReminder] Error removing reminders:`, reminderError);
+                                  //         // Continue with status update even if reminder deletion fails
+                                  //       }
+                                  //     }
 
-                                      await apiRequest(apiUrl(`/api/guests/${guest._id}`), {
-                                        method: 'PUT',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ status: newStatus })
-                                      });
-                                      showToast('Guest status updated successfully', 'success');
-                                      refresh();
-                                    } catch (error: any) {
-                                      showToast(`Error updating status: ${error.message}`, 'error');
-                                    }
-                                  }}
+                                  //     await apiRequest(apiUrl(`/api/guests/${guest._id}`), {
+                                  //       method: 'PUT',
+                                  //       headers: { 'Content-Type': 'application/json' },
+                                  //       body: JSON.stringify({ status: newStatus })
+                                  //     });
+                                  //     showToast('Guest status updated successfully', 'success');
+                                  //     refresh();
+                                  //   } catch (error: any) {
+                                  //     showToast(`Error updating status: ${error.message}`, 'error');
+                                  //   }
+                                  // }}
                                   className="w-3 h-3 sm:w-4 sm:h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary focus:ring-2"
                                 />
                               </td>

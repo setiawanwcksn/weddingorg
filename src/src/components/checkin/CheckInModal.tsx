@@ -175,22 +175,12 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
         onQRCodeScanned(qrData)
         return
       }
-      console.log('[CheckInModal] QR code data received:', qrData);
-      console.log('[CheckInModal] Trimmed guest name:', guestName);
-      console.log('[CheckInModal] Raw QR data length:', qrData.length);
-      console.log('[CheckInModal] Trimmed guest name length:', guestName.length);
-      console.log('[CheckInModal] QR data type:', typeof qrData);
-      console.log('[CheckInModal] QR data bytes:', Array.from(qrData).map(c => c.charCodeAt(0)));
 
       if (!guestName) {
         console.error('[CheckInModal] Empty QR code data');
         alert('QR code appears to be empty. Please try scanning again or upload a different QR code.');
         return;
       }
-
-      console.log('[CheckInModal] Searching for guest with name:', guestName);
-      console.log('[CheckInModal] Total guests in list:', guests.length);
-      console.log('[CheckInModal] Available guests:', guests.map(g => ({ name: g.name, id: g.id })));
 
       // Find guest by name in the provided guests list (case-insensitive)
       const foundGuest = guests.find(g => {
@@ -201,13 +191,11 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
       });
 
       if (foundGuest) {
-        console.log('[CheckInModal] Found matching guest:', foundGuest, context);
         if (onPickRegisteredGuest) {
           onPickRegisteredGuest(foundGuest);
           onClose();
         }
       } else {
-        console.log('[CheckInModal] No matching guest found for name:', guestName);
 
         // Try fuzzy matching for similar names
         const similarGuests = guests.filter(g => {

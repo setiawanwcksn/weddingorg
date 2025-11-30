@@ -44,6 +44,9 @@ export const Gifts: React.FC = () => {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmDuplicateOpen, setConfirmDuplicateOpen] = useState(false);
+  const [pendingGuestData, setPendingGuestData] = useState<NonInvitedGuestData | null>(null);
+
   const [visibleCols, setVisibleCols] = React.useState<Record<string, boolean>>({
     no: true,
     name: true,
@@ -207,6 +210,7 @@ export const Gifts: React.FC = () => {
           phone: data.phone,
           info: data.info,
           kado: data.kadoCount,
+          invitationCode: data.invitationCode,
           angpao: data.angpao,
           giftNote: data.giftNote,
           category: data.category
@@ -600,6 +604,25 @@ export const Gifts: React.FC = () => {
           <CheckInModal open={isSearchModalOpen} onClose={handleSearchModalClose} guests={allGuests.map(g => ({ id: g._id, name: g.name, code: g.code, extra: g.info }))} onPickRegisteredGuest={(registeredGuest) => { const guest = allGuests.find(g => g._id === registeredGuest.id); if (guest) { handleSearchGuest(guest); } }} mode="search" context="gift"
           />
           <ConfirmModal open={confirmOpen} title="Hapus Gift" message="Apakah kamu yakin ingin menghapus data gift untuk tamu ini?" onConfirm={confirmDeleteGift} onCancel={() => setConfirmOpen(false)} loading={loading} />
+          <ConfirmModal
+            open={confirmDuplicateOpen}
+            title="Nama sudah terdaftar"
+            message={`Nama "${pendingGuestData?.name}" sudah ada di daftar tamu. Lanjutkan tambah data baru?`}
+            confirmText="Lanjutkan"
+            cancelText="Batal"
+            onConfirm={async () => {
+              if (pendingGuestData) {
+                await submitGuestToApi(pendingGuestData);
+              }
+              setConfirmDuplicateOpen(false);
+              setPendingGuestData(null);
+            }}
+            onCancel={() => {
+              setConfirmDuplicateOpen(false);
+              setPendingGuestData(null);
+            }}
+          />
+
           {/* QR Scanner Modal - now includes all guests */}
           <CheckInModal
             open={isQRScannerOpen}
