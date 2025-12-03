@@ -221,15 +221,15 @@ authApp.post('/login', zValidator('json', loginSchema), async (c: Context<AppEnv
  */
 authApp.post('/setup-demo', async (c: Context<AppEnv>) => {
   try {
-    const demoEmail = 'demo@wedding.com'
+    const demoUname = 'demo@wedding.com'
     const demoPassword = 'demo123'
 
-    const existingUser = await db.collection(USERS_COLLECTION).findOne({ email: demoEmail })
+    const existingUser = await db.collection(USERS_COLLECTION).findOne({ username: demoUname })
     if (existingUser) {
       return c.json({
         success: true,
         message: 'Demo user already exists',
-        data: { email: demoEmail, password: demoPassword },
+        data: { username: demoUname, password: demoPassword },
       })
     }
 
@@ -243,7 +243,7 @@ authApp.post('/setup-demo', async (c: Context<AppEnv>) => {
     const accountId = accountResult.insertedId.toString()
 
     const userResult = await db.collection(USERS_COLLECTION).insertOne({
-      email: demoEmail,
+      username: demoUname,
       password: demoPassword,
       phone: '+1234567890',
       accountId,
@@ -256,7 +256,7 @@ authApp.post('/setup-demo', async (c: Context<AppEnv>) => {
     return c.json({
       success: true,
       message: 'Demo user created successfully',
-      data: { email: demoEmail, password: demoPassword },
+      data: { email: demoUname, password: demoPassword },
     })
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Demo setup failed'
