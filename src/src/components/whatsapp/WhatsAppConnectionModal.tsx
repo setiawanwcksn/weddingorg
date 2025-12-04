@@ -141,7 +141,7 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
     try {
       setConnectionStatus('connecting')
       // panggil endpoint untuk inisialisasi WA + scheduler
-      const res = await fetch('/api/whatsapp/connect', {
+      const res = await fetch(getApiUrl('/api/whatsapp/connect'), {
         headers: getAuthHeaders(user?.id),
       })
       if (!res.ok) throw new Error('connect failed')

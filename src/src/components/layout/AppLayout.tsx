@@ -134,7 +134,7 @@ export function AppLayout() {
   }, [userMenuOpen]);
 
   return (
-    <div className="bg-background text-text overflow-x-hidden min-h-screen flex flex-col">
+    <div className="bg-accent text-text overflow-x-hidden min-h-screen flex flex-col">
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">

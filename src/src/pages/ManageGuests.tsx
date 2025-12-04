@@ -685,7 +685,7 @@ const ManageGuests: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-50 text-gray-800">
+    <div className="bg-accent text-gray-800">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-4 sm:space-y-5">
           {/* Toast notifications */}
@@ -735,7 +735,7 @@ const ManageGuests: React.FC = () => {
                   <img src={EditTeksPengantar} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} /> Teks Pengantar
                 </button>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
                 <div className="relative">
                   <button
                     onClick={() => setFilterOpen(true)}

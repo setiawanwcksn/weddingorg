@@ -309,7 +309,7 @@ export const Souvenirs: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col flex-1 py-6">
+    <div className="flex flex-col flex-1">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         <div className="space-y-4 md:space-y-6">
@@ -342,7 +342,7 @@ export const Souvenirs: React.FC = () => {
                   <span className="font-medium text-sm md:text-base">Export Tamu</span>
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-auto sm:ml-0">
                 <div className="relative">
                   <button onClick={() => setFilterOpen(true)} className="w-9 h-9 sm:w-10 sm:h-10 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary  transition-colors min-h-[44px] touch-manipulation"
                     aria-label="Filter options" >

@@ -311,7 +311,7 @@ export const Gifts: React.FC = () => {
                   <span className="font-medium text-sm">Export Tamu</span>
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-auto sm:ml-0">
                 <div className="relative">
                   <button onClick={() => setFilterOpen(true)} className="w-12 h-12 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary transition-colors min-h-[48px] touch-manipulation"
                     aria-label="Filter options" >

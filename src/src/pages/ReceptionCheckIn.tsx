@@ -340,7 +340,7 @@ export function ReceptionCheckIn(): JSX.Element {
   }
 
   return (
-    <div className="bg-gray-50 text-gray-800 py-6">
+    <div className="bg-accent text-gray-800 py-6">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <div className="flex flex-col">
           <div className="flex-1 space-y-4 sm:space-y-6">

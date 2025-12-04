@@ -48,7 +48,7 @@ function ActionButton({ icon, children, onClick }: { icon: React.ReactNode; chil
   return (
     <button onClick={onClick} className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl bg-primary text-background text-sm font-medium shadow min-h-[44px] touch-manipulation">
       <span className="inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5">{icon}</span>
-      <span className="hidden sm:inline">{children}</span>
+      <span className="inline whitespace-nowrap">{children}</span>
     </button>
   );
 }
@@ -202,37 +202,39 @@ export function Doorprize(): JSX.Element {
                 <ActionButton icon={<UserPlus className="w-4 h-4" />}>Tambah Peserta</ActionButton>
                 <ActionButton icon={<Play className="w-4 h-4" />} onClick={() => navigate('/doorprize/picker')}>Start To Play</ActionButton>
               </div>
-              <div className="relative">
-                <button
-                  onClick={() => setFilterOpen(true)}
-                  className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary transition-colors"
-                  title="Filter columns"
-                >
-                  <img src={filter} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
-                </button>
-                <TableFilterPopover
-                  open={filterOpen}
-                  onClose={() => setFilterOpen(false)}
-                  options={[
-                    { key: 'no', label: 'No', checked: visibleCols.no },
-                    { key: 'name', label: 'Nama', checked: visibleCols.name },
-                    { key: 'kode', label: 'kode', checked: visibleCols.kode },
-                    { key: 'kategori', label: 'kategori', checked: visibleCols.kategori },
-                    { key: 'informasi', label: 'informasi', checked: visibleCols.informasi },
-                    { key: 'sesi', label: 'Sesi', checked: visibleCols.sesi },
-                    { key: 'limit', label: 'Limit Tamu', checked: visibleCols.limit },
-                    { key: 'meja', label: 'No. Meja', checked: visibleCols.meja },
-                    { key: 'tamu', label: 'Jumlah Tamu', checked: visibleCols.tamu },
-                    { key: 'tanggal', label: 'Tanggal', checked: visibleCols.tanggal },
-                    { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
-                  ]}
-                  onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
-                  onToggleAll={(checked) => {
-                    const keys = ['no', 'name', 'kode', 'kategori', 'informasi', 'sesi', 'limit', 'meja', 'tamu', 'tanggal', 'waktu'];
-                    setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
-                  }}
-                />
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
+                <div className="relative">
+                  <button
+                    onClick={() => setFilterOpen(true)}
+                    className="w-12 h-12 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary transition-colors min-h-[48px] touch-manipulation"
+                    title="Filter columns"
+                  >
+                    <img src={filter} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                  </button>
+                  <TableFilterPopover
+                    open={filterOpen}
+                    onClose={() => setFilterOpen(false)}
+                    options={[
+                      { key: 'no', label: 'No', checked: visibleCols.no },
+                      { key: 'name', label: 'Nama', checked: visibleCols.name },
+                      { key: 'kode', label: 'kode', checked: visibleCols.kode },
+                      { key: 'kategori', label: 'kategori', checked: visibleCols.kategori },
+                      { key: 'informasi', label: 'informasi', checked: visibleCols.informasi },
+                      { key: 'sesi', label: 'Sesi', checked: visibleCols.sesi },
+                      { key: 'limit', label: 'Limit Tamu', checked: visibleCols.limit },
+                      { key: 'meja', label: 'No. Meja', checked: visibleCols.meja },
+                      { key: 'tamu', label: 'Jumlah Tamu', checked: visibleCols.tamu },
+                      { key: 'tanggal', label: 'Tanggal', checked: visibleCols.tanggal },
+                      { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
+                    ]}
+                    onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                    onToggleAll={(checked) => {
+                      const keys = ['no', 'name', 'kode', 'kategori', 'informasi', 'sesi', 'limit', 'meja', 'tamu', 'tanggal', 'waktu'];
+                      setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
+                    }}
+                  />
 
+                </div>
               </div>
             </div>
           </div>

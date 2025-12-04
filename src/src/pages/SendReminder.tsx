@@ -310,7 +310,7 @@ const SendReminder: React.FC = () => {
 
   return (
     <>
-      <div className="bg-gray-50 text-gray-800">
+      <div className="bg-accent text-gray-800">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <NoticeModal
             open={openNotice}
@@ -371,7 +371,7 @@ const SendReminder: React.FC = () => {
                   </button>
 
                 </div>
-                <div className="flex items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 ml-auto sm:ml-0">
                   <div className="relative">
                     <button
                       onClick={() => setFilterOpen(true)}
@@ -400,9 +400,9 @@ const SendReminder: React.FC = () => {
                     />
 
                   </div>
-                  <button className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors" title="Settings">
+                  {/* <button className="p-1.5 sm:p-2 rounded-lg border border-border bg-primary hover:bg-primary/10 transition-colors" title="Settings">
                     <Cog className="w-3 h-3 sm:w-4 sm:h-4 text-text/70" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
