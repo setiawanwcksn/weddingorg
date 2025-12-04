@@ -43,6 +43,7 @@ type Session = {
   ensuring: boolean
   lastQrAt?: number
   lastStatusAt?: number
+  reconnectDelayMs?: number;
   sendText: ((phoneE164: string, text: string) => Promise<void>) | null
 }
 const sessions = new Map<string, Session>()
@@ -66,6 +67,17 @@ function getSession(userId: string): Session {
     sessions.set(userId, sess)
   }
   return sess
+}
+
+function scheduleReconnect(sess: Session, isLogoutLike: boolean) {
+  const base = isLogoutLike ? 5000 : 2000;
+  const next = Math.min((sess.reconnectDelayMs ?? base) * 2, 60000);
+  sess.reconnectDelayMs = next;
+  setTimeout(() => {
+    sess.sock = null;
+    sess.sendText = null;
+    ensureWA(sess.userId).catch(() => { });
+  }, sess.reconnectDelayMs);
 }
 
 function sanitize(s: string) {
@@ -164,18 +176,35 @@ async function ensureWA(userId: string) {
         const msg: string | undefined = err?.message ?? String(err)
 
         const logoutLikeCodes = new Set<number | string>([
-          DisconnectReason.loggedOut,          // 401
-          DisconnectReason.badSession,         // 500 on some variants
-          DisconnectReason.connectionReplaced, // 440/409
-          401, 403, 409, 440, 500,
-        ])
+          DisconnectReason.loggedOut,   // user betulan logout dari HP/WA
+          DisconnectReason.badSession,  // session rusak
+          401, 403                      // unauthorized
+        ]);
+
         const isLogoutLike =
-          code === DisconnectReason.loggedOut ||
-          code === DisconnectReason.connectionReplaced ||
-          /logged.?out|connection.?replaced/i.test(msg || '')
+          logoutLikeCodes.has(code ?? '') ||
+          /logged.?out/i.test(msg || '');
 
         setStatus(sess, `disconnected${code ? `:${code}` : ''}`)
         logger.warn({ userId: sess.userId, code, msg }, `[wa:${sess.userId}] connection closed`)
+
+        const isReplaced =
+          code === DisconnectReason.connectionReplaced ||
+          code === 440 ||
+          /replaced/i.test(msg || '');
+
+        logger.warn(
+          { userId: sess.userId, code, msg, stack: err?.stack },
+          `[wa:${sess.userId}] connection closed`
+        )
+        
+        if (isReplaced) {
+          // jangan wipe auth, cukup tandai saja
+          setStatus(sess, 'disconnected:replaced');
+          logger.warn({ userId: sess.userId, code, msg }, `[wa:${sess.userId}] connection replaced`);
+          // bisa tunggu manual /connect dari user, atau reconnect pelan-pelan
+          return;
+        }
 
         if (isLogoutLike) {
           (async () => {
@@ -186,12 +215,7 @@ async function ensureWA(userId: string) {
           })()
         }
 
-
-        setTimeout(() => {
-          sess.sock = null
-          sess.sendText = null
-          ensureWA(sess.userId).catch(() => { })
-        }, isLogoutLike ? 1200 : 2200)
+        scheduleReconnect(sess, isLogoutLike)
       }
     })
 
