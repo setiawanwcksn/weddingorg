@@ -50,7 +50,7 @@ giftDistributionsApp.get('/guest/:guestId', async (c: Context<AppEnv>) => {
       return c.json({ success: false, error: 'No token provided' }, 401)
     }
 
-    const guestId = c.req.param('guestId')
+    const guestId = c.req.param('guestId') as string
     console.log(`[GiftDistribution] Fetching distributions for guest=${guestId} by user=${user.id}`)
 
     const collection = db.collection('94884219_gift_distributions')
@@ -174,7 +174,7 @@ giftDistributionsApp.delete('/:id', async (c: Context<AppEnv>) => {
       return c.json({ success: false, error: 'No token provided' }, 401)
     }
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     console.log(`[GiftDistribution] Deleting distribution id=${id} for user=${user.id}`)
 
     const collection = db.collection('94884219_gift_distributions')
@@ -203,7 +203,7 @@ giftDistributionsApp.get('/guest/:guestId/stats', async (c: Context<AppEnv>) => 
       return c.json({ success: false, error: 'No token provided' }, 401)
     }
 
-    const guestId = c.req.param('guestId')
+    const guestId = c.req.param('guestId') as string
     console.log(`[GiftDistribution] Stats for guest=${guestId} by user=${user.id}`)
 
     const collection = db.collection('94884219_gift_distributions')

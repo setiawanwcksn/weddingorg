@@ -243,7 +243,7 @@ uploadApp.post('/', requireAuth, async (c: Context<AppEnv>) => {
  */
 uploadApp.get('/:filename/exists', async (c: Context<AppEnv>) => {
   try {
-    const filename = c.req.param('filename')
+    const filename = c.req.param('filename') as string
     const fileDoc = await db.collection(UPLOADED_FILES_COLLECTION).findOne({
       filename: { $regex: `^${filename}(\\.|$)` },
     })
@@ -267,7 +267,7 @@ uploadApp.get('/:filename/exists', async (c: Context<AppEnv>) => {
  */
 uploadApp.get('/:filename', async (c: Context<AppEnv>) => {
   try {
-    const filename = c.req.param('filename')
+    const filename = c.req.param('filename') as string
 
     let fileDoc =
       (await db.collection(UPLOADED_FILES_COLLECTION).findOne({ filename })) ||
@@ -318,7 +318,7 @@ uploadApp.get('/:filename', async (c: Context<AppEnv>) => {
 uploadApp.delete('/:filename', requireAuth, async (c: Context<AppEnv>) => {
   try {
     const user = c.get('user')
-    const filename = c.req.param('filename')
+    const filename = c.req.param('filename') as string
     if (!user) return c.json({ success: false, error: 'delete failed' }, 500)
 
     const fileDoc = await db.collection(UPLOADED_FILES_COLLECTION).findOne({

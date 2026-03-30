@@ -131,7 +131,7 @@ guestsApp.get('/:id', async (c: Context<AppEnv>) => {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     const collection = db.collection('94884219_guests')
     const guest = await collection.findOne(byIdFilter(user, id))
 
@@ -306,7 +306,7 @@ guestsApp.put('/:id', zValidator('json', updateGuestSchema), async (c: Context<A
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     const updateData = (c.req as any).valid('json') as UpdateGuestBody
 
     const collection = db.collection('94884219_guests')
@@ -338,7 +338,7 @@ guestsApp.post('/:id/clear-checkin', async (c: Context<AppEnv>) => {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     const collection = db.collection('94884219_guests')
     const before = await collection.findOne(byIdFilter(user, id))
 
@@ -377,7 +377,7 @@ guestsApp.post('/:id/checkin', async (c: Context<AppEnv>) => {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
 
     let guestCount = 1
     try {
@@ -434,7 +434,7 @@ guestsApp.post(
       const user = requireUser(c);
       if (!user) return c.json({ success: false, error: 'No token provided' }, 401);
 
-      const id = c.req.param('id');
+      const id = c.req.param('id') as string;
       const { count, kado, angpao } = (c.req as any).valid('json') as {
         count: number;
         kado?: number;
@@ -482,7 +482,7 @@ guestsApp.delete('/:id/souvenirs', async (c: Context<AppEnv>) => {
     if (!user)
       return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     const collection = db.collection('94884219_guests')
     const guest = await collection.findOne(byIdFilter(user, id))
 
@@ -534,7 +534,7 @@ guestsApp.delete('/:id/gifts', async (c: Context<AppEnv>) => {
     if (!user)
       return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     const collection = db.collection('94884219_guests')
     const guest = await collection.findOne(byIdFilter(user, id))
 
@@ -598,7 +598,7 @@ guestsApp.post(
       const user = requireUser(c)
       if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-      const id = c.req.param('id')
+      const id = c.req.param('id') as string
       const { type, count, kado, angpao } = (c.req as any).valid('json') as { type?: 'Angpao' | 'Kado'; count: number; kado?: number; angpao?: number }
 
       const collection = db.collection('94884219_guests')
@@ -629,7 +629,7 @@ guestsApp.post(
       const user = requireUser(c)
       if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-      const id = c.req.param('id')
+      const id = c.req.param('id') as string
       const { scheduledAt } = (c.req as any).valid('json') as { scheduledAt: string }
 
       const collection = db.collection('94884219_guests')
@@ -665,7 +665,7 @@ guestsApp.patch(
       const user = requireUser(c)
       if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-      const id = c.req.param('id')
+      const id = c.req.param('id') as string
       const { status, reminderScheduledAt } = (c.req as any).valid('json') as {
         status: 'Pending' | 'Confirmed' | 'Declined'
         reminderScheduledAt?: string | null
@@ -725,7 +725,7 @@ guestsApp.delete('/:id', async (c: Context<AppEnv>) => {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const id = c.req.param('id')
+    const id = c.req.param('id') as string
     const guestsCol = db.collection('94884219_guests')
     const remindersCol = db.collection('94884219_reminders')
 
@@ -753,7 +753,7 @@ guestsApp.get('/check-name/:name', async (c: Context<AppEnv>) => {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'No token provided' }, 401)
 
-    const name = decodeURIComponent(c.req.param('name'))
+    const name = decodeURIComponent(c.req.param('name') as string)
     const collection = db.collection('94884219_guests')
 
     const existingGuest = await collection.findOne({

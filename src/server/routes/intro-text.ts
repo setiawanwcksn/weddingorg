@@ -195,7 +195,7 @@ introTextApp.get('/category/:category', async (c: Context<AppEnv>) => {
     const user = requireUser(c)
     if (!user) return c.json({ success: false, error: 'User ID is required' }, 400)
 
-    const category = c.req.param('category')
+    const category = c.req.param('category') as string
     if (!category) return c.json({ success: false, error: 'Category is required' }, 400)
 
     const collection = db.collection('94884219_intro_texts')

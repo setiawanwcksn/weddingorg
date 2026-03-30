@@ -290,7 +290,7 @@ Datang yaa dan rayakan bersama kami!`,
 usersApp.delete('/:id', requireAdmin, async (c) => {
   try {
     const currentUser = getCtxUser(c)!
-    const paramId = c.req.param('id')
+    const paramId = c.req.param('id') as string
     const oid = safeObjectId(paramId)
     if (!oid) return c.json({ success: false, error: 'Invalid user id' }, 400)
 
@@ -333,7 +333,7 @@ usersApp.delete('/:id', requireAdmin, async (c) => {
  */
 usersApp.get('/:id/account', requireAdmin, async (c) => {
   try {
-    const paramId = c.req.param('id')
+    const paramId = c.req.param('id') as string
     const oid = safeObjectId(paramId)
     if (!oid) return c.json({ success: false, error: 'Invalid user id' }, 400)
 
@@ -377,7 +377,7 @@ usersApp.patch(
   async (c: Context<AppEnv>) => {
     try {
       const currentUser = getCtxUser(c)!
-      const paramId = c.req.param('id')
+      const paramId = c.req.param('id') as string
       const oid = safeObjectId(paramId)
       if (!oid) return c.json({ success: false, error: 'Invalid user id' }, 400)
 
@@ -410,7 +410,7 @@ usersApp.patch(
 
 usersApp.put('/accounts/:accountId', async (c: Context<AppEnv>) => {
   try {
-    const accountId = c.req.param('accountId');
+    const accountId = c.req.param('accountId') as string;
 
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

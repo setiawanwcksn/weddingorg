@@ -179,7 +179,7 @@ reminders.put(
   async (c: Context<AppEnv>) => {
     const accountId = c.get('accountId') as string | undefined;
     const user = c.get('user') as ContextUser | undefined;
-    const id = c.req.param('id');
+    const id = c.req.param('id') as string;
 
     if (!user?.id) {
       return c.json({ error: 'User ID not found' }, 400);
@@ -254,8 +254,8 @@ reminders.put(
 // Delete reminder
 reminders.delete('/:id', async (c: Context<AppEnv>) => {
   const user = c.get('user') as ContextUser | undefined;
-  const id = c.req.param('id');
-  const guestId = c.req.param('id');
+  const id = c.req.param('id') as string;
+  const guestId = c.req.param('id') as string;
 
   try {
     const collection = db.collection('94884219_reminders');

@@ -330,7 +330,7 @@ authApp.post('/logout', async (c: Context<AppEnv>) => {
  */
 authApp.get('/accounts/:accountId', async (c: Context<AppEnv>) => {
   try {
-    const accountId = c.req.param('accountId')
+    const accountId = c.req.param('accountId') as string
 
     const authHeader = c.req.header('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
