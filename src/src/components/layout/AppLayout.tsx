@@ -152,7 +152,7 @@ export function AppLayout() {
         </button>
       </div>
 
-      <div className="flex">
+      <div className="flex flex-1">
         {/* Mobile Sidebar Overlay */}
         {mobileMenuOpen && (
           <div
@@ -166,7 +166,7 @@ export function AppLayout() {
         <main className="flex-1 min-w-0 overflow-x-hidden flex flex-col">
           <div className="flex items-center justify-between mt-2 md:mt-2 px-4 sm:px-6 md:px-8">
             <nav className="text-sm text-text/70 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-              <Link to="/dashboard" className="hover:underline whitespace-nowrap transition-colors">Dashboard</Link>
+              <Link to="/Homepage" className="hover:underline whitespace-nowrap transition-colors">Dashboard</Link>
               {parts.map((p, idx) => (
                 <span key={idx} className="flex items-center gap-2">
                   <span className="text-text/40">›</span>

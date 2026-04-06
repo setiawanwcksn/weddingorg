@@ -59,7 +59,7 @@ export function Sidebar({ mobileMenuOpen = false, onMobileMenuClose }: SidebarPr
       className={`${mobileMenuOpen
         ? 'fixed inset-y-0 left-0 z-50 w-64'
         : 'hidden md:flex w-56'
-        } flex-col border-r border-gray-200 bg-white p-4 shadow-sm shrink-0 h-screen`}
+        } flex-col border-r border-gray-200 bg-white p-4 shadow-sm shrink-0`}
     >
       {/* Header */}
       <div className="flex items-center justify-between md:justify-start gap-2 px-2 py-1.5">

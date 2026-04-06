@@ -20,6 +20,7 @@ interface DashboardAccountInfo {
   location: string;
   photoUrl_dashboard: string;
   photoUrl: string;
+  linkUndangan?: string;
 }
 
 const DEFAULT_PHOTO = ' "https://images.unsplash.com/photo-1517244683847-7456b63c5969?q=80&w=1600&auto=format&fit=crop"';
@@ -82,6 +83,7 @@ const Dashboard: React.FC = () => {
             location: a.location ?? '',
             photoUrl: a.photoUrl ?? DEFAULT_PHOTO,
             photoUrl_dashboard: a.photoUrl ?? DEFAULT_PHOTO,
+            linkUndangan: a.linkUndangan
           });
         }
       } catch (e) {
@@ -116,8 +118,8 @@ const Dashboard: React.FC = () => {
 
   return (
     // page bg: very light gray like reference
-    <div className="bg-accent text-gray-800">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="bg-accent text-gray-800 flex-1 flex flex-col justify-center">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
         {/* Top grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           {/* Gambar (mengisi penuh tinggi row) */}
@@ -138,9 +140,9 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* isi card dibiarkan mengisi sisa tinggi */}
-            <ul className="divide-y divide-gray-100 px-4 py-4 flex-1 overflow-visible">
+            <ul className="divide-y divide-gray-100 px-4 flex-1 overflow-visible flex flex-col">
               {displayStats.map((row, idx) => (
-                <li key={idx} className="relative flex items-center justify-between px-5 py-4 bg-white">
+                <li key={idx} className="relative flex flex-1 items-center justify-between px-5 bg-white">
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-sm bg-primary/20 flex-shrink-0" />
                     {/* label + info icon */}
@@ -177,7 +179,7 @@ const Dashboard: React.FC = () => {
 
 
         {/* Lower grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mt-4 lg:mt-6">
           {/* Left: Countdown & CTA */}
           <div className="rounded-xl border border-border/60 bg-white p-5 sm:p-6 shadow-sm">
             <h3 className="text-2xl font-semibold">{title}</h3>
@@ -257,7 +259,13 @@ const Dashboard: React.FC = () => {
 
             <div className="border-t border-border/60 mt-6 pt-6">
               <button
-                className="inline-flex items-center justify-center gap-2 w-full max-w-xs px-5 py-3 rounded-full bg-primary text-white text-sm font-medium shadow-md hover:opacity-95 transition"
+                onClick={() => {
+                  if (account?.linkUndangan) {
+                    window.open(account.linkUndangan, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+                className={`inline-flex items-center justify-center gap-2 w-full max-w-xs px-5 py-3 rounded-full bg-primary text-white text-sm font-medium shadow-md hover:opacity-95 transition ${!account?.linkUndangan ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!account?.linkUndangan}
               >
                 <Eye className="w-3 h-3 sm:w-4 sm:h-4" /> Lihat Preview Undangan
               </button>
@@ -272,14 +280,14 @@ const Dashboard: React.FC = () => {
                 desc: 'Kelola daftar tamu, kirim reminder, dan atur kursi.',
                 permission: 'guests',
                 icon: kelolaTamuDshbd,
-                onClick: () => navigate('/guests')
+                onClick: () => navigate('/Guest Management')
               },
               {
                 title: 'Penerima Tamu',
                 desc: 'Atur penerima tamu dan proses check-in.',
                 permission: 'reception',
                 icon: penerimaTamu,
-                onClick: () => navigate('/reception')
+                onClick: () => navigate('/Guestbook')
               },
               {
                 title: 'Tanya Customer Care',

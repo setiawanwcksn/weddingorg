@@ -13,7 +13,7 @@ const PhotoContext = createContext<PhotoContextType>({
   photoUrl: null,
   dashboardUrl: null,
   welcomeUrl: null,
-  refreshPhotos: async () => {},
+  refreshPhotos: async () => { },
 });
 
 export const usePhoto = () => useContext(PhotoContext);
@@ -31,7 +31,7 @@ export const PhotoProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const result = await res.json();
 
       if (res.ok && result.success && result.exists) {
-        return apiUrl(`/api/upload/${result.filename}`);
+        return apiUrl(`/api/upload/${result.filename}?t=${Date.now()}`);
       }
     } catch {
       console.warn(`Failed to load photo for ${prefix}`);

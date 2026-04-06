@@ -107,7 +107,7 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
       <button aria-label="Close overlay" onClick={onClose} className="absolute inset-0 bg-text/30" />
 
       {/* Card */}
-      <div className="absolute left-1/2 top-2 sm:top-4 -translate-x-1/2 w-[96%] sm:w-[60%] max-w-[340px] sm:max-w-[480px] md:max-w-[520px] rounded-2xl border border-border bg-accent shadow-lg overflow-hidden max-h-[92vh]">
+      <div className="absolute left-1/2 top-2 sm:top-4 -translate-x-1/2 w-[96%] sm:w-[60%] max-w-[340px] sm:max-w-[480px] md:max-w-[520px] rounded-2xl border border-border bg-accent shadow-lg overflow-hidden flex flex-col max-h-[95vh]">
         <div className="flex items-center justify-between px-4 py-2 rounded-t-lg bg-primary text-white">
           <div className="font-semibold text-base">DETAIL TAMU</div>
           <button
@@ -119,8 +119,8 @@ const GiftAssignmentModal: React.FC<GiftAssignmentModalProps> = ({
           </button>
         </div>
 
-        {/* Detail list */}
-        <div className="px-3 sm:px-4 md:px-5 pb-3 sm:pb-4 pt-3">
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-5 pb-3 sm:pb-4 pt-3">
           <div className="rounded-2xl border border-border bg-background">
             <ul className="divide-y divide-border">
               <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">

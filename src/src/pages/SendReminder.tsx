@@ -102,7 +102,7 @@ const SendReminder: React.FC = () => {
   const handleCopyWhatsAppMessage = async (guest: Guest) => {
     try {
 
-      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
+      let linkUndangan = account?.linkUndangan?.trim().replace(/\/+$/, '') || ''
 
       const params = new URLSearchParams();
 
@@ -151,7 +151,7 @@ const SendReminder: React.FC = () => {
 
       let introText = result.data.text;
 
-      let linkUndangan = account.linkUndangan.trim().replace(/\/+$/, '') || ''
+      let linkUndangan = account?.linkUndangan?.trim().replace(/\/+$/, '') || ''
 
       const params = new URLSearchParams();
 

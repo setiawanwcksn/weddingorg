@@ -94,8 +94,8 @@ function App() {
                     </ProtectedRoute>
                   }
                 >
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/reception" element={
+                  <Route path="/Homepage" element={<Dashboard />} />
+                  <Route path="/Guestbook" element={
                     <PermissionGuard requiredPermission="reception">
                       <ReceptionCheckIn />
                     </PermissionGuard>
@@ -110,7 +110,7 @@ function App() {
                   <Route path="/gifts" element={<Gifts />} />
                   <Route path="/doorprize" element={<Doorprize />} />
                   <Route path="/doorprize/picker" element={<DoorprizePicker />} />
-                  <Route path="/guests" element={
+                  <Route path="/Guest Management" element={
                     <PermissionGuard requiredPermission="guests">
                       <ManageGuests />
                     </PermissionGuard>

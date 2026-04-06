@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { BottomBar } from '../components/navigation/BottomBar';
@@ -309,6 +310,44 @@ export function ReceptionCheckIn(): JSX.Element {
     }
   }
 
+  const handleExport = () => {
+    if (!rows || rows.length === 0) {
+      showToast('Tidak ada data tamu yang check-in untuk diekspor', 'info');
+      return;
+    }
+
+    // Map guests to a more user-friendly format for Excel
+    const exportData = filteredGuests.map((g: any, index: number) => ({
+      'No': String(index + 1).padStart(2, '0'),
+      'Nama': g.name,
+      'Telepon': g.phone || '-',
+      'Kode': g.code || '-',
+      'Kategori': g.category || '-',
+      'Informasi': g.info || '-',
+      'Sesi': g.session || '-',
+      'Limit': g.limit || '-',
+      'No. Meja': g.tableNo || '-',
+      'Jumlah Tamu': g.guestCount || 1,
+      'Souvenir': g.souvenirCount || 0,
+      'Angpao': g.angpaoCount || 0,
+      'Kado': g.kadoCount || 0,
+      'Catatan Hadiah': g.giftNote || '-',
+      'Tanggal Check-in': g.checkInDate ? new Date(g.checkInDate).toLocaleDateString('id-ID') : '-',
+      'Waktu Check-in': g.checkInDate ? new Date(g.checkInDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-',
+      'Tamu Diundang': g.isInvited !== false ? 'Ya' : 'Tidak',
+    }));
+
+    // Create worksheet and workbook
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Tamu Check-in');
+
+    // Trigger download
+    const fileName = `Data_Tamu_CheckIn_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    showToast('Berhasil mengekspor data tamu', 'success');
+  };
+
   // Loading state - only show loading when explicitly loading, not when guests array is empty
   if (guestsLoading) {
     return (
@@ -340,10 +379,10 @@ export function ReceptionCheckIn(): JSX.Element {
   }
 
   return (
-    <div className="bg-accent text-gray-800 py-6">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <div className="flex flex-col">
-          <div className="flex-1 space-y-4 sm:space-y-6">
+    <div className="flex-1 flex flex-col bg-accent/50">
+      <div className="flex-1 flex flex-col">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+          <div className="space-y-4 sm:space-y-6">
             {/* Top grid: hero and statistics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
               {/* Hero card */}
@@ -389,7 +428,10 @@ export function ReceptionCheckIn(): JSX.Element {
             <div className="rounded-xl border border-border p-3 sm:p-4 shadow-sm bg-white rounded-b-none">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <button className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl bg-primary text-background text-sm font-medium border border-primary shadow-sm hover:bg-primary/90 hover:shadow-md transition-all min-h-[44px] touch-manipulation">
+                  <button
+                    onClick={handleExport}
+                    className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-xl bg-primary text-background text-sm font-medium border border-primary shadow-sm hover:bg-primary/90 hover:shadow-md transition-all min-h-[44px] touch-manipulation"
+                  >
                     <img src={ExportTamu} className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
                     Export Tamu
                   </button>
@@ -714,7 +756,7 @@ export function ReceptionCheckIn(): JSX.Element {
         </div>
       </div>
       {/* Bottom navigation - inline at the page bottom */}
-      <div className="">
+      <div className="mt-auto pt-6">
         <BottomBar
           variant="inline"
           active="checkin"

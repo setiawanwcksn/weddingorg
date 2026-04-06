@@ -303,7 +303,7 @@ uploadApp.get('/:filename', async (c: Context<AppEnv>) => {
     // no range → kirim full
     c.header('Content-Type', fileDoc.mimetype)
     c.header('Content-Length', String(size))
-    c.header('Cache-Control', 'public, max-age=31536000')
+    c.header('Cache-Control', 'no-cache, no-store, must-revalidate')
     return c.body(bin)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Failed to serve file'

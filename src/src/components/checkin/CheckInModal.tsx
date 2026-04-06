@@ -284,11 +284,11 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
       )}
 
       {/* Modal card */}
-      <div className="absolute left-1/2 top-4 sm:top-6 -translate-x-1/2 w-[92%] sm:w-[94%] max-w-[320px] sm:max-w-[480px] md:max-w-[620px] rounded-2xl border border-border bg-background shadow-lg overflow-hidden">
+      <div className="absolute left-1/2 top-4 sm:top-6 -translate-x-1/2 w-[92%] sm:w-[94%] max-w-[320px] sm:max-w-[480px] md:max-w-[620px] rounded-2xl border border-border bg-background shadow-lg overflow-hidden max-h-[calc(100vh-2rem)] flex flex-col">
         <Header />
 
         {/* Body */}
-        <div className="p-4 sm:p-5 md:p-6">
+        <div className="p-4 sm:p-5 md:p-6 flex-1 overflow-y-auto">
           {mode === 'scan' && (
             <>
               <p className="text-sm font-medium text-text/70 mb-3">Scan QR-Code</p>

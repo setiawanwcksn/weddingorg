@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePhoto } from '../contexts/PhotoProvider';
 import { useToast } from '../contexts/ToastContext';
 import { getApiUrl, getAuthHeaders } from '../utils/api';
 import { Image as ImageIcon, UploadCloud } from 'lucide-react';
@@ -12,6 +13,7 @@ type PhotoField =
 export default function Settings(): JSX.Element {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { refreshPhotos, photoUrl, dashboardUrl, welcomeUrl } = usePhoto();
 
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [uploadingDashboardPhoto, setUploadingDashboardPhoto] = useState(false);
@@ -24,6 +26,13 @@ export default function Settings(): JSX.Element {
     const fileInputMainRef = useRef<HTMLInputElement | null>(null);
     const fileInputDashboardRef = useRef<HTMLInputElement | null>(null);
     const fileInputWelcomeRef = useRef<HTMLInputElement | null>(null);
+
+    // Initialize previews from global state
+    React.useEffect(() => {
+        if (photoUrl) setPreviewPhoto(photoUrl);
+        if (dashboardUrl) setPreviewDashboardPhoto(dashboardUrl);
+        if (welcomeUrl) setPreviewWelcomePhoto(welcomeUrl);
+    }, [photoUrl, dashboardUrl, welcomeUrl]);
 
     if (!user) {
         return
@@ -68,7 +77,7 @@ export default function Settings(): JSX.Element {
             if (!json?.success) throw new Error(json?.error || 'Upload failed');
 
             const filename: string | undefined = json?.data?.filename;
-            const imageUrl = filename ? getApiUrl(`/api/upload/${filename}`) : URL.createObjectURL(file);
+            const imageUrl = filename ? getApiUrl(`/api/upload/${filename}?t=${Date.now()}`) : URL.createObjectURL(file);
 
             if (fieldName === 'weddingPhotoUrl') {
                 setPreviewPhoto(imageUrl);
@@ -79,6 +88,7 @@ export default function Settings(): JSX.Element {
             }
 
             showToast('Foto berhasil di-upload', 'success');
+            await refreshPhotos();
             return true;
         } catch (err: any) {
             console.error(`[upload ${fieldName}]`, err);

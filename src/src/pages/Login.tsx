@@ -28,7 +28,7 @@ const Login: React.FC = () => {
     
     try {
       await login(formData.username, formData.password);
-      navigate('/dashboard');
+      navigate('/Homepage');
     } catch (err: any) {
       console.error(`[login] Login error:`, err);
       const errorMessage = err.message || 'Login failed. Please check your credentials and try again.';
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
       
       // Auto-login with demo credentials
       await login('demo', 'demo123');
-      navigate('/dashboard');
+      navigate('/Homepage');
     } catch (err: any) {
       console.error(`[login] Demo setup error:`, err);
       setError('Failed to setup demo account. Please try manual login.');
@@ -81,7 +81,7 @@ const Login: React.FC = () => {
     
     try {
       await loginWithGoogle();
-      navigate('/dashboard');
+      navigate('/Homepage');
     } catch (err: any) {
       setError(err.message || 'Google login failed. Please try again.');
     } finally {

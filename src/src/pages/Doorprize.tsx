@@ -192,242 +192,244 @@ export function Doorprize(): JSX.Element {
   }, [q]);
 
   return (
-    <div className="flex flex-col flex-1">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="space-y-4 md:space-y-6">
-          {/* Top Actions bar */}
-          <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5 rounded-b-none">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <ActionButton icon={<UserPlus className="w-4 h-4" />}>Tambah Peserta</ActionButton>
-                <ActionButton icon={<Play className="w-4 h-4" />} onClick={() => navigate('/doorprize/picker')}>Start To Play</ActionButton>
+    <div className="flex-1 flex flex-col bg-accent/50">
+      <div className="flex-1 flex flex-col">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+          <div className="space-y-4 md:space-y-6">
+            {/* Top Actions bar */}
+            <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5 rounded-b-none">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <ActionButton icon={<UserPlus className="w-4 h-4" />}>Tambah Peserta</ActionButton>
+                  <ActionButton icon={<Play className="w-4 h-4" />} onClick={() => navigate('/doorprize/picker')}>Start To Play</ActionButton>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
+                  <div className="relative">
+                    <button
+                      onClick={() => setFilterOpen(true)}
+                      className="w-12 h-12 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary transition-colors min-h-[48px] touch-manipulation"
+                      title="Filter columns"
+                    >
+                      <img src={filter} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                    </button>
+                    <TableFilterPopover
+                      open={filterOpen}
+                      onClose={() => setFilterOpen(false)}
+                      options={[
+                        { key: 'no', label: 'No', checked: visibleCols.no },
+                        { key: 'name', label: 'Nama', checked: visibleCols.name },
+                        { key: 'kode', label: 'kode', checked: visibleCols.kode },
+                        { key: 'kategori', label: 'kategori', checked: visibleCols.kategori },
+                        { key: 'informasi', label: 'informasi', checked: visibleCols.informasi },
+                        { key: 'sesi', label: 'Sesi', checked: visibleCols.sesi },
+                        { key: 'limit', label: 'Limit Tamu', checked: visibleCols.limit },
+                        { key: 'meja', label: 'No. Meja', checked: visibleCols.meja },
+                        { key: 'tamu', label: 'Jumlah Tamu', checked: visibleCols.tamu },
+                        { key: 'tanggal', label: 'Tanggal', checked: visibleCols.tanggal },
+                        { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
+                      ]}
+                      onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
+                      onToggleAll={(checked) => {
+                        const keys = ['no', 'name', 'kode', 'kategori', 'informasi', 'sesi', 'limit', 'meja', 'tamu', 'tanggal', 'waktu'];
+                        setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
+                      }}
+                    />
+
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-auto sm:ml-0">
-                <div className="relative">
-                  <button
-                    onClick={() => setFilterOpen(true)}
-                    className="w-12 h-12 inline-flex items-center justify-center rounded-xl bg-primary text-background border border-primary transition-colors min-h-[48px] touch-manipulation"
-                    title="Filter columns"
+            </div>
+
+            {/* Table controls */}
+            <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6 rounded-t-none" style={{ marginTop: '0px' }}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
+                  <span>Show</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
+                    className="border border-border rounded-md px-2 py-1 bg-white"
                   >
-                    <img src={filter} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <span>entries</span>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-64 order-1 sm:order-2 mb-3 sm:mb-0">
+                  <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-text/70 flex-shrink-0" />
+                  <input value={q} onChange={(e) => setQ(e.target.value)} className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm outline-none focus:border-primary hover:border-primary/50 transition-colors" placeholder="Search participants..." />
+                </div>
+              </div>
+
+              {/* Error state */} {error && (
+                <div className="mt-4 p-4 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
+                  Failed to load checked-in guests. Please try again.
+                  <br />
+                  <code className="text-xs mt-1 block">{error.message}</code>
+                </div>
+              )} {/* Manual API test results */} {manualData && (
+                <div className="mt-4 p-4 bg-success/10 border border-success/20 rounded-lg text-success text-sm">
+                  <div className="font-medium mb-2">Manual API Test Results:</div>
+                  <div>Success: {manualData.success ? 'Yes' : 'No'}</div>
+                  <div>Items found: {manualData.items?.length || 0}</div>
+                  {manualData.items && manualData.items.length > 0 && (
+                    <div className="mt-2">
+                      <div className="text-xs">First guest: {manualData.items[0]?.name}</div>
+                    </div>
+                  )}
+                </div>
+              )} {manualError && (
+                <div className="mt-4 p-4 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
+                  <div className="font-medium mb-2">Manual API Test Error:</div>
+                  <div>{manualError}</div>
+                </div>
+              )} {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-accent text-text/70">
+                      {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No</th>}
+                      {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Nama</th>}
+                      {visibleCols.kode && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kode</th>}
+                      {visibleCols.kategori && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kategori</th>}
+                      {visibleCols.inf && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Informasi</th>}
+                      {visibleCols.sesi && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Sesi</th>}
+                      {visibleCols.limit && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Limit</th>}
+                      {visibleCols.meja && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No. Meja</th>}
+                      {visibleCols.tamu && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Jumlah Tamu</th>}
+                      {visibleCols.tanggal && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>}
+                      {visibleCols.waktu && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Waktu</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={12} className="px-2 sm:px-3 py-8 text-center text-text/60">
+                          Loading checked-in guests...
+                        </td>
+                      </tr>
+                    ) : filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={12} className="px-2 sm:px-3 py-8 text-center text-text/60">
+                          {data?.items?.length === 0 ? 'No checked-in guests found' : 'No matching guests found'}
+                        </td>
+                      </tr>
+                    ) : (pageRows.map((r, idx) => (
+                      <tr key={idx}>
+                        {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.no}</td>}
+                        {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>}
+                        {visibleCols.kode && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>}
+                        {visibleCols.kategori && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                          <InfoPill>{r.category}</InfoPill>
+                        </td>}
+                        {visibleCols.info && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                          <InfoPill>{r.info}</InfoPill>
+                        </td>}
+                        {visibleCols.sesi && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.session}</td>}
+                        {visibleCols.limit && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.limit}</td>}
+                        {visibleCols.meja && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.tableNo}</td>}
+                        {visibleCols.tamu && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.guestCount}</td>}
+                        {visibleCols.tanggal && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.date}</td>}
+                        {visibleCols.waktu && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.time}</td>}
+                        {/* <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
+                          <RowActions />
+                        </td> */}
+                      </tr>
+                    )))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden mt-3 space-y-3">
+                {isLoading ? (
+                  <div className="text-center py-8 text-text/60">
+                    Loading checked-in guests...
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="text-center py-8 text-text/60">
+                    {data?.items?.length === 0 ? 'No checked-in guests found' : 'No matching guests found'}
+                  </div>
+                ) : (filtered.map((r, idx) => (
+                  <div key={idx} className="bg-white rounded-xl border border-border p-4 shadow-sm">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-text/60">#{r.no}</span>
+                        <span className="text-primary font-medium">{r.code}</span>
+                      </div>
+                      <RowActions />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div>
+                        <div className="text-sm font-medium text-text">{r.name}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <InfoPill>{r.category}</InfoPill>
+                          <InfoPill>{r.info}</InfoPill>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-text/60">Sesi:</span>
+                          <span className="ml-1">{r.session}</span>
+                        </div>
+                        <div>
+                          <span className="text-text/60">Limit:</span>
+                          <span className="ml-1">{r.limit}</span>
+                        </div>
+                        <div>
+                          <span className="text-text/60">Meja:</span>
+                          <span className="ml-1">{r.tableNo}</span>
+                        </div>
+                        <div>
+                          <span className="text-text/60">Tamu:</span>
+                          <span className="ml-1">{r.guestCount}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs text-text/60 pt-2 border-t border-border">
+                        <span>{r.date}</span>
+                        <span>{r.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                )))}
+              </div>
+
+              {/* Footer */}
+              <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
+                <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <button
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page <= 1}
+                    className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                  >
+                    Previous
                   </button>
-                  <TableFilterPopover
-                    open={filterOpen}
-                    onClose={() => setFilterOpen(false)}
-                    options={[
-                      { key: 'no', label: 'No', checked: visibleCols.no },
-                      { key: 'name', label: 'Nama', checked: visibleCols.name },
-                      { key: 'kode', label: 'kode', checked: visibleCols.kode },
-                      { key: 'kategori', label: 'kategori', checked: visibleCols.kategori },
-                      { key: 'informasi', label: 'informasi', checked: visibleCols.informasi },
-                      { key: 'sesi', label: 'Sesi', checked: visibleCols.sesi },
-                      { key: 'limit', label: 'Limit Tamu', checked: visibleCols.limit },
-                      { key: 'meja', label: 'No. Meja', checked: visibleCols.meja },
-                      { key: 'tamu', label: 'Jumlah Tamu', checked: visibleCols.tamu },
-                      { key: 'tanggal', label: 'Tanggal', checked: visibleCols.tanggal },
-                      { key: 'waktu', label: 'Waktu', checked: visibleCols.waktu },
-                    ]}
-                    onToggle={(key) => setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))}
-                    onToggleAll={(checked) => {
-                      const keys = ['no', 'name', 'kode', 'kategori', 'informasi', 'sesi', 'limit', 'meja', 'tamu', 'tanggal', 'waktu'];
-                      setVisibleCols(keys.reduce((acc, k) => ({ ...acc, [k]: checked }), {} as typeof visibleCols));
-                    }}
-                  />
-
+                  <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
+                  <button
+                    onClick={() => setPage(Math.min(totalPages, page + 1))}
+                    disabled={page >= totalPages}
+                    className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             </div>
+
+            {/* Toast */} {toast.show && (
+              <Toast message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} duration={4000} />)}
           </div>
-
-          {/* Table controls */}
-          <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6 rounded-t-none" style={{ marginTop: '0px' }}>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
-              <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
-                <span>Show</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => { setPage(1); setPageSize(Number(e.target.value)); }}
-                  className="border border-border rounded-md px-2 py-1 bg-white"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span>entries</span>
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-64 order-1 sm:order-2 mb-3 sm:mb-0">
-                <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5 text-text/70 flex-shrink-0" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} className="w-full rounded-lg border border-border bg-accent px-3 py-2 text-sm outline-none focus:border-primary hover:border-primary/50 transition-colors" placeholder="Search participants..." />
-              </div>
-            </div>
-
-            {/* Error state */} {error && (
-              <div className="mt-4 p-4 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
-                Failed to load checked-in guests. Please try again.
-                <br />
-                <code className="text-xs mt-1 block">{error.message}</code>
-              </div>
-            )} {/* Manual API test results */} {manualData && (
-              <div className="mt-4 p-4 bg-success/10 border border-success/20 rounded-lg text-success text-sm">
-                <div className="font-medium mb-2">Manual API Test Results:</div>
-                <div>Success: {manualData.success ? 'Yes' : 'No'}</div>
-                <div>Items found: {manualData.items?.length || 0}</div>
-                {manualData.items && manualData.items.length > 0 && (
-                  <div className="mt-2">
-                    <div className="text-xs">First guest: {manualData.items[0]?.name}</div>
-                  </div>
-                )}
-              </div>
-            )} {manualError && (
-              <div className="mt-4 p-4 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
-                <div className="font-medium mb-2">Manual API Test Error:</div>
-                <div>{manualError}</div>
-              </div>
-            )} {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-accent text-text/70">
-                    {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No</th>}
-                    {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Nama</th>}
-                    {visibleCols.kode && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kode</th>}
-                    {visibleCols.kategori && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kategori</th>}
-                    {visibleCols.inf && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Informasi</th>}
-                    {visibleCols.sesi && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Sesi</th>}
-                    {visibleCols.limit && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Limit</th>}
-                    {visibleCols.meja && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No. Meja</th>}
-                    {visibleCols.tamu && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Jumlah Tamu</th>}
-                    {visibleCols.tanggal && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Tanggal</th>}
-                    {visibleCols.waktu && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Waktu</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={12} className="px-2 sm:px-3 py-8 text-center text-text/60">
-                        Loading checked-in guests...
-                      </td>
-                    </tr>
-                  ) : filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan={12} className="px-2 sm:px-3 py-8 text-center text-text/60">
-                        {data?.items?.length === 0 ? 'No checked-in guests found' : 'No matching guests found'}
-                      </td>
-                    </tr>
-                  ) : (pageRows.map((r, idx) => (
-                    <tr key={idx}>
-                      {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.no}</td>}
-                      {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>}
-                      {visibleCols.kode && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>}
-                      {visibleCols.kategori && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                        <InfoPill>{r.category}</InfoPill>
-                      </td>}
-                      {visibleCols.info && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                        <InfoPill>{r.info}</InfoPill>
-                      </td>}
-                      {visibleCols.sesi && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.session}</td>}
-                      {visibleCols.limit && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.limit}</td>}
-                      {visibleCols.meja && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.tableNo}</td>}
-                      {visibleCols.tamu && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.guestCount}</td>}
-                      {visibleCols.tanggal && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.date}</td>}
-                      {visibleCols.waktu && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.time}</td>}
-                      {/* <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
-                        <RowActions />
-                      </td> */}
-                    </tr>
-                  )))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Card View */}
-            <div className="md:hidden mt-3 space-y-3">
-              {isLoading ? (
-                <div className="text-center py-8 text-text/60">
-                  Loading checked-in guests...
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="text-center py-8 text-text/60">
-                  {data?.items?.length === 0 ? 'No checked-in guests found' : 'No matching guests found'}
-                </div>
-              ) : (filtered.map((r, idx) => (
-                <div key={idx} className="bg-white rounded-xl border border-border p-4 shadow-sm">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-text/60">#{r.no}</span>
-                      <span className="text-primary font-medium">{r.code}</span>
-                    </div>
-                    <RowActions />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-sm font-medium text-text">{r.name}</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <InfoPill>{r.category}</InfoPill>
-                        <InfoPill>{r.info}</InfoPill>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="text-text/60">Sesi:</span>
-                        <span className="ml-1">{r.session}</span>
-                      </div>
-                      <div>
-                        <span className="text-text/60">Limit:</span>
-                        <span className="ml-1">{r.limit}</span>
-                      </div>
-                      <div>
-                        <span className="text-text/60">Meja:</span>
-                        <span className="ml-1">{r.tableNo}</span>
-                      </div>
-                      <div>
-                        <span className="text-text/60">Tamu:</span>
-                        <span className="ml-1">{r.guestCount}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-text/60 pt-2 border-t border-border">
-                      <span>{r.date}</span>
-                      <span>{r.time}</span>
-                    </div>
-                  </div>
-                </div>
-              )))}
-            </div>
-
-            {/* Footer */}
-            <div className="px-4 py-3 border-t border-border flex items-center justify-between text-sm">
-              <p className="text-xs sm:text-sm">Showing {totalItems === 0 ? 0 : pageStart + 1} {' '}to{' '}{Math.min(pageStart + pageSize, totalItems)} {' '}of{' '}{totalItems} entries</p>
-              <div className="flex items-center gap-1 sm:gap-2">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page <= 1}
-                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
-                >
-                  Previous
-                </button>
-                <span className="px-2 sm:px-3 py-1 text-xs sm:text-sm">Page {page} of {totalPages}</span>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  className="px-2 sm:px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/10 transition-colors text-xs sm:text-sm"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Toast */} {toast.show && (
-            <Toast message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} duration={4000} />)}
         </div>
-      </div>
-      {/* Bottom Navigation - Fixed at bottom without floating */}
-      <div className="mt-auto pt-6 py-6">
-        <BottomBar variant="inline" active="doorprize" onSelect={(key) => { switch (key) { case 'home': navigate('/dashboard'); break; case 'checkin': navigate('/reception'); break; case 'souvenir': navigate('/souvenirs'); break; case 'gift': navigate('/gifts'); break; } }} />
+        {/* Bottom Navigation - Fixed at bottom without floating */}
+        <div className="mt-auto pt-6">
+          <BottomBar variant="inline" active="doorprize" onSelect={(key) => { switch (key) { case 'home': navigate('/dashboard'); break; case 'checkin': navigate('/reception'); break; case 'souvenir': navigate('/souvenirs'); break; case 'gift': navigate('/gifts'); break; } }} />
+        </div>
       </div>
     </div>
   );
