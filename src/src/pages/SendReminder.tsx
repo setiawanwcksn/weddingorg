@@ -483,23 +483,45 @@ const SendReminder: React.FC = () => {
                             {visibleCols.phone && <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">{guest.phone || '-'}</td>}
                             {visibleCols.reminder && (
                               <td className="px-2 sm:px-3 md:px-4 py-3 sm:py-4 whitespace-nowrap">
-                                <button
-                                  onClick={() => {
-                                    setSelectedGuestForReminder({
-                                      id: guest._id,
-                                      name: guest.name,
-                                      phone: guest.phone || ''
-                                    });
-                                    setReminderSettingsOpen(true);
-                                  }}
-                                  className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors min-h-[28px] ${guest.status === 'Confirmed' || hasReminder
-                                    ? 'bg-green-500 text-white hover:bg-green-600'
-                                    : 'bg-red-500 text-white hover:bg-red-600'
-                                    }`}
-                                >
-                                  {guest.status === 'Confirmed' || hasReminder ? 'Done' : 'Setting'}
-                                  <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                </button>
+                                {(() => {
+                                  let btnLabel = 'Setting';
+                                  let btnClass = 'bg-red-500 text-white hover:bg-red-600';
+                                  
+                                  const reminder = reminders.find((r: ReminderItem) => r.guestId === guest._id);
+                                  
+                                  if (reminder) {
+                                    if (reminder.status === 'sent') {
+                                      btnLabel = 'Sent';
+                                      btnClass = 'bg-green-500 text-white hover:bg-green-600';
+                                    } else if (reminder.status === 'pending' || reminder.status === 'processing' as any) {
+                                      btnLabel = 'Pending';
+                                      btnClass = 'bg-orange-500 text-white hover:bg-orange-600';
+                                    } else if (reminder.status === 'failed') {
+                                      btnLabel = 'Failed';
+                                      btnClass = 'bg-red-700 text-white hover:bg-red-800';
+                                    }
+                                  } else if (guest.status === 'Confirmed') {
+                                    btnLabel = 'Done';
+                                    btnClass = 'bg-green-500 text-white hover:bg-green-600';
+                                  }
+
+                                  return (
+                                    <button
+                                      onClick={() => {
+                                        setSelectedGuestForReminder({
+                                          id: guest._id,
+                                          name: guest.name,
+                                          phone: guest.phone || ''
+                                        });
+                                        setReminderSettingsOpen(true);
+                                      }}
+                                      className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-medium transition-colors min-h-[28px] ${btnClass}`}
+                                    >
+                                      {btnLabel}
+                                      <Settings className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                    </button>
+                                  );
+                                })()}
                               </td>
                             )}
                             {visibleCols.terjadwal && (

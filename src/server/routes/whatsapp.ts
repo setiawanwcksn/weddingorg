@@ -372,7 +372,11 @@ async function startScheduler() {
           await new Promise(r => setTimeout(r, 500 + Math.random() * 800))
         } catch (e: any) {
           console.error('[scheduler] failed', job?.phone, e?.message)
-          await markFailed(job._id, e?.message ?? String(e))
+          if (job.attempts < 3) {
+            await markPending(job._id, `Retrying (${job.attempts}/3): ${e?.message ?? String(e)}`)
+          } else {
+            await markFailed(job._id, e?.message ?? String(e))
+          }
         }
       }
     } catch (err) {
