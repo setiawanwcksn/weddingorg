@@ -22,7 +22,7 @@ services:
       - PORT=8787
       - TZ=Asia/Jakarta
     volumes:
-      - ./wa_auth:/app/auth
+      - wa_auth:/app/auth
     restart: unless-stopped
 
   frontend:
@@ -41,3 +41,4 @@ services:
 
 volumes:
   mongo_data:
+  wa_auth:
