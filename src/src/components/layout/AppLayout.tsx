@@ -240,7 +240,7 @@ export function AppLayout() {
                   </div>
                   <div className="divide-border">
                     <button
-                      onClick={() => { setUserMenuOpen(false); navigate('/dashboard'); }}
+                      onClick={() => { setUserMenuOpen(false); navigate('/Homepage'); }}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors text-left"
                     >
                       <Moon className="w-5 h-5 text-text/70" />

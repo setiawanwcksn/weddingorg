@@ -8,7 +8,7 @@ import { ArrowLeft, User, Lock, Bell, CreditCard, HelpCircle, LogOut, ChevronRig
 
 export default function Profile() {
   const handleBack = () => {
-    window.location.hash = '#/dashboard';
+    window.location.hash = '#/Homepage';
   };
 
   const handleEditProfile = () => {
