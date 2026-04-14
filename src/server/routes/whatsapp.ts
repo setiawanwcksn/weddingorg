@@ -30,7 +30,7 @@ function errMsg(e: unknown) {
   return e instanceof Error ? e.message : String(e)
 }
 
-const AUTH_ROOT = process.env.WA_AUTH_DIR ?? '/app/auth'
+const AUTH_ROOT = process.env.WA_AUTH_DIR ?? path.join(process.cwd(), '.wa_auth')
 const logger = pino({ level: process.env.NODE_ENV === 'production' ? 'warn' : 'info' })
 
 type Session = {
@@ -43,6 +43,7 @@ type Session = {
   ensuring: boolean
   lastQrAt?: number
   lastStatusAt?: number
+  lastErr?: string | null
   reconnectDelayMs?: number;
   sendText: ((phoneE164: string, text: string) => Promise<void>) | null
 }
@@ -62,6 +63,7 @@ function getSession(userId: string): Session {
       status: 'idle',
       latestQR: null,
       ensuring: false,
+      lastErr: null as string | null,
       sendText: null,
     }
     sessions.set(userId, sess)
@@ -390,7 +392,7 @@ export default function whatsAppRoutes({ upgradeWebSocket }: { upgradeWebSocket:
     const user = requireUser(c)
     if (!user) return c.json({ ok: false, error: 'No token' }, 401)
     const sess = getSession(user.id)
-    return c.json({ ok: true, status: sess.status, ready: sess.ready, hasQR: !!sess.latestQR })
+    return c.json({ ok: true, status: sess.status, ready: sess.ready, hasQR: !!sess.latestQR, error: sess.lastErr })
   })
 
   // Connect per user
@@ -503,6 +505,7 @@ export default function whatsAppRoutes({ upgradeWebSocket }: { upgradeWebSocket:
               setStatus(sess, 'connecting') // opsional, biar FE lihat progress lebih cepat
               ensureWA(userId).catch((err) => {
                 logger.error({ err, userId }, `[wa:${userId}] ensureWA from WS failed`)
+                sess.lastErr = String(err?.message ?? err)
                 setStatus(sess, 'disconnected:ensure_failed')
               })
             }
