@@ -438,17 +438,17 @@ const SendReminder: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs sm:text-sm">
+              <div className="overflow-x-auto overflow-y-auto max-h-[350px]">
+                <table className="w-full text-left text-xs sm:text-sm relative">
                   <thead className="bg-gray-50">
                     <tr>
-                      {visibleCols.no && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">No</th>}
-                      {visibleCols.name && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium sticky left-0 bg-gray-50 z-10">Nama</th>}
-                      {visibleCols.phone && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden sm:table-cell">WhatsApp</th>}
-                      {visibleCols.reminder && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Set Reminder</th>}
-                      {visibleCols.terjadwal && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden md:table-cell">Terjadwal</th>}
-                      {visibleCols.status && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium">Status</th>}
-                      {visibleCols.share && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium text-center">Bagikan</th>}
+                      {visibleCols.no && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium sticky top-0 bg-gray-50 z-20">No</th>}
+                      {visibleCols.name && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium sticky left-0 top-0 bg-gray-50 z-30">Nama</th>}
+                      {visibleCols.phone && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden sm:table-cell sticky top-0 bg-gray-50 z-20">WhatsApp</th>}
+                      {visibleCols.reminder && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium sticky top-0 bg-gray-50 z-20">Set Reminder</th>}
+                      {visibleCols.terjadwal && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium hidden md:table-cell sticky top-0 bg-gray-50 z-20">Terjadwal</th>}
+                      {visibleCols.status && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium sticky top-0 bg-gray-50 z-20">Status</th>}
+                      {visibleCols.share && <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 font-medium text-center sticky top-0 bg-gray-50 z-20">Bagikan</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
