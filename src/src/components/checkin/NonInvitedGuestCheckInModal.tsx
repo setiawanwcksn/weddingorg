@@ -24,6 +24,11 @@ export interface NonInvitedGuestData {
   invitationCode: string
   category?: string
   categoryID?: number
+  kado: number
+  angpao: number
+  kadoCount: number
+  giftNote: string
+  souvenir: number
 }
 
 interface NonInvitedGuestCheckInModalProps {
@@ -60,7 +65,12 @@ export default function NonInvitedGuestCheckInModal({
     invitationCode: '',
     guestCount: 1,
     category: '',
-    categoryID: 0
+    categoryID: 0,
+    kado: 0,
+    angpao: 0,
+    kadoCount: 0,
+    giftNote: '',
+    souvenir: 0
   })
 
   const updateAdd = (k: keyof NonInvitedGuestData, v: string) =>
@@ -81,7 +91,12 @@ export default function NonInvitedGuestCheckInModal({
       invitationCode: '',
       guestCount: 1,
       category: '',
-      categoryID: 0
+      categoryID: 0,
+      kado: 0,
+      angpao: 0,
+      kadoCount: 0,
+      giftNote: '',
+      souvenir: 0
     });
     setPhoneError('');
   };
@@ -112,18 +127,23 @@ export default function NonInvitedGuestCheckInModal({
     e.preventDefault()
     if (!formData.name.trim()) return
 
-    // Validate phone number
-    const phoneError = getPhoneValidationError(formData.phone)
-    if (phoneError) {
-      setPhoneError(phoneError)
-      return
+    // Validate phone number only if provided
+    if (formData.phone.trim()) {
+      const phoneError = getPhoneValidationError(formData.phone)
+      if (phoneError) {
+        setPhoneError(phoneError)
+        return
+      }
     }
 
-    // Format phone number before saving
-    const formattedPhone = formatIndonesianPhone(formData.phone)
-    if (!formattedPhone) {
-      setPhoneError('Invalid phone number format')
-      return
+    // Format phone number before saving (only if provided)
+    let formattedPhone = '';
+    if (formData.phone.trim()) {
+      formattedPhone = formatIndonesianPhone(formData.phone) || '';
+      if (!formattedPhone) {
+        setPhoneError('Invalid phone number format')
+        return
+      }
     }
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -143,6 +163,7 @@ export default function NonInvitedGuestCheckInModal({
 
     const matchedGuest = allGuests?.find((guest: Guest) => {
       const samePhone =
+        candidate.phone &&
         guest.phone &&
         guest.phone.replace(/\s+/g, '') === candidate.phone.replace(/\s+/g, '');
       const sameName =
@@ -218,7 +239,7 @@ export default function NonInvitedGuestCheckInModal({
           <form onSubmit={handleSubmit} className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium mb-2">Nama Tamu *</label>
+              <label className="block text-sm font-medium mb-2">Nama Tamu <span className="text-red-500">*</span></label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
@@ -235,7 +256,7 @@ export default function NonInvitedGuestCheckInModal({
             {/* Info */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium">Informasi *</label>
+                <label className="block text-sm font-medium">Informasi <span className="text-red-500">*</span></label>
               </div>
               <input
                 required
@@ -248,7 +269,7 @@ export default function NonInvitedGuestCheckInModal({
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium mb-2">No. WhatsApp *</label>
+              <label className="block text-sm font-medium mb-2">No. WhatsApp</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
@@ -258,7 +279,6 @@ export default function NonInvitedGuestCheckInModal({
                   className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors ${phoneError ? 'border-red-500' : 'border-border'
                     }`}
                   placeholder="Contoh: 08123456789"
-                  required
                 />
               </div>
               {phoneError && (
@@ -268,7 +288,7 @@ export default function NonInvitedGuestCheckInModal({
 
             {/* Guest Count */}
             <div>
-              <label className="block text-sm font-medium mb-2">Jumlah Tamu *</label>
+              <label className="block text-sm font-medium mb-2">Jumlah Tamu <span className="text-red-500">*</span></label>
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
@@ -283,9 +303,94 @@ export default function NonInvitedGuestCheckInModal({
               </div>
             </div>
 
+
+
+            {/* Souvenir */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Souvenir</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label="dec souvenir"
+                  onClick={() => handleInputChange('souvenir', Math.max(0, formData.souvenir - 1))}
+                  className="w-8 h-8 inline-flex items-center justify-center rounded-full bg-secondary text-text border border-border hover:bg-secondary/80 transition-colors text-lg font-semibold"
+                >
+                  –
+                </button>
+                <span className="text-sm font-semibold w-10 text-center">
+                  {formData.souvenir}
+                </span>
+                <button
+                  type="button"
+                  aria-label="inc souvenir"
+                  onClick={() => handleInputChange('souvenir', Math.min(99, formData.souvenir + 1))}
+                  className="w-8 h-8 inline-flex items-center justify-center rounded-full bg-primary text-white border border-border hover:bg-primary/90 transition-colors text-lg font-semibold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Kado */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Kado</label>
+              <select
+                value={formData.kado === 1 ? '1' : '0'}
+                onChange={(e) => handleInputChange('kado', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-primary text-sm outline-none transition-colors"
+              >
+                <option value="0">Tidak</option>
+                <option value="1">Ya</option>
+              </select>
+            </div>
+
+            {/* Angpao */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Angpao</label>
+              <select
+                value={formData.angpao === 1 ? '1' : '0'}
+                onChange={(e) => handleInputChange('angpao', parseInt(e.target.value))}
+                className="w-full px-3 py-2 border border-border rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-primary text-sm outline-none transition-colors"
+              >
+                <option value="0">Tidak</option>
+                <option value="1">Ya</option>
+              </select>
+            </div>
+
+            {/* Jumlah Kado */}
+            {formData.kado === 1 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Jumlah Kado</label>
+                <select
+                  value={formData.kadoCount}
+                  onChange={(e) => handleInputChange('kadoCount', parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-white focus:ring-2 focus:ring-primary focus:border-primary text-sm outline-none transition-colors"
+                  required
+                >
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Gift Note */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Catatan Hadiah</label>
+              <textarea
+                rows={3}
+                value={formData.giftNote}
+                onChange={(e) => handleInputChange('giftNote', e.target.value)}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-none transition-colors"
+                placeholder="Contoh: kotak warna kuning"
+              />
+            </div>
+
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium mb-3">Kategori Tamu</label>
+              <label className="block text-sm font-medium mb-3">Kategori Tamu <span className="text-red-500">*</span></label>
 
               <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
                 {categories.map((cat, index) => (

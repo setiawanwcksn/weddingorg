@@ -449,7 +449,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium mb-2">Nama Tamu *</label>
+                <label className="block text-sm font-medium mb-2">Nama Tamu <span className="text-red-500">*</span></label>
                 <input
                   required
                   value={addForm.name}
@@ -461,7 +461,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium">Informasi *</label>
+                  <label className="block text-sm font-medium">Informasi <span className="text-red-500">*</span></label>
                   <span className="text-xs text-primary">(Untuk bagan informasi dikasih limit)</span>
                 </div>
                 <input
@@ -474,9 +474,8 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">No. WhatsApp *</label>
+                <label className="block text-sm font-medium mb-2">No. WhatsApp</label>
                 <input
-                  required
                   value={addForm.whatsapp}
                   onChange={(e) => updateAdd('whatsapp', e.target.value)}
                   className="w-full rounded-lg border border-border px-4 py-3 text-base sm:text-sm outline-none focus:ring-2 focus:ring-primary focus:border-primary"
@@ -485,7 +484,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Jumlah Tamu *</label>
+                <label className="block text-sm font-medium mb-2">Jumlah Tamu <span className="text-red-500">*</span></label>
                 <input
                   required
                   value={addForm.count}
@@ -496,7 +495,7 @@ export function CheckInModal({ open, onClose, onSearch, onAddGuest, onAddNonInvi
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-3">Kategori Tamu *</label>
+                <label className="block text-sm font-medium mb-3">Kategori Tamu <span className="text-red-500">*</span></label>
 
                 <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
                   {categories.map((cat) => (

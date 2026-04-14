@@ -48,7 +48,7 @@ function errMsg(error: unknown): string {
 
 const guestSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  phone: z.string().min(1, 'Phone is required'),
+  phone: z.string().optional().default(''),
   category: z.string().optional(),
   categoryID: z.number().optional(),
   status: z.enum(['Pending', 'Confirmed', 'Declined', 'Checked-In']).optional().default('Pending'),
@@ -199,6 +199,7 @@ guestsApp.post(
       souvenir: z.number().min(0).optional(),
       category: z.string().optional(),
       categoryID: z.number().optional(),
+      checkin: z.boolean().optional(),
     }),
   ),
   async (c: Context<AppEnv>) => {
@@ -221,6 +222,7 @@ guestsApp.post(
         limit?: string;
         category?: string;
         categoryID: number;
+        checkin?: boolean;
       };
 
       const collection = db.collection('94884219_guests');
@@ -278,9 +280,12 @@ guestsApp.post(
       }
 
       if (
-        typeof data.souvenir !== 'number' &&
-        typeof data.angpao !== 'number' &&
-        typeof data.kado !== 'number'
+        data.checkin === true ||
+        (
+          typeof data.souvenir !== 'number' &&
+          typeof data.angpao !== 'number' &&
+          typeof data.kado !== 'number'
+        )
       ) {
         newGuest.status = 'Checked-In';
         newGuest.checkInDate = now;

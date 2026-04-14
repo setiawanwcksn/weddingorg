@@ -240,7 +240,7 @@ export const Souvenirs: React.FC = () => {
 
       const matchesSearch = searchTerm === '' ||
         guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        guest.phone.includes(searchTerm) ||
+        guest.phone?.includes(searchTerm) ||
         guest.code.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory = selectedCategory === 'All' || guest.category === selectedCategory;
@@ -311,10 +311,10 @@ export const Souvenirs: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col bg-accent/50">
       <div className="flex-1 flex flex-col">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 sm:pb-32 flex-1">
           <div className="space-y-4 md:space-y-6">
             {/* Top Actions bar */}
-            <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5 rounded-b-none">
+            <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-3 md:gap-4">
                   <button onClick={() => setIsQRScannerOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-background text-sm font-medium border border-border px-4 py-3 transition min-h-[48px] hover:opacity-90 active:scale-95" >
@@ -371,7 +371,7 @@ export const Souvenirs: React.FC = () => {
             </div>
 
             {/* Guest Table - Mobile Optimized */}
-            <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6  rounded-t-none" style={{ marginTop: '0px' }}>
+            <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
                   <span>Show</span>
@@ -395,12 +395,12 @@ export const Souvenirs: React.FC = () => {
                 </div>
               </div>
               {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[320px]">
                 <table className="w-full">
-                  <thead className="bg-accent">
+                  <thead className="bg-accent sticky top-0 z-10">
                     <tr>
-                      {visibleCols.no && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">No</th>}
-                      {visibleCols.name && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky left-0 bg-accent">Nama</th>}
+                      {visibleCols.no && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky left-0 z-20 bg-accent">No</th>}
+                      {visibleCols.name && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky z-20 bg-accent" style={{ left: visibleCols.no ? '40px' : '0px' }}>Nama</th>}
                       {visibleCols.kategori && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kategori</th>}
                       {visibleCols.informasi && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Informasi</th>}
                       {visibleCols.souvenir && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Jumlah Souvenir</th>}
@@ -414,10 +414,10 @@ export const Souvenirs: React.FC = () => {
                     {pageRows.map((guest, index) => {
                       const souvenirStatus = getSouvenirStatus(guest); return (
                         <tr key={guest._id} className="hover:bg-accent">
-                          {visibleCols.no && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text/70">
+                          {visibleCols.no && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-text/70 sticky left-0 z-[5] bg-white">
                             {(page - 1) * pageSize + index + 1}
                           </td>}
-                          {visibleCols.name && <td className="px-4 lg:px-6 py-4 whitespace-nowrap sticky left-0 bg-white z-10 hover:bg-accent">
+                          {visibleCols.name && <td className="px-4 lg:px-6 py-4 whitespace-nowrap sticky z-[5] bg-white" style={{ left: visibleCols.no ? '40px' : '0px' }}>
                             <div>
                               <div className="text-sm font-medium text-text">{guest.name}</div>
                             </div>
@@ -614,9 +614,11 @@ export const Souvenirs: React.FC = () => {
             />
           </div>
         </div>
-        {/* Bottom Navigation */}
-        <div className="mt-auto pt-6">
-          <BottomBar variant="inline" active="souvenir" onSelect={(key) => { switch (key) { case 'home': navigate('/dashboard'); break; case 'checkin': navigate('/reception'); break; case 'gift': navigate('/gifts'); break; case 'doorprize': navigate('/doorprize'); break; } }} />
+        {/* Bottom navigation - sticky at the main content bottom */}
+        <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
+          <div className="pointer-events-auto">
+            <BottomBar variant="inline" active="souvenir" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'gift': navigate('/gifts'); break; case 'doorprize': navigate('/doorprize'); break; } }} />
+          </div>
         </div>
       </div>
     </div>

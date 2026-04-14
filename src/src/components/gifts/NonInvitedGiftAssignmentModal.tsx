@@ -107,16 +107,23 @@ export default function NonInvitedGiftAssignmentModal({
     e.preventDefault()
     if (!formData.name.trim()) return
 
-    const phoneError = getPhoneValidationError(formData.phone)
-    if (phoneError) {
-      setPhoneError(phoneError)
-      return
+    // Validate phone number only if provided
+    if (formData.phone.trim()) {
+      const phoneError = getPhoneValidationError(formData.phone)
+      if (phoneError) {
+        setPhoneError(phoneError)
+        return
+      }
     }
 
-    const formattedPhone = formatIndonesianPhone(formData.phone)
-    if (!formattedPhone) {
-      setPhoneError('Invalid phone number format')
-      return
+    // Format phone number before saving (only if provided)
+    let formattedPhone = '';
+    if (formData.phone.trim()) {
+      formattedPhone = formatIndonesianPhone(formData.phone) || '';
+      if (!formattedPhone) {
+        setPhoneError('Invalid phone number format')
+        return
+      }
     }
 
     if (formData.kado === 0 && formData.angpao === 0) {
@@ -142,6 +149,7 @@ export default function NonInvitedGiftAssignmentModal({
     // 🔍 cari guest existing
     const matchedGuest = allGuests?.find((guest: Guest) => {
       const samePhone =
+        candidate.phone &&
         guest.phone &&
         guest.phone.replace(/\s+/g, '') === candidate.phone.replace(/\s+/g, '');
       const sameName =
@@ -248,7 +256,7 @@ export default function NonInvitedGiftAssignmentModal({
             <form onSubmit={handleSubmit} className="p-4 space-y-3 text-sm">
               {/* Nama */}
               <div>
-                <label className="block font-medium mb-1">Nama Tamu *</label>
+                <label className="block font-medium mb-1">Nama Tamu <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
                   <input
@@ -264,7 +272,7 @@ export default function NonInvitedGiftAssignmentModal({
 
               {/* Informasi */}
               <div>
-                <label className="block font-medium mb-1">Informasi *</label>
+                <label className="block font-medium mb-1">Informasi <span className="text-red-500">*</span></label>
                 <input
                   required
                   value={formData.info}
@@ -276,7 +284,7 @@ export default function NonInvitedGiftAssignmentModal({
 
               {/* WhatsApp */}
               <div>
-                <label className="block font-medium mb-1">No. WhatsApp *</label>
+                <label className="block font-medium mb-1">No. WhatsApp</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
                   <input
@@ -286,7 +294,6 @@ export default function NonInvitedGiftAssignmentModal({
                     className={`w-full pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none ${phoneError ? 'border-red-500' : 'border-border'
                       }`}
                     placeholder="Contoh: 08123456789"
-                    required
                   />
                 </div>
                 {phoneError && (
@@ -296,7 +303,7 @@ export default function NonInvitedGiftAssignmentModal({
 
               {/* Kado & Angpao */}
               <div>
-                <label className="block font-medium mb-1">Kado *</label>
+                <label className="block font-medium mb-1">Kado </label>
                 <select
                   value={formData.kado === 1 ? '1' : '0'}
                   onChange={(e) => handleInputChange('kado', parseInt(e.target.value))}
@@ -309,7 +316,7 @@ export default function NonInvitedGiftAssignmentModal({
               </div>
 
               <div>
-                <label className="block font-medium mb-1">Angpao *</label>
+                <label className="block font-medium mb-1">Angpao </label>
                 <select
                   value={formData.angpao === 1 ? '1' : '0'}
                   onChange={(e) => handleInputChange('angpao', parseInt(e.target.value))}
@@ -323,7 +330,7 @@ export default function NonInvitedGiftAssignmentModal({
 
               {/* Jumlah Kado */}
               <div>
-                <label className="block font-medium mb-1">Jumlah Kado *</label>
+                <label className="block font-medium mb-1">Jumlah Kado </label>
                 <select
                   value={formData.kadoCount}
                   onChange={(e) => handleInputChange('kadoCount', parseInt(e.target.value))}
@@ -352,7 +359,7 @@ export default function NonInvitedGiftAssignmentModal({
 
               {/* Kategori */}
               <div>
-                <label className="block font-medium mb-1">Kategori Tamu</label>
+                <label className="block font-medium mb-1">Kategori Tamu <span className="text-red-500">*</span></label>
                 <div className="flex items-center gap-4">
                   {categories.map((cat) => (
                     <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">

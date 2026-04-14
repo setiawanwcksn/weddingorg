@@ -10,11 +10,10 @@ export interface ExcelRow {
 export interface ParsedGuestData {
   name: string;
   phone: string;
-  email?: string;
   category: string;
   session: number;
   limit: number;
-  notes?: string;
+  info?: string;
   tableNo?: string;
   errors: string[];
   isValid: boolean;
@@ -60,7 +59,7 @@ export const formatIndonesianPhone = (phone: string): string => {
  */
 export const validateIndonesianPhone = (phone: string): { isValid: boolean; error?: string } => {
   if (!phone) {
-    return { isValid: false, error: 'Phone number is required' };
+    return { isValid: true };
   }
   
   const formatted = formatIndonesianPhone(phone);
@@ -86,22 +85,6 @@ export const validateIndonesianPhone = (phone: string): { isValid: boolean; erro
   return { isValid: true };
 };
 
-/**
- * Validate email address
- */
-export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
-  if (!email) {
-    return { isValid: true }; // Email is optional
-  }
-  
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
-  if (!emailRegex.test(email)) {
-    return { isValid: false, error: 'Invalid email format' };
-  }
-  
-  return { isValid: true };
-};
 
 /**
  * Parse and validate a single row of guest data
@@ -112,11 +95,10 @@ export const parseGuestRow = (row: ExcelRow, rowIndex: number): ParsedGuestData 
   // Extract and clean data
   const name = String(row.name || row.Name || row.Nama || '').trim();
   const phone = String(row.phone || row.Phone || row.WhatsApp || row['No HP'] || row['No. HP'] || '').trim();
-  const email = String(row.email || row.Email || row['E-mail'] || '').trim();
   const category = String(row.category || row.Category || row.Kategori).trim();
   const session = Number(row.session || row.Session || row.Sesi);
   const limit = Number(row.limit || row.Limit || row['Jumlah Tamu']);
-  const notes = String(row.notes || row.Notes || row.Keterangan || row.info || row.Info || '').trim();
+  const info = String(row.Information || row.information || row.info || row.Info || row.Keterangan || row.notes || row.Notes || '').trim();
   const tableNo = String(row.tableNo || row['Table No'] || row['No Meja'] || row.table || row.Table || '').trim();
   
   // Validate required fields
@@ -124,31 +106,21 @@ export const parseGuestRow = (row: ExcelRow, rowIndex: number): ParsedGuestData 
     errors.push('Name is required');
   }
   
-  if (!phone) {
-    errors.push('Phone number is required');
-  } else {
+  if (phone) {
     const phoneValidation = validateIndonesianPhone(phone);
     if (!phoneValidation.isValid) {
       errors.push(phoneValidation.error || 'Invalid phone number');
     }
   }
   
-  // Validate optional fields
-  if (email) {
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      errors.push(emailValidation.error || 'Invalid email');
-    }
-  }
   
   return {
     name,
     phone: phone ? formatIndonesianPhone(phone) : '',
-    email: email || undefined,
     category: category,
     session: session || undefined,
     limit: limit || undefined,
-    notes: notes || undefined,
+    info: info || undefined,
     tableNo: tableNo || undefined,
     errors,
     isValid: errors.length === 0
@@ -191,32 +163,29 @@ export const generateSampleExcelData = (): ExcelRow[] => {
     {
       Name: 'John Doe',
       Phone: '08123456789',
-      Email: 'john@example.com',
       Category: 'VIP',
       Session: 1,
       Limit: 2,
       'Table No': 'A1',
-      Notes: 'Vegetarian'
+      Information: 'Vegetarian'
     },
     {
       Name: 'Jane Smith',
       Phone: '08234567890',
-      Email: 'jane@example.com',
       Category: 'Regular',
       Session: 2,
       Limit: 1,
       'Table No': 'B2',
-      Notes: 'Allergic to seafood'
+      Information: 'Allergic to seafood'
     },
     {
       Name: 'Bob Johnson',
       Phone: '08345678901',
-      Email: '',
       Category: 'Regular',
       Session: 1,
       Limit: 3,
       'Table No': 'C3',
-      Notes: 'Family of 3'
+      Information: 'Family of 3'
     }
   ];
 };

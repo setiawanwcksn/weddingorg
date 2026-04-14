@@ -7,7 +7,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
-import { LayoutGrid, Menu, LogOut, User, Calendar, Moon } from 'lucide-react';
+import { LayoutGrid, Menu, LogOut, User, Calendar, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { saveWeddingToCalendar } from '../../utils/calendar';
 import { useState } from 'react';
@@ -26,6 +26,10 @@ export function AppLayout() {
   const parts = location.pathname.split('/').filter(Boolean);
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
   const [weddingData, setWeddingData] = useState<any>(null);
   const [account, setAccount] = useState<DashboardAccountInfo | null>(null);
   const [loadingWedding, setLoadingWedding] = useState(false);
@@ -133,8 +137,16 @@ export function AppLayout() {
     }
   }, [userMenuOpen]);
 
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebarCollapsed', String(next));
+      return next;
+    });
+  };
+
   return (
-    <div className="bg-accent text-text overflow-x-hidden min-h-screen flex flex-col">
+    <div className="bg-accent text-text overflow-x-clip min-h-screen flex flex-col">
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
@@ -161,9 +173,34 @@ export function AppLayout() {
           />
         )}
 
-        <Sidebar mobileMenuOpen={mobileMenuOpen} onMobileMenuClose={() => setMobileMenuOpen(false)} />
+        {/* Sidebar wrapper with border toggle */}
+        <div className="relative hidden md:flex shrink-0">
+          <Sidebar
+            mobileMenuOpen={mobileMenuOpen}
+            onMobileMenuClose={() => setMobileMenuOpen(false)}
+            isCollapsed={sidebarCollapsed}
+          />
+          {/* Floating toggle on the border */}
+          <button
+            onClick={handleToggleSidebar}
+            className="absolute top-6 -right-3 z-10 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-blue-600 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          </button>
+        </div>
 
-        <main className="flex-1 min-w-0 overflow-x-hidden flex flex-col">
+        {/* Mobile Sidebar (rendered separately, not inside the hidden md:flex wrapper) */}
+        <div className="md:hidden">
+          <Sidebar
+            mobileMenuOpen={mobileMenuOpen}
+            onMobileMenuClose={() => setMobileMenuOpen(false)}
+            isCollapsed={false}
+          />
+        </div>
+
+        <main className="flex-1 min-w-0 overflow-x-clip flex flex-col">
           <div className="flex items-center justify-between mt-2 md:mt-2 px-4 sm:px-6 md:px-8">
             <nav className="text-sm text-text/70 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
               <Link to="/Homepage" className="hover:underline whitespace-nowrap transition-colors">Dashboard</Link>

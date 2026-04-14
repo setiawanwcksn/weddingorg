@@ -319,7 +319,7 @@ export function GuestDetailModal({
                   <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">
                     <span className="text-[13px] sm:text-sm">Sesi Tamu</span>
                     <span className="text-[13px] sm:text-sm text-text truncate max-w-[60%] text-right">
-                      {guestDetails?.session || guestDetails?.notes || '-'}
+                      {guestDetails?.session || '-'}
                     </span>
                   </li>
                   <li className="flex items-center justify-between px-4 py-2.5 sm:py-3">

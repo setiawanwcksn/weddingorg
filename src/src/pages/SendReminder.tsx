@@ -327,7 +327,7 @@ const SendReminder: React.FC = () => {
             {/* Header tiles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-7">
               <button
-                onClick={() => navigate('/guests')}
+                onClick={() => navigate('/Guest Management')}
                 className="rounded-lg sm:rounded-xl border border-border bg-secondary p-4 sm:p-5 flex items-center gap-2 sm:gap-3 shadow-sm hover:bg-accent transition-colors bg-secondary justify-center"
               >
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-secondary flex items-center justify-center shadow-sm">

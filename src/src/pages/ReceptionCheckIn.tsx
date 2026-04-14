@@ -133,7 +133,12 @@ export function ReceptionCheckIn(): JSX.Element {
           info: data.info,
           guestCount: data.guestCount,
           category: data.category,
-          invitationCode: data.invitationCode
+          invitationCode: data.invitationCode,
+          checkin: true,
+          ...(data.kado === 1 ? { kado: data.kadoCount || 1 } : {}),
+          ...(data.angpao === 1 ? { angpao: 1 } : {}),
+          ...(data.giftNote ? { giftNote: data.giftNote } : {}),
+          ...(data.souvenir > 0 ? { souvenir: data.souvenir } : {}),
         })
       });
 
@@ -223,26 +228,21 @@ export function ReceptionCheckIn(): JSX.Element {
     };
   }, [allGuests]);
 
-  // Calculate stats based on ALL guests (not just checked-in)
+  // Calculate stats based on checked-in guests only
   const allGuestStats = React.useMemo(() => {
     const allGuestList = allGuests || [];
-    // const regularCount = allGuestList.filter((g: any) => g.category === 'Regular').length;
-    const regularCount = allGuestList.filter((g: any) =>
+    const checkedInGuests = allGuestList.filter((g: any) => !!g.checkInDate);
+
+    const regularCount = checkedInGuests.filter((g: any) =>
       (g.category || '').toLowerCase().trim().includes('reguler')
-    ).length
-    // const vipCount = allGuestList.filter((g: any) => g.category === 'VIP').length;
-    const vipCount = allGuestList.filter((g: any) =>
+    ).length;
+    const vipCount = checkedInGuests.filter((g: any) =>
       (g.category || '').toLowerCase().trim().includes('vip')
-    ).length
+    ).length;
 
-    const nonInvitedCount = allGuestList.filter((g: any) => g.isInvited === false).length;
-    const checkedInCount = allGuestList.filter((g: any) => !!g.checkInDate).length;
-    const totalWithPlusOne = allGuestList.reduce((sum: number, g: any) => {
-      const guestCount = g.guestCount || 1;
-      return sum + guestCount;
-    }, 0);
-    const totalGuestCount = allGuestList?.filter((g: any) => !!g.checkInDate)?.reduce((sum, g) => sum + (g.guestCount || 0), 0) || 0;
-
+    const nonInvitedCount = checkedInGuests.filter((g: any) => g.isInvited === false).length;
+    const checkedInCount = checkedInGuests.length;
+    const totalGuestCount = checkedInGuests.reduce((sum: number, g: any) => sum + (g.guestCount || 0), 0);
 
     return {
       total: allGuestList.length,
@@ -250,7 +250,6 @@ export function ReceptionCheckIn(): JSX.Element {
       regular: regularCount,
       vip: vipCount,
       nonInvited: nonInvitedCount,
-      totalWithPlusOne,
       totalGuestCount
     };
   }, [allGuests]);
@@ -381,7 +380,7 @@ export function ReceptionCheckIn(): JSX.Element {
   return (
     <div className="flex-1 flex flex-col bg-accent/50">
       <div className="flex-1 flex flex-col">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 sm:pb-32 flex-1">
           <div className="space-y-4 sm:space-y-6">
             {/* Top grid: hero and statistics */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
@@ -514,12 +513,12 @@ export function ReceptionCheckIn(): JSX.Element {
                   </div>
                 </div>
               </div>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[320px]">
                 <table className="min-w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-accent text-text/70">
-                      {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No</th>}
-                      {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Nama</th>}
+                      {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky left-0 z-20 bg-accent">No</th>}
+                      {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky z-20 bg-accent" style={{ left: visibleCols.no ? '40px' : '0px' }}>Nama</th>}
                       {visibleCols.code && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kode</th>}
                       {visibleCols.category && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap hidden md:table-cell">Kategori</th>}
                       {visibleCols.info && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap hidden lg:table-cell">Informasi</th>}
@@ -535,8 +534,8 @@ export function ReceptionCheckIn(): JSX.Element {
                   <tbody className="divide-y divide-border">
                     {pageRows.map((r, idx) => (
                       <tr key={r.id} >
-                        {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{(page - 1) * pageSize + idx + 1}</td>}
-                        {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>}
+                        {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky left-0 z-[5] bg-background">{(page - 1) * pageSize + idx + 1}</td>}
+                        {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky z-[5] bg-background" style={{ left: visibleCols.no ? '40px' : '0px' }}>{r.name}</td>}
                         {visibleCols.code && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>}
                         {visibleCols.category && (
                           <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap hidden md:table-cell">
@@ -755,19 +754,21 @@ export function ReceptionCheckIn(): JSX.Element {
           <ConfirmModal open={confirmOpen} title="Hapus Check-in Data Tamu" message="Apakah kamu yakin ingin menghapus data check-in untuk tamu ini?" onConfirm={confirmDeleteCheckin} onCancel={() => setConfirmOpen(false)} />
         </div>
       </div>
-      {/* Bottom navigation - inline at the page bottom */}
-      <div className="mt-auto pt-6">
-        <BottomBar
-          variant="inline"
-          active="checkin"
-          onSelect={(key) => {
-            if (key === 'home') navigate('/dashboard');
-            else if (key === 'souvenir') navigate('/souvenirs');
-            else if (key === 'gift') navigate('/gifts');
-            else if (key === 'doorprize') navigate('/doorprize');
-            else if (key === 'checkin') setCheckInOpen(true);
-          }}
-        />
+      {/* Bottom navigation - sticky at the main content bottom */}
+      <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
+        <div className="pointer-events-auto">
+          <BottomBar
+            variant="inline"
+            active="checkin"
+            onSelect={(key) => {
+              if (key === 'home') navigate('/Guestbook');
+              else if (key === 'souvenir') navigate('/souvenirs');
+              else if (key === 'gift') navigate('/gifts');
+              else if (key === 'doorprize') navigate('/doorprize');
+              else if (key === 'checkin') setCheckInOpen(true);
+            }}
+          />
+        </div>
       </div>
     </div>
   );

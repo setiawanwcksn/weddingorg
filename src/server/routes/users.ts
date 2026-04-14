@@ -205,7 +205,7 @@ usersApp.post('/', requireAdmin, async (c) => {
       location: '',
       welcomeText: 'Selamat Datang ',
       youtubeUrl: '',
-      guestCategories: ["Tamu VIP", "Tamu Reguler"],
+      guestCategories: ["Reguler", "VIP"],
       createdAt: new Date(),
       updatedAt: new Date(),
     }

@@ -19,7 +19,6 @@ export interface EditGuestFormData {
   tableNo: string;
   category: string;
   categoryID: number;
-  email?: string;
   guestCount?: number;
 }
 
@@ -40,7 +39,6 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
     tableNo: '',
     category: '',
     categoryID: 0,
-    email: '',
     guestCount: 1,
   });
 
@@ -87,22 +85,27 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
 
     if (isSubmitting || !guest) return;
 
-    // Validate phone number
-    const phoneError = getPhoneValidationError(form.phone);
-    if (phoneError) {
-      setPhoneError(phoneError);
-      return;
+    // Validate phone number only if provided
+    if (form.phone.trim()) {
+      const phoneError = getPhoneValidationError(form.phone);
+      if (phoneError) {
+        setPhoneError(phoneError);
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     try {
-      // Format phone number before saving
-      const formattedPhone = formatIndonesianPhone(form.phone);
-      if (!formattedPhone) {
-        setPhoneError('Invalid phone number format');
-        setIsSubmitting(false);
-        return;
+      // Format phone number before saving (only if provided)
+      let formattedPhone = '';
+      if (form.phone.trim()) {
+        formattedPhone = formatIndonesianPhone(form.phone) || '';
+        if (!formattedPhone) {
+          setPhoneError('Invalid phone number format');
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       onSave({
@@ -142,7 +145,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
           <form onSubmit={submit} className="p-4 space-y-3 text-sm">
             {/* Nama */}
             <div>
-              <label className="block font-medium mb-1">Nama Tamu *</label>
+              <label className="block font-medium mb-1">Nama Tamu <span className="text-red-500">*</span></label>
               <input
                 required
                 value={form.name}
@@ -154,9 +157,8 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
 
             {/* WhatsApp */}
             <div>
-              <label className="block font-medium mb-1">No. WhatsApp *</label>
+              <label className="block font-medium mb-1">No. WhatsApp</label>
               <input
-                required
                 value={form.phone}
                 onChange={(e) => update('phone', e.target.value)}
                 className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary ${phoneError ? 'border-red-500' : 'border-border'
@@ -172,7 +174,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
             {/* Informasi */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block font-medium">Informasi *</label>
+                <label className="block font-medium">Informasi <span className="text-red-500">*</span></label>
                 <span className="text-xs text-text/60">{form.info.length}/{infoMax}</span>
               </div>
               <input
@@ -187,7 +189,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
 
             {/* Sesi / Limit / Meja */}
             <div>
-              <label className="block font-medium mb-1">Sesi Tamu *</label>
+              <label className="block font-medium mb-1">Sesi Tamu <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={form.session}
@@ -197,7 +199,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Limit Tamu *</label>
+              <label className="block font-medium mb-1">Limit Tamu <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={form.limit}
@@ -207,7 +209,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Nomor Meja *</label>
+              <label className="block font-medium mb-1">Nomor Meja <span className="text-red-500">*</span></label>
               <input
                 value={form.tableNo}
                 onChange={(e) => update('tableNo', e.target.value)}
@@ -218,7 +220,7 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
 
             {/* Kategori */}
             <div>
-              <label className="block font-medium mb-2">Kategori Tamu *</label>
+              <label className="block font-medium mb-2">Kategori Tamu <span className="text-red-500">*</span></label>
               <div className="flex gap-4">
                 {categories.map((opt, index) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">

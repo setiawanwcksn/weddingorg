@@ -111,16 +111,11 @@ const ManageGuests: React.FC = () => {
   };
 
   const onDownloadQr = async () => {
-    const r = await fetch('/api/whatsapp/qrcode'); // sesuaikan endpoint
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'qr.png'; a.click();
-    URL.revokeObjectURL(url);
+    setToast({ message: 'coming soon...', type: 'success' });
   };
 
   const onBlast = async () => {
-    console.log('blast…');
+    setToast({ message: 'coming soon...', type: 'success' });
   };
 
   const { guests, allGuests, loading, error, refresh, setGuests } = useGuests();
@@ -221,7 +216,6 @@ const ManageGuests: React.FC = () => {
       const mappedData = {
         name: guestData.name,
         phone: guestData.phone,
-        email: guestData.email || '',
         category: guestData.category,
         categoryID: guestData.categoryID,
         status: 'Pending',
@@ -355,8 +349,13 @@ const ManageGuests: React.FC = () => {
         throw new Error(responseData.error || 'Failed to update guest status');
       }
 
+      let newMessage = newStatus
+      if (newStatus == "Confirmed") {
+        newMessage = "Sent"
+      }
+
       console.log(`[handleStatusChange] Status update successful!`);
-      setToast({ message: `Guest status updated to ${newStatus}`, type: 'success' });
+      setToast({ message: `Guest status updated to ${newMessage}`, type: 'success' });
       // Refresh to ensure data consistency
       await refresh();
     } catch (error: any) {
@@ -550,11 +549,6 @@ const ManageGuests: React.FC = () => {
       console.log(`[handleWhatsAppSend] Starting WhatsApp send for guest: ${guest.name} (${guest._id})`);
       console.log(`[handleWhatsAppSend] Guest introTextCategory: ${guest.introTextCategory}`);
       console.log(`[handleWhatsAppSend] Guest phone: ${guest.phone}`);
-
-      if (!guest.phone) {
-        setToast({ message: 'Guest phone number is required', type: 'error' });
-        return;
-      }
 
       if (!guest.introTextCategory) {
         setToast({ message: 'Please select an intro text category first', type: 'error' });
@@ -824,12 +818,12 @@ const ManageGuests: React.FC = () => {
               </form>
             </div>
             <div ref={scrollRef} className={`overflow-x-auto w-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} style={{ touchAction: 'pan-x', WebkitOverflowScrolling: 'touch' }}>
-              <div className="w-full overflow-x-auto">
+              <div className="w-full overflow-x-auto overflow-y-auto max-h-[320px]">
                 <table className="table-auto w-full min-w-[1200px] text-left">
-                  <thead>
+                  <thead className="sticky top-0 z-20">
                     <tr className="bg-gray-50">
-                      {visibleCols.no && <th className="px-4 py-3 text-xs font-medium text-text/70">No</th>}
-                      {visibleCols.name && <th className="px-4 py-3 text-xs font-medium text-text/70 sticky bg-gray-50 left-0">Nama</th>}
+                      {visibleCols.no && <th className="px-4 py-3 text-xs font-medium text-text/70 sticky left-0 z-20 bg-gray-50">No</th>}
+                      {visibleCols.name && <th className="px-4 py-3 text-xs font-medium text-text/70 sticky z-20 bg-gray-50" style={{ left: visibleCols.no ? '40px' : '0px' }}>Nama</th>}
                       {visibleCols.phone && <th className="px-4 py-3 text-xs font-medium text-text/70">WhatsApp</th>}
                       {visibleCols.kode && <th className="px-4 py-3 text-xs font-medium text-text/70">Kode</th>}
                       {visibleCols.kategori && <th className="px-4 py-3 text-xs font-medium text-text/70">Kategori</th>}
@@ -852,8 +846,8 @@ const ManageGuests: React.FC = () => {
                   <tbody className="divide-y divide-border">
                     {pageRows.map((guest: any, index: number) => (
                       <tr key={guest._id} className="hover:bg-accent/50 transition-colors">
-                        {visibleCols.no && <td className="px-4 py-4 text-sm whitespace-nowrap">{(page - 1) * pageSize + index + 1}</td>}
-                        {visibleCols.name && <td className="px-4 py-4 text-sm whitespace-nowrap sticky left-0 bg-white z-10">{guest.name}</td>}
+                        {visibleCols.no && <td className="px-4 py-4 text-sm whitespace-nowrap sticky left-0 bg-white z-10">{(page - 1) * pageSize + index + 1}</td>}
+                        {visibleCols.name && <td className="px-4 py-4 text-sm whitespace-nowrap sticky bg-white z-10" style={{ left: visibleCols.no ? '40px' : '0px' }}>{guest.name}</td>}
                         {visibleCols.phone && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.phone || '-'}</td>}
                         {visibleCols.kode && <td className="px-4 py-4 text-sm whitespace-nowrap text-primary">{guest.code || '-'}</td>}
                         {visibleCols.kategori && <td className="px-4 py-4 text-sm whitespace-nowrap">{guest.category || '-'}</td>}
@@ -946,7 +940,10 @@ const ManageGuests: React.FC = () => {
                               title={guest.status === 'Confirmed' ? 'Terkirim' : guest.status === 'scheduled' ? 'Terjadwal' : 'Belum'}
                             />
                             {guest.status === 'scheduled' && (
-                              <span className="text-xs text-gray-600 font-medium">Terjadwal</span>
+                              <span className="text-xs text-gray-600 font-medium">Scheduled</span>
+                            )}
+                            {guest.status === 'Confirmed' && (
+                              <span className="text-xs text-gray-600 font-medium">Sent</span>
                             )}
                           </div>
                         </td>}

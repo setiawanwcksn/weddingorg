@@ -15,11 +15,11 @@ type CtxUser = { id: string; accountId?: string; username?: string; role?: strin
 // Guest data validation schema
 const guestImportSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  phone: z.string().min(1, 'Phone number is required'),
+  phone: z.string().optional(),
   category: z.string().optional(),
   session: z.coerce.string().optional(),
   limit: z.coerce.string().optional(),
-  notes: z.string().optional(),
+  info: z.string().optional(),
   tableNo: z.coerce.string().optional(),
 })
 
@@ -109,11 +109,11 @@ bulkImportApp.post(
           const rowIndex = i + j + 1
 
           try {
-            // Format phone number
-            const formattedPhone = formatIndonesianPhone(guest.phone)
+            // Format phone number (only if provided)
+            const formattedPhone = guest.phone ? formatIndonesianPhone(guest.phone) : ''
 
-            // Validate phone number
-            if (!formattedPhone.startsWith('62')) {
+            // Validate phone number only if provided
+            if (formattedPhone && !formattedPhone.startsWith('62')) {
               throw new Error('Phone number must be formatted to Indonesian format (62...)')
             }
 
@@ -133,7 +133,7 @@ bulkImportApp.post(
               category: guest.category,
               session: guest.session,
               limit: guest.limit,
-              notes: guest.notes || '',
+              info: guest.info || '',
               tableNo: guest.tableNo || '',
               code: invitationCode,
               status: 'Pending' as const,

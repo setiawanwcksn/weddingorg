@@ -116,7 +116,7 @@ export const Gifts: React.FC = () => {
 
       const matchesSearch = searchTerm === '' ||
         guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        guest.phone.includes(searchTerm) ||
+        guest.phone?.includes(searchTerm) ||
         guest.code.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory = selectedCategory === 'All' || guest.category === selectedCategory;
@@ -291,7 +291,7 @@ export const Gifts: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col bg-accent/50">
       <div className="flex-1 flex flex-col">
-        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex-1">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 pb-28 sm:pb-32 flex-1">
           <div className="space-y-3 sm:space-y-4 md:space-y-6">
             {/* Top Actions bar */}
             <div className="bg-white rounded-xl border border-border shadow-sm p-4 sm:p-5">
@@ -383,12 +383,12 @@ export const Gifts: React.FC = () => {
                 </div>
               </div>
               {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[320px]">
                 <table className="w-full">
-                  <thead className="bg-accent">
+                  <thead className="bg-accent sticky top-0 z-10">
                     <tr>
-                      {visibleCols.no && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">No</th>}
-                      {visibleCols.name && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Nama</th>}
+                      {visibleCols.no && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky left-0 z-20 bg-accent">No</th>}
+                      {visibleCols.name && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider sticky z-20 bg-accent" style={{ left: visibleCols.no ? '40px' : '0px' }}>Nama</th>}
                       {visibleCols.kode && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kode</th>}
                       {visibleCols.kategori && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Kategori</th>}
                       {visibleCols.info && <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-text/70 uppercase tracking-wider">Informasi</th>}
@@ -405,8 +405,8 @@ export const Gifts: React.FC = () => {
                     {/* Guest gift givers */}
                     {pageRows.map((guest, index) => (
                       <tr key={guest._id} className="hover:bg-accent">
-                        {visibleCols.no && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-text">{(page - 1) * pageSize + index + 1}</td>}
-                        {visibleCols.name && <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        {visibleCols.no && <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm font-medium text-text sticky left-0 z-[5] bg-white">{(page - 1) * pageSize + index + 1}</td>}
+                        {visibleCols.name && <td className="px-4 lg:px-6 py-4 whitespace-nowrap sticky z-[5] bg-white" style={{ left: visibleCols.no ? '40px' : '0px' }}>
                           <div>
                             <div className="text-sm font-medium text-text">{guest.name}</div>
                           </div>
@@ -516,7 +516,7 @@ export const Gifts: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-text/70">
                           <span className="font-medium">Phone:</span>
-                          <span>{guest.phone}</span>
+                          <span>{guest.phone || '-'}</span>
                         </div>
                         {guest.info && (
                           <div className="flex items-center gap-2 text-xs text-text/70">
@@ -639,9 +639,11 @@ export const Gifts: React.FC = () => {
             />
           </div>
         </div>
-        {/* Bottom Navigation - Fixed at bottom without floating */}
-        <div className="mt-auto pt-6">
-          <BottomBar variant="inline" active="gift" onSelect={(key) => { switch (key) { case 'home': navigate('/dashboard'); break; case 'checkin': navigate('/reception'); break; case 'souvenir': navigate('/souvenirs'); break; case 'doorprize': navigate('/doorprize'); break; } }} />
+        {/* Bottom navigation - sticky at the main content bottom */}
+        <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
+          <div className="pointer-events-auto">
+            <BottomBar variant="inline" active="gift" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'souvenir': navigate('/souvenirs'); break; case 'doorprize': navigate('/doorprize'); break; } }} />
+          </div>
         </div>
       </div>
     </div>

@@ -194,10 +194,10 @@ export function Doorprize(): JSX.Element {
   return (
     <div className="flex-1 flex flex-col bg-accent/50">
       <div className="flex-1 flex flex-col">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 sm:pb-32 flex-1">
           <div className="space-y-4 md:space-y-6">
             {/* Top Actions bar */}
-            <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5 rounded-b-none">
+            <div className="bg-white rounded-xl border border-border shadow-sm p-3 md:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <ActionButton icon={<UserPlus className="w-4 h-4" />}>Tambah Peserta</ActionButton>
@@ -241,7 +241,7 @@ export function Doorprize(): JSX.Element {
             </div>
 
             {/* Table controls */}
-            <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6 rounded-t-none" style={{ marginTop: '0px' }}>
+            <div className="rounded-xl border border-border bg-white overflow-hidden shadow-sm px-4 sm:px-6 lg:px-8 py-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 text-sm mb-6">
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-text/70">
                   <span>Show</span>
@@ -286,12 +286,12 @@ export function Doorprize(): JSX.Element {
                   <div>{manualError}</div>
                 </div>
               )} {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[320px]">
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="bg-accent text-text/70">
-                      {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">No</th>}
-                      {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Nama</th>}
+                      {visibleCols.no && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky left-0 z-20 bg-accent">No</th>}
+                      {visibleCols.name && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky z-20 bg-accent" style={{ left: visibleCols.no ? '40px' : '0px' }}>Nama</th>}
                       {visibleCols.kode && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kode</th>}
                       {visibleCols.kategori && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Kategori</th>}
                       {visibleCols.inf && <th className="text-left font-medium px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">Informasi</th>}
@@ -318,8 +318,8 @@ export function Doorprize(): JSX.Element {
                       </tr>
                     ) : (pageRows.map((r, idx) => (
                       <tr key={idx}>
-                        {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.no}</td>}
-                        {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">{r.name}</td>}
+                        {visibleCols.no && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky left-0 z-[5] bg-white">{r.no}</td>}
+                        {visibleCols.name && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap sticky z-[5] bg-white" style={{ left: visibleCols.no ? '40px' : '0px' }}>{r.name}</td>}
                         {visibleCols.kode && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap text-primary font-medium">{r.code}</td>}
                         {visibleCols.kategori && <td className="px-2 sm:px-3 py-2 sm:py-3 whitespace-nowrap">
                           <InfoPill>{r.category}</InfoPill>
@@ -426,9 +426,11 @@ export function Doorprize(): JSX.Element {
               <Toast message={toast.message} type={toast.type} onClose={() => setToast({ show: false, message: '', type: 'success' })} duration={4000} />)}
           </div>
         </div>
-        {/* Bottom Navigation - Fixed at bottom without floating */}
-        <div className="mt-auto pt-6">
-          <BottomBar variant="inline" active="doorprize" onSelect={(key) => { switch (key) { case 'home': navigate('/dashboard'); break; case 'checkin': navigate('/reception'); break; case 'souvenir': navigate('/souvenirs'); break; case 'gift': navigate('/gifts'); break; } }} />
+        {/* Bottom navigation - sticky at the main content bottom */}
+        <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
+          <div className="pointer-events-auto">
+            <BottomBar variant="inline" active="doorprize" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'souvenir': navigate('/souvenirs'); break; case 'gift': navigate('/gifts'); break; } }} />
+          </div>
         </div>
       </div>
     </div>

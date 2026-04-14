@@ -72,7 +72,7 @@ export function isValidIndonesianPhone(phone: string): boolean {
  */
 export function getPhoneValidationError(phone: string): string | null {
   if (!phone.trim()) {
-    return 'Phone number is required';
+    return null;
   }
   
   const formatted = formatIndonesianPhone(phone);

@@ -110,8 +110,8 @@ const Dashboard: React.FC = () => {
   const location = account?.location ?? '';
 
   const displayStats = [
-    { label: 'Total Tamu', value: sharedStats.total, help: 'Jumlah total tamu termasuk tamu tambahan.' },
-    { label: 'Tamu Undangan', value: sharedStats.invitedGuests, help: 'Jumlah tamu yang diundang.' },
+    { label: 'Total Tamu', value: sharedStats.invitedGuests, help: 'Jumlah total tamu tidak termasuk tamu tambahan.' },
+    { label: 'Tamu Reguler', value: sharedStats.regular, help: 'Jumlah tamu dengan kategori Reguler.' },
     { label: 'Tamu VIP', value: sharedStats.vip, help: 'Jumlah tamu dengan kategori VIP.' },
     { label: 'Tamu Tambahan', value: sharedStats.tamuTambahan, help: 'Jumlah tamu tambahan diluar undangan resmi.' },
   ];
@@ -132,8 +132,8 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Card Data Tamu (stretch) */}
-          <div className="rounded-xl overflow-hidden border border-border/60 bg-white shadow-sm h-full flex flex-col">
-            <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base flex items-center gap-2">
+          <div className="rounded-xl overflow-visible border border-border/60 bg-white shadow-sm h-full flex flex-col">
+            <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base flex items-center gap-2 rounded-t-xl">
               <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
                 style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
               Data Tamu

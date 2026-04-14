@@ -133,11 +133,13 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
     if (isSubmitting) return;
 
-    // Validate phone number
-    const phoneError = getPhoneValidationError(form.phone);
-    if (phoneError) {
-      setPhoneError(phoneError);
-      return;
+    // Validate phone number only if provided
+    if (form.phone.trim()) {
+      const phoneError = getPhoneValidationError(form.phone);
+      if (phoneError) {
+        setPhoneError(phoneError);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -150,12 +152,15 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
         return;
       }
 
-      // Format phone number before saving
-      const formattedPhone = formatIndonesianPhone(form.phone);
-      if (!formattedPhone) {
-        setPhoneError('Invalid phone number format');
-        setIsSubmitting(false);
-        return;
+      // Format phone number before saving (only if provided)
+      let formattedPhone = '';
+      if (form.phone.trim()) {
+        formattedPhone = formatIndonesianPhone(form.phone) || '';
+        if (!formattedPhone) {
+          setPhoneError('Invalid phone number format');
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       onSave({
@@ -199,7 +204,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
           >
             {/* Nama */}
             <div>
-              <label className="block font-medium mb-1">Nama Tamu *</label>
+              <label className="block font-medium mb-1">Nama Tamu <span className="text-red-500">*</span></label>
               <input
                 required
                 value={form.name}
@@ -215,7 +220,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
             {/* Info */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block font-medium">Informasi *</label>
+                <label className="block font-medium">Informasi <span className="text-red-500">*</span></label>
                 <span className="text-xs text-text/60">{form.info.length}/{infoMax}</span>
               </div>
               <input
@@ -230,9 +235,8 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
             {/* WhatsApp */}
             <div>
-              <label className="block font-medium mb-1">No. WhatsApp *</label>
+              <label className="block font-medium mb-1">No. WhatsApp</label>
               <input
-                required
                 value={form.phone}
                 onChange={(e) => update('phone', e.target.value)}
                 className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary ${phoneError ? 'border-red-500' : 'border-border'
@@ -244,7 +248,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
             {/* Sesi / Limit / Meja */}
             <div>
-              <label className="block font-medium mb-1">Sesi</label>
+              <label className="block font-medium mb-1">Sesi <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={form.session}
@@ -254,7 +258,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Limit</label>
+              <label className="block font-medium mb-1">Limit <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={form.limit}
@@ -264,7 +268,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Meja</label>
+              <label className="block font-medium mb-1">Meja <span className="text-red-500">*</span></label>
               <input
                 value={form.tableNo}
                 onChange={(e) => update('tableNo', e.target.value)}
@@ -275,7 +279,7 @@ export function AddGuestModal({ open, onClose, onSave }: AddGuestModalProps) {
 
             {/* Kategori */}
             <div>
-              <label className="block font-medium mb-2">Kategori</label>
+              <label className="block font-medium mb-2">Kategori <span className="text-red-500">*</span></label>
               <div className="flex gap-4">
                 {categories.map((opt, index) => (
                   <label key={opt} className="flex items-center gap-2 cursor-pointer">

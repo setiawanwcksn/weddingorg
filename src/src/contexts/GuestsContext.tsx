@@ -239,12 +239,9 @@ export const GuestsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const setGuests = (updater: (prev: GuestDoc[]) => GuestDoc[]) => {
-    // Update both invited and non-invited guests
+    // Update SWR cache optimistically (no revalidation) so UI reflects changes immediately
     const updatedGuests = updater(allGuests);
-    const invited = updatedGuests.filter(g => g.isInvited !== false);
-    const nonInvited = updatedGuests.filter(g => g.isInvited === false);
-
-    mutateGuests();
+    mutateGuests(updatedGuests, { revalidate: false });
   };
 
   const value: GuestsContextValue = {

@@ -108,18 +108,23 @@ export default function NonInvitedSouvenirAssignmentModal({
     e.preventDefault()
     if (!formData.name.trim()) return
 
-    // Validate phone number
-    const phoneError = getPhoneValidationError(formData.phone)
-    if (phoneError) {
-      setPhoneError(phoneError)
-      return
+    // Validate phone number only if provided
+    if (formData.phone.trim()) {
+      const phoneError = getPhoneValidationError(formData.phone)
+      if (phoneError) {
+        setPhoneError(phoneError)
+        return
+      }
     }
 
-    // Format phone number before saving
-    const formattedPhone = formatIndonesianPhone(formData.phone)
-    if (!formattedPhone) {
-      setPhoneError('Invalid phone number format')
-      return
+    // Format phone number before saving (only if provided)
+    let formattedPhone = '';
+    if (formData.phone.trim()) {
+      formattedPhone = formatIndonesianPhone(formData.phone) || '';
+      if (!formattedPhone) {
+        setPhoneError('Invalid phone number format')
+        return
+      }
     }
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -139,6 +144,7 @@ export default function NonInvitedSouvenirAssignmentModal({
 
     const matchedGuest = allGuests?.find((guest: Guest) => {
       const samePhone =
+        candidate.phone &&
         guest.phone &&
         guest.phone.replace(/\s+/g, '') === candidate.phone.replace(/\s+/g, '');
       const sameName =
@@ -212,7 +218,7 @@ export default function NonInvitedSouvenirAssignmentModal({
           <form onSubmit={handleSubmit} className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-5">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium mb-2">Nama Tamu *</label>
+              <label className="block text-sm font-medium mb-2">Nama Tamu <span className="text-red-500">*</span></label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
@@ -229,7 +235,7 @@ export default function NonInvitedSouvenirAssignmentModal({
             {/* Info */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium">Informasi *</label>
+                <label className="block text-sm font-medium">Informasi <span className="text-red-500">*</span></label>
               </div>
               <input
                 required
@@ -242,7 +248,7 @@ export default function NonInvitedSouvenirAssignmentModal({
 
             {/* Phone */}
             <div>
-              <label className="block text-sm font-medium mb-2">No. WhatsApp *</label>
+              <label className="block text-sm font-medium mb-2">No. WhatsApp</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
@@ -252,7 +258,6 @@ export default function NonInvitedSouvenirAssignmentModal({
                   className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-colors ${phoneError ? 'border-red-500' : 'border-border'
                     }`}
                   placeholder="Contoh: 08123456789"
-                  required
                 />
               </div>
               {phoneError && (
@@ -262,7 +267,7 @@ export default function NonInvitedSouvenirAssignmentModal({
 
             {/* Souvenir count */}
             <div>
-              <label className="block text-sm font-medium mb-2">Jumlah Souvenir *</label>
+              <label className="block text-sm font-medium mb-2">Jumlah Souvenir</label>
               <div className="relative">
                 <input
                   type="number"
@@ -278,7 +283,7 @@ export default function NonInvitedSouvenirAssignmentModal({
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium mb-3">Kategori Tamu</label>
+              <label className="block text-sm font-medium mb-3">Kategori Tamu <span className="text-red-500">*</span></label>
 
               <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 sm:gap-6">
                 {categories.map((cat) => (

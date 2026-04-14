@@ -142,7 +142,7 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ open, onClos
             category: guest.category,
             session: guest.session.toString(),
             limit: guest.limit.toString(),
-            notes: guest.notes || '',
+            info: guest.info || '',
             tableNo: guest.tableNo || ''
           })),
           generateInvitations: true
@@ -262,8 +262,8 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ open, onClos
                 <h3 className="font-medium mb-2 sm:mb-3 text-sm sm:text-base">File Requirements</h3>
                 <ul className="text-xs sm:text-sm text-text/70 space-y-1">
                   <li>• Supported formats: CSV, Excel (.xlsx, .xls)</li>
-                  <li>• Required columns: Name, Phone</li>
-                  <li>• Optional columns: Email, Category, Session, Limit, Table No, Notes</li>
+                  <li>• Required columns: Name</li>
+                  <li>• Optional columns: Phone, Category, Session, Limit, Table No, Information</li>
                   <li>• Phone numbers will be automatically formatted to Indonesian format (62...)</li>
                 </ul>
               </div>
@@ -338,7 +338,6 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ open, onClos
                       <tr>
                         <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left font-medium">Name</th>
                         <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left font-medium">Phone</th>
-                        <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left font-medium hidden sm:table-cell">Email</th>
                         <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left font-medium hidden md:table-cell">Category</th>
                         <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left font-medium hidden lg:table-cell">Session</th>
                         <th className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-left font-medium hidden lg:table-cell">Limit</th>
@@ -350,7 +349,6 @@ export const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ open, onClos
                         <tr key={index} className={guest.isValid ? '' : 'bg-red-50'}>
                           <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3">{guest.name}</td>
                           <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3">{guest.phone}</td>
-                          <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden sm:table-cell">{guest.email || '-'}</td>
                           <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden md:table-cell">{guest.category}</td>
                           <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden lg:table-cell">{guest.session}</td>
                           <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 hidden lg:table-cell">{guest.limit}</td>
