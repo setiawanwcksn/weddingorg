@@ -1,4 +1,7 @@
 // src/server/routes/whatsapp.ts
+import dns from 'node:dns'
+try { dns.setDefaultResultOrder('ipv4first') } catch (e) {}
+
 import { Hono, type Context } from 'hono'
 import { createNodeWebSocket } from '@hono/node-ws'
 import makeWASocket, {
@@ -146,7 +149,7 @@ async function ensureWA(userId: string) {
       qrTimeout: 180000, // 3 minutes timeout before throwing 408
       logger,
       getMessage: async () => undefined,
-      browser: Browsers.macOS('Google Chrome'),
+      browser: ['Ubuntu', 'Chrome', '20.0.04'],
       markOnlineOnConnect: false,
       syncFullHistory: false,
       generateHighQualityLinkPreview: false,
