@@ -125,7 +125,29 @@ export const WhatsAppConnectionModal: React.FC<WhatsAppConnectionModalProps> = (
     setQrString('')
     connectWs()
 
+    // Jelastic/VPS fallback: if WebSocket is buffered by proxy, poll HTTP endpoint
+    const pollInterval = setInterval(async () => {
+      try {
+        const url = getApiUrl('/api/whatsapp/status')
+        const res = await fetch(url, { headers: getAuthHeaders(user?.id) })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.status === 'connected') {
+             setConnectionStatus('connected')
+             onConnected?.()
+             setTimeout(() => onClose?.(), 1200)
+          } else if (data.status === 'qr' || data.hasQR) {
+             if (data.qr) setQrString(data.qr)
+             setConnectionStatus('qr_ready')
+          } else if (data.status === 'connecting') {
+             setConnectionStatus('connecting')
+          }
+        }
+      } catch (e) {}
+    }, 3000)
+
     return () => {
+      clearInterval(pollInterval)
       if (wsRef.current) {
         wsRef.current.close()
         wsRef.current = null

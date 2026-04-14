@@ -406,7 +406,7 @@ export default function whatsAppRoutes({ upgradeWebSocket }: { upgradeWebSocket:
     const user = requireUser(c)
     if (!user) return c.json({ ok: false, error: 'No token' }, 401)
     const sess = getSession(user.id)
-    return c.json({ ok: true, status: sess.status, ready: sess.ready, hasQR: !!sess.latestQR, error: sess.lastErr })
+    return c.json({ ok: true, status: sess.status, ready: sess.ready, hasQR: !!sess.latestQR, qr: sess.latestQR, error: sess.lastErr })
   })
 
   // Connect per user
