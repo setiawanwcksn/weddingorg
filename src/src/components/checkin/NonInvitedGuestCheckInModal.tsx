@@ -396,6 +396,7 @@ export default function NonInvitedGuestCheckInModal({
                 {categories.map((cat, index) => (
                   <label key={cat} className="flex items-center gap-3 text-base sm:text-sm cursor-pointer">
                     <input
+                      required
                       type="radio"
                       name="kategori"
                       value={cat}

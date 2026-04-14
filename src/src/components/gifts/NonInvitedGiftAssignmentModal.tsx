@@ -364,6 +364,7 @@ export default function NonInvitedGiftAssignmentModal({
                   {categories.map((cat) => (
                     <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
                       <input
+                        required
                         type="radio"
                         name="kategori"
                         value={cat}

@@ -32,7 +32,7 @@ export async function renderMessage(template: string, reminder: any): Promise<st
     const guestName = guest?.name ?? reminder.guestName ?? '[Nama Tamu]'
     const mempelaiRaw = account?.title?.trim?.() || account?.name?.trim?.() || '[Nama Mempelai]'
     const mempelai = mempelaiRaw
-    let linkUndangan = account?.linkUndangan.trim().replace(/\/+$/, '') || '';
+    let linkUndangan = account?.linkUndangan?.trim().replace(/\/+$/, '') || '';
 
     const params = new URLSearchParams();
 
