@@ -128,7 +128,15 @@ async function ensureWA(userId: string) {
     fs.mkdirSync(sess.authDir, { recursive: true })
 
     const { state, saveCreds } = await useMultiFileAuthState(sess.authDir)
-    const { version } = await fetchLatestBaileysVersion()
+    
+    // Fallback to avoid hanging on fetchLatestBaileysVersion for minutes due to IPv6/DNS issues
+    const { version } = await Promise.race([
+      fetchLatestBaileysVersion(),
+      new Promise<{version: any}>((resolve) => 
+        setTimeout(() => resolve({ version: [2, 3000, 1015901307] }), 3000)
+      )
+    ]).catch(() => ({ version: [2, 3000, 1015901307] as any }));
+    
     logger.info({ version, userId }, `[wa:${userId}] using WA Web version`)
 
     const sock = makeWASocket({
@@ -141,6 +149,8 @@ async function ensureWA(userId: string) {
       browser: Browsers.macOS('Google Chrome'),
       markOnlineOnConnect: false,
       syncFullHistory: false,
+      generateHighQualityLinkPreview: false,
+      shouldSyncHistoryMessage: () => false,
     })
     sess.sock = sock
 
