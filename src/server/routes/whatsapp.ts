@@ -135,6 +135,7 @@ async function ensureWA(userId: string) {
       version,
       auth: state,
       printQRInTerminal: process.env.NODE_ENV !== 'production',
+      qrTimeout: 180000, // 3 minutes timeout before throwing 408
       logger,
       getMessage: async () => undefined,
       browser: Browsers.macOS('Google Chrome'),
