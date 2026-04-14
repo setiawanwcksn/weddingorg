@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Card Data Tamu (stretch) */}
-          <div className="rounded-xl overflow-visible border border-border/60 bg-white shadow-sm h-full flex flex-col">
+          <div className="rounded-xl overflow-visible border border-border/60 bg-white shadow-sm h-full flex flex-col min-h-[300px]">
             <div className="bg-primary text-white px-5 py-4 font-semibold text-sm sm:text-base flex items-center gap-2 rounded-t-xl">
               <img src={stats} alt="Icon Data Tamu" className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
                 style={{ filter: 'brightness(0) saturate(100%) invert(1)' }} />
