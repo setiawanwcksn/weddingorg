@@ -11,10 +11,10 @@ export interface ParsedGuestData {
   name: string;
   phone: string;
   category: string;
-  session: number;
-  limit: number;
-  info?: string;
-  tableNo?: string;
+  session: string;
+  limit: string;
+  info: string;
+  tableNo: string;
   errors: string[];
   isValid: boolean;
 }
@@ -96,8 +96,8 @@ export const parseGuestRow = (row: ExcelRow, rowIndex: number): ParsedGuestData 
   const name = String(row.name || row.Name || row.Nama || '').trim();
   const phone = String(row.phone || row.Phone || row.WhatsApp || row['No HP'] || row['No. HP'] || '').trim();
   const category = String(row.category || row.Category || row.Kategori).trim();
-  const session = Number(row.session || row.Session || row.Sesi);
-  const limit = Number(row.limit || row.Limit || row['Jumlah Tamu']);
+  const session = String(row.session || row.Session || row.Sesi || '').trim();
+  const limit = String(row.limit || row.Limit || row['Jumlah Tamu'] || '').trim();
   const info = String(row.Information || row.information || row.info || row.Info || row.Keterangan || row.notes || row.Notes || '').trim();
   const tableNo = String(row.tableNo || row['Table No'] || row['No Meja'] || row.table || row.Table || '').trim();
   
@@ -118,10 +118,10 @@ export const parseGuestRow = (row: ExcelRow, rowIndex: number): ParsedGuestData 
     name,
     phone: phone ? formatIndonesianPhone(phone) : '',
     category: category,
-    session: session || undefined,
-    limit: limit || undefined,
-    info: info || undefined,
-    tableNo: tableNo || undefined,
+    session,
+    limit,
+    info,
+    tableNo,
     errors,
     isValid: errors.length === 0
   };

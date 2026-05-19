@@ -615,11 +615,13 @@ export const Souvenirs: React.FC = () => {
           </div>
         </div>
         {/* Bottom navigation - sticky at the main content bottom */}
-        <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
-          <div className="pointer-events-auto">
-            <BottomBar variant="inline" active="souvenir" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'gift': navigate('/gifts'); break; case 'doorprize': navigate('/doorprize'); break; } }} />
+        {!isAssignmentModalOpen && !isAddGuestOpen && !isQRScannerOpen && !isSearchModalOpen && !filterOpen && !infoOpen && !confirmOpen && (
+          <div className="sticky bottom-4 sm:bottom-6 z-40 mt-auto pointer-events-none pb-4">
+            <div className="pointer-events-auto">
+              <BottomBar variant="inline" active="souvenir" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'gift': navigate('/gifts'); break; case 'doorprize': navigate('/doorprize'); break; } }} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

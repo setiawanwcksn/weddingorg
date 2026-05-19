@@ -189,9 +189,8 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
 
             {/* Sesi / Limit / Meja */}
             <div>
-              <label className="block font-medium mb-1">Sesi Tamu <span className="text-red-500">*</span></label>
+              <label className="block font-medium mb-1">Sesi Tamu</label>
               <input
-                required
                 type="number"
                 value={form.session}
                 onChange={(e) => update('session', e.target.value)}
@@ -200,9 +199,8 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Limit Tamu <span className="text-red-500">*</span></label>
+              <label className="block font-medium mb-1">Limit Tamu</label>
               <input
-                required
                 type="number"
                 value={form.limit}
                 onChange={(e) => update('limit', e.target.value)}
@@ -211,9 +209,8 @@ export function EditGuestModal({ open, onClose, onSave, guest }: EditGuestModalP
               />
             </div>
             <div>
-              <label className="block font-medium mb-1">Nomor Meja <span className="text-red-500">*</span></label>
+              <label className="block font-medium mb-1">Nomor Meja</label>
               <input
-                required
                 value={form.tableNo}
                 onChange={(e) => update('tableNo', e.target.value)}
                 className="w-full rounded-md border border-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"

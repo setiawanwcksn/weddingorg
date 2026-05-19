@@ -427,11 +427,13 @@ export function Doorprize(): JSX.Element {
           </div>
         </div>
         {/* Bottom navigation - sticky at the main content bottom */}
-        <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
-          <div className="pointer-events-auto">
-            <BottomBar variant="inline" active="doorprize" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'souvenir': navigate('/souvenirs'); break; case 'gift': navigate('/gifts'); break; } }} />
+        {!filterOpen && (
+          <div className="sticky bottom-4 sm:bottom-6 z-40 mt-auto pointer-events-none pb-4">
+            <div className="pointer-events-auto">
+              <BottomBar variant="inline" active="doorprize" onSelect={(key) => { switch (key) { case 'home': navigate('/Guestbook'); break; case 'checkin': navigate('/Guestbook'); break; case 'souvenir': navigate('/souvenirs'); break; case 'gift': navigate('/gifts'); break; } }} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -755,21 +755,23 @@ export function ReceptionCheckIn(): JSX.Element {
         </div>
       </div>
       {/* Bottom navigation - sticky at the main content bottom */}
-      <div className="sticky bottom-4 sm:bottom-6 z-50 mt-auto pointer-events-none pb-4">
-        <div className="pointer-events-auto">
-          <BottomBar
-            variant="inline"
-            active="checkin"
-            onSelect={(key) => {
-              if (key === 'home') navigate('/Guestbook');
-              else if (key === 'souvenir') navigate('/souvenirs');
-              else if (key === 'gift') navigate('/gifts');
-              else if (key === 'doorprize') navigate('/doorprize');
-              else if (key === 'checkin') setCheckInOpen(true);
-            }}
-          />
+      {!checkInOpen && !detailOpen && !nonInvitedGuestModalOpen && !infoOpen && !confirmOpen && !filterOpen && (
+        <div className="sticky bottom-4 sm:bottom-6 z-40 mt-auto pointer-events-none pb-4">
+          <div className="pointer-events-auto">
+            <BottomBar
+              variant="inline"
+              active="checkin"
+              onSelect={(key) => {
+                if (key === 'home') navigate('/Guestbook');
+                else if (key === 'souvenir') navigate('/souvenirs');
+                else if (key === 'gift') navigate('/gifts');
+                else if (key === 'doorprize') navigate('/doorprize');
+                else if (key === 'checkin') setCheckInOpen(true);
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
